@@ -1,2 +1,1 @@
-# collectd-plugins
-collectd-plugins
+# Collectd Python Plugins

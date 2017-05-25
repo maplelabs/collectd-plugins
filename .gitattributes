@@ -1,0 +1,6 @@
+*.sql text
+*.csv text
+*.txt text
+*.webm binary
+*.mp4 binary
+autocrlf=true
