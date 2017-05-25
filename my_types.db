@@ -1,0 +1,13 @@
+diskusage    Disk_Capacity:GAUGE:0:U, Disk_Used:GAUGE:0:U, Num_Disks:GAUGE:0:U
+disk_stat_rate   Read_IOPS:counter:0:U, Write_IOPS:counter:0:U, Read_Throughput:counter:0:U, Write_Throughput:counter:0:U
+disk_stat_counter read_bytes:GAUGE:0:U, write_bytes:GAUGE:0:U
+tcpstats            readbufflow:GAUGE:0:U, writebufflow:GAUGE:0:U, readbuffmedium:GAUGE:0:U, writebuffmedium:GAUGE:0:U, readbuffhigh:GAUGE:0:U, writebuffhigh:GAUGE:0:U, TCP_Retrans:GAUGE:0:U, TCP_Reset:GAUGE:0:U
+nicstats               mtu:GAUGE:U:U, Rx_pkts:GAUGE:U:U, Tx_pkts:GAUGE:U:U, Rx_Drops:GAUGE:U:U, Tx_Drops:GAUGE:U:U, Updown:GAUGE:0:U, Rx_bytes:GAUGE:0:U, Tx_bytes:GAUGE:0:U
+nic_rate    Rx_Rate:counter:0:U, Tx_Rate:counter:0:U
+nic_agg_rate Rx_rate_agg:counter:0:U, Tx_rate_agg:counter:0:U
+nicstataggregate          Rx_pkts:GAUGE:U:U, Tx_pkts:GAUGE:U:U, Rx_Drops:GAUGE:U:U, Tx_Drops:GAUGE:U:U Num_NICS:GAUGE:0:U
+ramusage             RAM:GAUGE:0:U, RAM_Util:GAUGE:0:U
+cpustats            Physical_Cores:GAUGE:U:U, total_cores:GAUGE:U:U, total_logical_cpus:GAUGE:U:U, Sockets:GAUGE:U:U
+cpu_util   Cpu_Util:GAUGE:0:100.1
+jvmstatic    threads:GAUGE:U:U, Classes:GAUGE:U:U, Heap_size(MB):GAUGE:U:U, Heap_Usage(MB):GAUGE:U:U, RAM_Usage(MB):GAUGE:U:U, CPU_Usage:GAUGE:U:U, pid:GAUGE:U:U, utime:GAUGE:U:U, stime:GAUGE:U:U, CLK_TCK:GAUGE:U:U
+dummy      dummy:GAUGE:0:U
