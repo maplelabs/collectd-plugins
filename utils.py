@@ -8,22 +8,22 @@ import collectd
 from constants import *
 
 
-#def gethostname():
-#    """Returns hostname."""
-#    hostname = HOSTNAMEFAILURE
-#    try:
-#        with open("/etc/hostname") as hostname_file:
-#            hostname = hostname_file.readline()
-#            hostname = hostname.rstrip('\n')
-#    except:
-#        pass
-#    return hostname
+def gethostname():
+    """Returns hostname."""
+    hostname = HOSTNAMEFAILURE
+    try:
+        with open("/etc/hostname") as hostname_file:
+            hostname = hostname_file.readline()
+            hostname = hostname.rstrip('\n')
+    except:
+        pass
+    return hostname
 
 
 def dispatch(data_dict):
     """Dispatches data to collectd."""
     # add hostname to data_dict
-#    data_dict[HOSTNAME] = gethostname()
+    data_dict[HOSTNAME] = gethostname()
 
     # first dispatch to write json
     write_json.write(data_dict)
