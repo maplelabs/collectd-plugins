@@ -5,6 +5,9 @@ heap size, heap usage, Process state]
 
 import subprocess
 import collectd
+from constants import *
+from utils import *
+import time
 
 
 class JVM(object):
@@ -18,9 +21,9 @@ class JVM(object):
     def read_config(self, cfg):
         """Initializes variables from conf files."""
         for children in cfg.children:
-            if children.key == 'interval':
+            if children.key == INTERVAL:
                 self.interval = children.values[0]
-            if children.key == 'process':
+            if children.key == PROCESS:
                 self.process = children.values[0]
 
     def get_ramusage(self, pid):
@@ -94,6 +97,7 @@ class JVM(object):
 
     def get_jvmstatistics(self, pid, state):
         """Returns a list containg JVM stats no.of threads, class, heap usage, ram usage"""
+        jvm_res = {}
         fileobj = open('/proc/%d/status' % (int(pid)))
         if fileobj is None:
             collectd.debug(
@@ -142,22 +146,33 @@ class JVM(object):
         cpu_usage, utime, stime, clk_tick = self.get_cpuusage(pid)
         if cpu_usage == -1:
             return
+        jvm_res["numThreads"] = float(num_threads)
+        jvm_res["numClasses"] = float(classes[5])
+        jvm_res["heapSize"] = float(heapsize)
+        jvm_res["heapUsage"] = float(heapusage)
+        jvm_res["ramUsage"] = float(ram_usage)
+        jvm_res["cpuUsage"] = float(cpu_usage)
+        jvm_res["pid"] = float(pid)
+        jvm_res["timeSec"] = float(stime)
+        jvm_res["clkTick"] = float(clk_tick)
+        self.add_common_params(jvm_res, state, pid)
+        self.dispatch_data(jvm_res)
 
-        values = [float(num_threads), float(classes[5]), float(heapsize), float(heapusage), float(
-            ram_usage), float(cpu_usage), float(pid), float(utime), float(stime), float(clk_tick)]
-        self.dispatch_collectd(values, state, pid)
+    def add_common_params(self,  jvm_dict, state, pid):
+        hostname = gethostname()
+        timestamp = time.time()
+        jvm_dict[HOSTNAME] = hostname
+        jvm_dict[TIMESTAMP] = timestamp
+        jvm_dict[PLUGIN] = JVM_STATS
+        jvm_dict[PLUGIN_INS] = str(pid)
+        jvm_dict[TYPE] = "jvmStatic"
+        jvm_dict[INTERVAL] = int(self.interval)
+        jvm_dict[PROCESS_STATE] = state
+        jvm_dict[NAME] = self.process
 
-    def dispatch_collectd(self, values, state, pid):
-        """Dispatches values to collectd."""
-        metric = collectd.Values()
-        metric.plugin = 'jvm_stats'
-        metric.plugin_instance = str(pid)
-        metric.type = 'jvmstatic'
-        metric.values = values
-        metric.interval = int(self.interval)
-        metric.meta["Process_state"] = state
-        metric.meta["name"] = self.process
-        metric.dispatch()
+    @staticmethod
+    def dispatch_data(jvm_dict):
+        dispatch(jvm_dict)
 
     def get_jvmstate(self):
         """Get the state of jvm process"""
@@ -189,3 +204,4 @@ class JVM(object):
 OBJ = JVM()
 collectd.register_config(OBJ.read_config)
 collectd.register_read(OBJ.read_temp)
+
