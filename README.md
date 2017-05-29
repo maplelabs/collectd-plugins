@@ -14,8 +14,8 @@
 
     <Module apache_perf>
         interval "300"
-        port "80"
-        location "server-status"
+        port "<apache/httpd port number>"
+        location "<location of stats e.g. server-status>"
         secure "False"
     </Module>
 </Plugin>
@@ -30,7 +30,7 @@
     Import "apache_trans"
 
     <Module apache_trans>
-        accesslog "/var/log/apache2/access.log"
+        accesslog "<path of access.log e.g. /var/log/apache2/access.log>"
         name "apache_trans"
         interval "100"
     </Module>
@@ -46,7 +46,7 @@
 
         <Module jvm_stats>
             interval "300"
-            process "elasticsearch"
+            process "<java process name, e.g. elasticsearch>"
         </Module>
 </Plugin>
 ```
