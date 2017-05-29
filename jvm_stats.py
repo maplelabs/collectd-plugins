@@ -1,7 +1,7 @@
-'''
+"""
 Collectd Python plugin to get JVM stats [pid, classes, threads, cpu usage, ram usage,
 heap size, heap usage, Process state]
-'''
+"""
 
 import subprocess
 import collectd
@@ -40,7 +40,7 @@ class JVM(object):
             if ram is not "":
                 ramusage = ram.split()
                 if ramusage[1] == pid:
-                    ramusage = (float(ramusage[5])) / (1024)
+                    ramusage = (float(ramusage[5])) / 1024
                     break
         return ramusage
 
@@ -120,7 +120,7 @@ class JVM(object):
         classes = classes.split()
 
         heapsize = 'java -XX:+PrintFlagsFinal -version | grep -iE MaxHeapSize'
-        call = subprocess.Popen("%s" % (heapsize), shell=True,
+        call = subprocess.Popen("%s" % heapsize, shell=True,
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         (heapsize, err) = call.communicate()
         heapsize = heapsize.split("\n")

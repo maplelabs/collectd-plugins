@@ -41,7 +41,7 @@ class TcpStats(object):
         except IOError:
             collectd.error(
                 "Plugin tcp_stats: Could not open file : /proc/net/snmp")
-            return (FAILURE, None)
+            return FAILURE, None
 
         flag = 0
         for i in range(0, len(snmp_output)):
@@ -52,8 +52,8 @@ class TcpStats(object):
                 resets_recv = tcp_stat[8]
                 retrans = tcp_stat[12]
                 resets_sent = tcp_stat[14]
-                return (SUCCESS, [retrans, resets_sent, resets_recv])
-            flag = flag + 1
+                return SUCCESS, [retrans, resets_sent, resets_recv]
+            flag += 1
 
     def get_tcp_buffersize(self):
         """Returns dictionary with values of tcpWin(low, medium and high),

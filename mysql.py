@@ -104,19 +104,19 @@ class MysqlStats:
             for db_name in db_list:
                 db_dict = {}
                 try:
-		    db_query_1_org = db_query_1 % db_name
+                    db_query_1_org = db_query_1 % db_name
                     self.cur.execute(db_query_1_org)
                     db_size = self.cur.fetchall()[0][0]
-		    db_query_2_org = db_query_2 % db_name
+                    db_query_2_org = db_query_2 % db_name
                     self.cur.execute(db_query_2_org)
                     num_tables = self.cur.fetchall()[0][0]
-		    db_query_3_org = db_query_3 % db_name
+                    db_query_3_org = db_query_3 % db_name
                     self.cur.execute(db_query_3_org)
                     index_size = []
                     for ind_size in self.cur.fetchall():
                         index_size.append(ind_size[0])
                     total_index_size = sum(index_size)
-		    db_query_4_org = db_query_4 % db_name
+                    db_query_4_org = db_query_4 % db_name
                     self.cur.execute(db_query_4_org)
                     self.cur.execute(db_query_5)
                     db_details = dict(self.cur.fetchall())

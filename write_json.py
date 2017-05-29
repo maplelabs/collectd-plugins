@@ -6,7 +6,7 @@ import collectd
 from constants import *
 
 
-class WriteJson():
+class WriteJson:
     def __init__(self):
         self.max_entries = 10
         self.path = PATH
@@ -54,7 +54,7 @@ class WriteJson():
     def get_filename_from_index(self, index):
         new_index = (index + 1) % self.max_entries
         filename = str(new_index) + LOG_EXTENSION
-        return (filename, new_index)
+        return filename, new_index
 
     def write(self, data, dirname):
         index = self.get_index(dirname)

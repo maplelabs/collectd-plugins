@@ -30,9 +30,8 @@ class CpuUtil(object):
     def add_cpu_data(self):
         """Returns dictionary with values of total,per core CPU utilization
            and no. of cores in low, medium and high range."""
-        dict_cpu_util = {}
-        dict_cpu_util[CPU_UTIL] = psutil.cpu_percent(
-            interval=None, percpu=False)
+        dict_cpu_util = {CPU_UTIL: psutil.cpu_percent(
+            interval=None, percpu=False)}
         per_cpu_util = psutil.cpu_percent(interval=None, percpu=True)
         no_of_cores = len(per_cpu_util)
 
@@ -41,11 +40,11 @@ class CpuUtil(object):
 
         for i in range(1, no_of_cores + 1):
             dict_cpu_util[CORE + str(i)] = per_cpu_util[i - 1]
-            if per_cpu_util[i - 1] >= LOW_RANGE_BEGIN and per_cpu_util[i - 1] <= LOW_RANGE_END:
+            if LOW_RANGE_BEGIN <= per_cpu_util[i - 1] <= LOW_RANGE_END:
                 dict_cpu_util[NUM_LOW_ACTIVE] += 1
-            elif per_cpu_util[i - 1] > LOW_RANGE_END and per_cpu_util[i - 1] <= MEDIUM_RANGE_END:
+            elif LOW_RANGE_END < per_cpu_util[i - 1] <= MEDIUM_RANGE_END:
                 dict_cpu_util[NUM_MEDIUM_ACTIVE] += 1
-            elif per_cpu_util[i - 1] > MEDIUM_RANGE_END and per_cpu_util[i - 1] <= HIGH_RANGE_END:
+            elif MEDIUM_RANGE_END < per_cpu_util[i - 1] <= HIGH_RANGE_END:
                 dict_cpu_util[NUM_HIGH_ACTIVE] += 1
 
         return dict_cpu_util

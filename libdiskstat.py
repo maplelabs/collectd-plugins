@@ -31,7 +31,7 @@ def get_part_to_disk():
             if parts[1] == 'disk':
                 dname = parts[0]
             dict_disk_part[parts[0]] = dname
-            index = index + 1
+            index += 1
         else:
             break
 
