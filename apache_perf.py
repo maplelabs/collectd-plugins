@@ -31,7 +31,6 @@ key_map = {
 
 
 class ApachePerf:
-
     def __init__(self):
         self.interval = DEFAULT_INTERVAL
         self.port = 80
@@ -51,16 +50,16 @@ class ApachePerf:
 
     def poll(self):
         global key_map
-	port = self.port
-	secure = self.secure
+        port = self.port
+        secure = self.secure
         try:
-            if secure == True:
-		port = 443
+            if secure:
+                port = 443
                 url = "https://localhost:{}/{}?auto".format(port, self.location)
             else:
                 url = "http://localhost:{}/{}?auto".format(port, self.location)
             session = requests.Session()
-            session.mount('http://',requests.adapters.HTTPAdapter(max_retries=Retry(3)))
+            session.mount('http://', requests.adapters.HTTPAdapter(max_retries=Retry(3)))
             session.mount('https://', requests.adapters.HTTPAdapter(max_retries=Retry(3)))
             session.verify = False
             response = session.get(url, timeout=30)
@@ -107,7 +106,7 @@ class ApachePerf:
 
     @staticmethod
     def dispatch_data(result_dict):
-        collectd.debug("Plugin apache_perf: Values dispatched = "+json.dumps(result_dict))
+        collectd.debug("Plugin apache_perf: Values dispatched = " + json.dumps(result_dict))
         dispatch(result_dict)
 
     def read(self):
@@ -129,4 +128,3 @@ class ApachePerf:
 obj = ApachePerf()
 collectd.register_config(obj.read_config)
 collectd.register_read(obj.read_temp)
-

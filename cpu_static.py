@@ -1,6 +1,5 @@
-"""Python plugin for collectd to get static CPU information."""
-
 #!/usr/bin/python
+"""Python plugin for collectd to get static CPU information."""
 
 from __future__ import division
 import signal
@@ -12,7 +11,6 @@ import collectd
 # user imports
 import utils
 from constants import *
-
 
 
 class CpuStatic(object):
@@ -89,10 +87,10 @@ class CpuStatic(object):
                     model_list.append(modelname)
 
             if re.match("cpu MHz", line):
-                total_freq = total_freq + float(line.split()[3])
-                count_freq = count_freq + 1
+                total_freq += float(line.split()[3])
+                count_freq += 1
 
-            index = index + 1
+            index += 1
 
         if keyword_processor_found and keyword_physical_id_found and keyword_core_id_found:
             if (total_cores * total_physical_cpus) * 2 == total_logical_cpus:

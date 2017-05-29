@@ -89,7 +89,6 @@ CLOCK = "clock"
 NAME = "name"
 DISKSTAT = "diskStat"
 DISK = "disk"
-TYPE = "type"
 MOUNTPOINT = "mount"
 CAPACITY = "capacity"
 READIOPS = "readIOPS"
@@ -140,7 +139,6 @@ db_query_5 = 'show session status where VARIABLE_NAME like "Created_tmp_files" o
 # JVM CONSTANTS
 PROCESS = "process"
 PROCESS_STATE = "processState"
-NAME = "name"
 JVM_STATS = "jvmStats"
 
 # APACHE CONSTANTS

@@ -30,6 +30,7 @@ key_map = {
 
 class LogWatch(Thread):
     """ Thread watching a log file for appended lines """
+
     def __init__(self, logfile, line_queue):
         Thread.__init__(self)
         self.killed = False
@@ -95,7 +96,7 @@ class ApacheLog:
         read_start = datetime.now()
 
         while (self.logwatch.isAlive() and
-               (datetime.now()-read_start).seconds < self.interval):
+                       (datetime.now() - read_start).seconds < self.interval):
             try:
                 line = self.line_buffer.get_nowait()
             except Empty:
@@ -107,8 +108,8 @@ class ApacheLog:
                 collectd.info("Change the Default Log format in the apache2 configuration file to the provided "
                               "custom format: %s" % self.access_log_format)
                 return
-            self.values = dict([(key_map[key], value)for key, value in request.items() if (key in key_map.keys())])
-	    collectd.info("values:%s" % self.values)
+            self.values = dict([(key_map[key], value) for key, value in request.items() if (key in key_map.keys())])
+            collectd.info("values:%s" % self.values)
             if self.values:
                 for key, value in self.values.items():
                     try:
@@ -129,7 +130,7 @@ class ApacheLog:
         collectd.info("Plugin apache_trans: Added common parameters successfully")
 
     def dispatch_data(self):
-        collectd.debug("Plugin apache_trans: Values dispatched = "+json.dumps(self.values))
+        collectd.debug("Plugin apache_trans: Values dispatched = " + json.dumps(self.values))
         dispatch(self.values)
 
     def read(self):
@@ -153,8 +154,8 @@ class ApacheLog:
         self.logwatch.killed = True
         self.logwatch.join(1)
 
+
 a_log = ApacheLog()
 collectd.register_config(a_log.configure)
 collectd.register_read(a_log.read)
 collectd.register_shutdown(a_log.shutdown)
-

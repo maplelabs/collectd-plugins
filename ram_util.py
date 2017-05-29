@@ -32,10 +32,8 @@ class RamUtil(object):
         Returns dictionary with values of available and ram utilization information.
         """
         mem = psutil.virtual_memory()
-        dict_ram_util = {}
-        dict_ram_util['available'] = round(
-            float(mem.available) / (FACTOR * FACTOR * FACTOR), FLOATING_FACTOR)
-        dict_ram_util['RAMUtil'] = mem.percent
+        dict_ram_util = {'available': round(
+            float(mem.available) / (FACTOR * FACTOR * FACTOR), FLOATING_FACTOR), 'RAMUtil': mem.percent}
         return dict_ram_util
 
     def add_common_params(self, dict_ram_util):

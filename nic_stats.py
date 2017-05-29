@@ -52,9 +52,8 @@ class NicStats(object):
         """Returns dictionary with values of TYPE, IPADDR, MAC, SPEED, MTU and UP info."""
         dict_nics = {}  # will contain data for all interfaces
         for if_name, if_info in psutil.net_if_addrs().items():
-            interface = {}
+            interface = {TYPE: VIRT}
         #    interface[NICNAME] = if_name
-            interface[TYPE] = VIRT
             for add_family in if_info:
                 if add_family.family == socket.AF_INET:
                     interface[IPADDR] = add_family.address
@@ -81,14 +80,9 @@ class NicStats(object):
         """Returns dictionary with values of RX/TX_PKTS,RX/TX_PKTS,RX/TX_DROPS and RX/TX_BYTES."""
         dict_nics = {}
         for if_name, if_info in psutil.net_io_counters(pernic=True).items():
-            interface = {}
+            interface = {RX_PKTS: if_info.packets_recv, TX_PKTS: if_info.packets_sent, RX_DROPS: if_info.dropin,
+                         TX_DROPS: if_info.dropout, RX_BYTES: if_info.bytes_recv, TX_BYTES: if_info.bytes_sent}
         #    interface[NICNAME]  = if_name
-            interface[RX_PKTS] = if_info.packets_recv
-            interface[TX_PKTS] = if_info.packets_sent
-            interface[RX_DROPS] = if_info.dropin
-            interface[TX_DROPS] = if_info.dropout
-            interface[RX_BYTES] = if_info.bytes_recv
-            interface[TX_BYTES] = if_info.bytes_sent
             dict_nics[if_name] = interface
 
         return dict_nics
@@ -125,15 +119,10 @@ class NicStats(object):
                 total_rx_bytes = total_rx_bytes + if_info[RX_BYTES]
                 total_tx_bytes = total_tx_bytes + if_info[TX_BYTES]
 
-        interface = {}
+        interface = {TYPE: AGGREGATE, AGG + RX_PKTS: total_rx_pkts, AGG + TX_PKTS: total_tx_pkts,
+                     AGG + RX_DROPS: total_rx_drops, AGG + TX_DROPS: total_tx_drops, AGG + RX_BYTES: total_rx_bytes,
+                     AGG + TX_BYTES: total_tx_bytes}
         #interface[NICNAME]  = AGGREGATE
-        interface[TYPE] = AGGREGATE
-        interface[AGG + RX_PKTS] = total_rx_pkts
-        interface[AGG + TX_PKTS] = total_tx_pkts
-        interface[AGG + RX_DROPS] = total_rx_drops
-        interface[AGG + TX_DROPS] = total_tx_drops
-        interface[AGG + RX_BYTES] = total_rx_bytes
-        interface[AGG + TX_BYTES] = total_tx_bytes
         dict_nics[AGGREGATE] = interface
 
     def add_common_params(self, dict_nics):

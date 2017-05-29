@@ -54,17 +54,15 @@ class DiskStats(object):
             line = list_disk[index]
             if line:
                 parts = re.split(r'\s+', line.strip())
-                disk = {}
-                disk[TYPE] = parts[1]
-                disk[CAPACITY] = round(
-                    float(parts[2]) / (FACTOR * FACTOR * FACTOR), FLOATING_FACTOR)
+                disk = {TYPE: parts[1], CAPACITY: round(
+                    float(parts[2]) / (FACTOR * FACTOR * FACTOR), FLOATING_FACTOR)}
                 if len(parts) == 4:
                     disk[MOUNTPOINT] = parts[3]
                 else:
                     disk[MOUNTPOINT] = []
                 if SWAP not in disk[MOUNTPOINT]:
                     dict_disk[parts[0]] = disk
-                index = index + 1
+                index += 1
             else:
                 break
 
@@ -78,12 +76,9 @@ class DiskStats(object):
             return None
 
         for name, disk_ioinfo in disk_part_io.items():
-            disk = {}
-            disk[READBYTE] = float(disk_ioinfo.read_bytes) / (FACTOR * FACTOR)
-            disk[WRITEBYTE] = float(
-                disk_ioinfo.write_bytes) / (FACTOR * FACTOR)
-            disk[READCOUNT] = disk_ioinfo.read_count
-            disk[WRITECOUNT] = disk_ioinfo.write_count
+            disk = {READBYTE: float(disk_ioinfo.read_bytes) / (FACTOR * FACTOR), WRITEBYTE: float(
+                disk_ioinfo.write_bytes) / (FACTOR * FACTOR), READCOUNT: disk_ioinfo.read_count,
+                    WRITECOUNT: disk_ioinfo.write_count}
             dict_disk[name] = disk
 
         return dict_disk
@@ -117,10 +112,10 @@ class DiskStats(object):
         while index < num_lines:
             line = sdlines[index]
             if line:
-                total_sum = total_sum + int(line)
-                index = index + 1
+                total_sum += int(line)
+                index += 1
             else:
-                index = index + 1
+                index += 1
         return round(float(total_sum) / (FACTOR * FACTOR * FACTOR), FLOATING_FACTOR)
 
     def add_agg_usage(self):
@@ -138,10 +133,10 @@ class DiskStats(object):
         while uindex < unum_lines:
             line = splines[uindex]
             if line:
-                usage_sum = usage_sum + int(line)  # usage_sum is in Kb
-                uindex = uindex + 1
+                usage_sum += int(line)  # usage_sum is in Kb
+                uindex += 1
             else:
-                uindex = uindex + 1
+                uindex += 1
         return round(float((usage_sum * FACTOR)) / (FACTOR * FACTOR * FACTOR), FLOATING_FACTOR)
 
     def add_aggregate(self, dict_disks):
@@ -153,18 +148,13 @@ class DiskStats(object):
 
         for name, io_info in dict_disks.items():
             if io_info[TYPE] == DISK:
-                total_readbytes = total_readbytes + float(io_info[READBYTE])
-                total_writebytes = total_writebytes + float(io_info[WRITEBYTE])
-                total_readcount = total_readcount + float(io_info[READCOUNT])
-                total_writecount = total_writecount + \
-                    float(io_info[WRITECOUNT])
+                total_readbytes += float(io_info[READBYTE])
+                total_writebytes += float(io_info[WRITEBYTE])
+                total_readcount += float(io_info[READCOUNT])
+                total_writecount += float(io_info[WRITECOUNT])
 
-        disk = {}
-        disk[TYPE] = AGGREGATE
-        disk[READBYTE] = float(total_readbytes)
-        disk[WRITEBYTE] = float(total_writebytes)
-        disk[READCOUNT] = float(total_readcount)
-        disk[WRITECOUNT] = float(total_writecount)
+        disk = {TYPE: AGGREGATE, READBYTE: float(total_readbytes), WRITEBYTE: float(total_writebytes),
+                READCOUNT: float(total_readcount), WRITECOUNT: float(total_writecount)}
         agg_cap = self.add_agg_capacity()
         if agg_cap:
             disk[AGG + CAPACITY] = agg_cap

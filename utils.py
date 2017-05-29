@@ -72,13 +72,14 @@ def get_rate(key, curr_data, prev_data):
     prev_time = prev_data[TIMESTAMP]
 
     if curr_time <= prev_time:
-        collectd.error("Current data time: %s is less than previous data time: %s."+
+        collectd.error("Current data time: %s is less than previous data time: %s. "
                        "Shouldn't happen." % (curr_time, prev_time))
         return rate
 
     """
     if ((curr_time-prev_time) > (curr_data[INTERVAL]*TIME_DIFF_FACTOR)):
-        collectd.error("Too much time diff between current data time: %s and previous data time: %s." %(curr_time, prev_time))
+        collectd.error("Too much time diff between current data time: %s and previous data time: %s."
+        %(curr_time, prev_time))
         return rate
     """
 
