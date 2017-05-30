@@ -1,6 +1,6 @@
 # Collectd Python Plugins
 
-###### Download plugins to /opt/collectd/conf/
+###### Download plugins to /opt/collectd/plugins/
 
 ### Plugins Configs:
 
@@ -14,8 +14,8 @@
 
     <Module apache_perf>
         interval "300"
-        port "<apache/httpd port number>"
-        location "<location of stats e.g. server-status>"
+        port "APACHE PORT NUMBER"
+        location "LOCATION e.g. server-status"
         secure "False"
     </Module>
 </Plugin>
@@ -30,7 +30,7 @@
     Import "apache_trans"
 
     <Module apache_trans>
-        accesslog "<path of access.log e.g. /var/log/apache2/access.log>"
+        accesslog "PATH of access.log e.g. /var/log/apache2/access.log"
         name "apache_trans"
         interval "100"
     </Module>
@@ -46,7 +46,7 @@
 
         <Module jvm_stats>
             interval "300"
-            process "<java process name, e.g. elasticsearch>"
+            process "JAVA PROCESS NAME, e.g. elasticsearch"
         </Module>
 </Plugin>
 ```
@@ -138,9 +138,9 @@
 
     <Module mysql>
         interval "300"
-        host "localhost"
-        user "root"
-        password "root"
+        host "MYSQL HOST e.g. localhost"
+        user "MYSQL USERNAME"
+        password "MYSQL PASSWORD"
     </Module>
 </Plugin>
 ```
