@@ -21,7 +21,7 @@ DATADIR = "data"
 NAN = "NaN"
 
 # Interface Plugin Constants
-IF_STATS = "nicStats"
+IF_STATS = "nic_stats"
 NICNAME = "name"
 IPADDR = "ip"
 MAC = "mac"
@@ -45,7 +45,7 @@ TIME_DIFF_FACTOR = 3
 FLOATING_FACTOR = 2
 
 # CPU_Util Plugin Constants
-CPU = "cpuUtil"
+CPU = "cpu_util"
 CPU_UTILIZATION = "cpu_util"
 CPU_UTIL = "CPUUtil"
 CORE = "Cpu"  # for now let it be cpu
@@ -58,13 +58,13 @@ MEDIUM_RANGE_END = 40.0
 HIGH_RANGE_END = 100.0
 
 # Ram_Util Plugin Constants
-RAM = "ramUtil"
+RAM = "ram_util"
 RAM_UTILIZATION = "ram_util"
 RAM_UTIL = "RAMUtil"
 AVAILABLE = "available"
 
 # TCP Plugin Constants
-TCP = "tcpStats"
+TCP = "tcp_stats"
 TCP_STAT = "tcp_stat"
 READ_TCPWIN_LOW = "readTcpWinLow"
 READ_TCPWIN_MEDIUM = "readTcpWinMedium"
@@ -76,7 +76,7 @@ TCPRESET = "tcpReset"
 TCPRETRANS = "tcpRetrans"
 
 # CPU_Static Plugin Constants
-CPU_STATIC = "cpuStatic"
+CPU_STATIC = "cpu_static"
 CPU_TYPE = "CPUType"
 SOCKET = "numSockets"
 TOTAL_CORE = "numCores"
@@ -87,7 +87,7 @@ CLOCK = "clock"
 
 # DiskStatic Plugin Constants
 NAME = "name"
-DISKSTAT = "diskStat"
+DISKSTAT = "disk_stat"
 DISK = "disk"
 MOUNTPOINT = "mount"
 CAPACITY = "capacity"
