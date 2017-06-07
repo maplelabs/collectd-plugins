@@ -23,6 +23,7 @@ from libvirt_constants import *
 
 PLUGIN_NAME = "libvirt_interface"
 
+
 class LibvirtInterface:
     """
     LibvirtInterface collects libvirt related interface data from libvirt
@@ -36,6 +37,7 @@ class LibvirtInterface:
         url = LIBVIRT_URL
         self.error = None
         self.prev_iface_data = {}
+        self.prev_iface_agg = {}
         self.conn = None
         self.url = LIBVIRT_URL
         self.first_time = True
@@ -70,9 +72,21 @@ class LibvirtInterface:
             return
 
         for domain in self.conn.listAllDomains(0):
+            if not domain.isActive():
+                collectd.warning("Failed to collectd interface "
+                                 "stats for VM %s, VM is not running!" % domain.name())
+                continue
             tree = ElementTree.fromstring(domain.XMLDesc())
             interfaces = [i.get("dev")
                           for i in tree.findall('devices/interface/target')]
+
+            total_rx_pkts = 0
+            total_tx_pkts = 0
+            total_rx_drops = 0
+            total_tx_drops = 0
+            total_rx_bytes = 0
+            total_tx_bytes = 0
+
             for iface in interfaces:
                 if iface:
                     collectd.info(
@@ -84,8 +98,51 @@ class LibvirtInterface:
                     dispatch(nic_data)
                     collectd.info("Data for interface: %s of VM: %s is "
                                   "dispatched" % (iface, domain.name()))
+
+                    total_rx_pkts = total_rx_pkts + nic_data[RX_PKTS]
+                    total_tx_pkts = total_tx_pkts + nic_data[TX_PKTS]
+                    total_rx_drops = total_rx_drops + nic_data[RX_DROPS]
+                    total_tx_drops = total_tx_drops + nic_data[TX_DROPS]
+                    total_rx_bytes = total_rx_bytes + nic_data[RX_BYTES]
+                    total_tx_bytes = total_tx_bytes + nic_data[TX_BYTES]
+
+            interface = {}
+            interface[TYPE] = AGGREGATE
+            interface[RX_PKTS] = total_rx_pkts
+            interface[TX_PKTS] = total_tx_pkts
+            interface[RX_DROPS] = total_rx_drops
+            interface[TX_DROPS] = total_tx_drops
+            interface[RX_BYTES] = total_rx_bytes
+            interface[TX_BYTES] = total_tx_bytes
+            self.add_aggregate(domain, interface)
+            self.prev_iface_agg[domain.name()] = interface
+            dispatch(interface)
+
         if not self.error:
             self.conn.close()
+
+    def add_aggregate(self, domain, iface):
+        iface[PLUGIN] = IFACE_PLUGIN
+        iface[UTC] = str(datetime.datetime.utcnow())
+        iface[INTERVAL] = self.interval
+        iface[PLUGIN_INS] = str(domain.name() + "-iface-aggregate")
+        iface[VMNAME] = domain.name()
+        state, reason = domain.state()
+        iface[VM_STATE] = get_vm_state(state)
+        iface[UTC] = str(datetime.datetime.utcnow())
+        iface[TIMESTAMP] = time.time()
+
+        rx_rate = get_rate(
+            RX_BYTES, iface, self.prev_iface_agg.get(domain.name(), {}))
+        tx_rate = get_rate(
+            TX_BYTES, iface, self.prev_iface_agg.get(domain.name(), {}))
+        if rx_rate != NAN:
+            iface[AGG_RX_RATE] = round(float(rx_rate) / (1024 * 1024), 2)
+        if tx_rate != NAN:
+            iface[AGG_TX_RATE] = round(float(tx_rate) / (1024 * 1024), 2)
+        collectd.info(
+            "Collectd stats for nic: '%s' is collected of VM: %s" %
+            (iface, domain.name()))
 
     def collectd_nic_stats(self, domain, iface):
         """
