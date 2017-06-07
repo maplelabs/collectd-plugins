@@ -5,19 +5,28 @@
 import subprocess
 import write_json
 import collectd
+import socket
 from constants import *
 
 
 def gethostname():
-    """Returns hostname."""
     hostname = HOSTNAMEFAILURE
     try:
-        with open("/etc/hostname") as hostname_file:
-            hostname = hostname_file.readline()
-            hostname = hostname.rstrip('\n')
+        hostname = socket.gethostname()
     except:
-        pass
+	pass
     return hostname
+
+#def gethostname():
+#    """Returns hostname."""
+#    hostname = HOSTNAMEFAILURE
+#    try:
+#        with open("/etc/hostname") as hostname_file:
+#            hostname = hostname_file.readline()
+#            hostname = hostname.rstrip('\n')
+#    except:
+#        pass
+#    return hostname
 
 
 def dispatch(data_dict):
