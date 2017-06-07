@@ -2,7 +2,7 @@ from constants import *
 
 
 # Libvirt iface plugin
-IFACE_PLUGIN = "libvirtInterface"
+IFACE_PLUGIN = "libvirt_interface"
 IFACE_NAME = "ifaceName"
 TX_PKTS = "txPkts"
 TX_BYTES = "txBytes"
@@ -39,13 +39,13 @@ OSNAME = "osName"
 OSTYPE = "osType"
 CPUTYPE = "cpuType"
 NUM_CORES = "numCores"
-STATIC_PLUGIN = "libvirtStatic"
+STATIC_PLUGIN = "libvirt_static"
 NO_OF_VCPU = "noOfCpus"
 ALLOCATED_MEMORY = "allocatedMemory(MB)"
 
 
 # Libvirt Compute plugin constants
-COMP_PLUGIN = "libvirtCompute"
+COMP_PLUGIN = "libvirt_compute"
 CPU_UTIL = "cpuUtil(%)"
 CPU_TIME = "totalCpuTime(ns)"
 USED_MEMORY = "usedMemory(MB)"
@@ -67,7 +67,7 @@ DISK_WRITE_BYTES = "diskWriteBytes"
 DISK_READ_REQ = "diskReadReq"
 DISK_WRITE_REQ = "diskWriteReq"
 DISK_ERR = "diskError"
-DISK_PLUGIN = "libvirtDisk"
+DISK_PLUGIN = "libvirt_disk"
 
 AGG_READ_IOPS = "aggReadIops"
 AGG_WRITE_IOPS = "aggWriteIops"
