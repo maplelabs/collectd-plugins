@@ -45,7 +45,7 @@ ALLOCATED_MEMORY = "allocatedMemory(MB)"
 
 
 # Libvirt Compute plugin constants
-COMP_PLUGIN = "libvirt_compute"
+COMP_PLUGIN = "libvirt_cpu"
 CPU_UTIL = "cpuUtil(%)"
 CPU_TIME = "totalCpuTime(ns)"
 USED_MEMORY = "usedMemory(MB)"
