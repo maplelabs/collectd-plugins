@@ -68,7 +68,10 @@ class LibvirtCompute:
             collectd.error("Empty stats dispatch, failed to open connection.")
             return
         for domain in self.conn.listAllDomains(0):
-            tree = ElementTree.fromstring(domain.XMLDesc())
+            if not domain.isActive():
+                collectd.warning("Failed to collectd interface "
+                                 "stats for VM %s, VM is not running!" % domain.name())
+                continue
             compute_dict = self.get_compute_stats(domain)
             self.prev_comp_data[compute_dict[VMNAME]] = deepcopy(compute_dict)
             dispatch(compute_dict)

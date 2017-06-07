@@ -9,19 +9,16 @@
 #
 
 import datetime
-import re
 import time
 from copy import deepcopy
 from xml.etree import ElementTree
-from subprocess import (PIPE, Popen)
-import collectd
 
 from utils import *
-import libvirt
 from libvirt_utils import *
 from libvirt_constants import *
 
 PLUGIN_NAME = "libvirt_disk"
+
 
 class LibvirtDisk:
     """
@@ -36,6 +33,7 @@ class LibvirtDisk:
         url = LIBVIRT_URL
         self.error = None
         self.prev_disk_data = {}
+        self.prev_disk_agg = {}
         self.conn = None
         self.url = LIBVIRT_URL
 
@@ -56,7 +54,39 @@ class LibvirtDisk:
             self.conn, self.error = establish_connection(self.url)
         except libvirt.libvirtError as e:
             collectd.error('Failed to open connection %s, reason: %s' % (self.url, e.get_error_message()))
-            self.error= FAILURE
+            self.error = FAILURE
+
+    def add_aggregate(self, domain, disk_agg):
+        disk_agg[PLUGIN] = DISK_PLUGIN
+        disk_agg[UTC] = str(datetime.datetime.utcnow())
+        disk_agg[INTERVAL] = self.interval
+        disk_agg[PLUGIN_INS] = str(domain.name() + "-disk-aggregate")
+        state, reason = domain.state()
+        disk_agg[VM_STATE] = get_vm_state(state)
+        disk_agg[VMNAME] = domain.name()
+        disk_agg[TIMESTAMP] = time.time()
+
+        read_iops = get_rate(
+            DISK_READ_REQ, disk_agg, self.prev_disk_agg.get(domain.name(), {}))
+        write_iops = get_rate(
+            DISK_WRITE_REQ, disk_agg, self.prev_disk_agg.get(domain.name(), {}))
+        write_throughput = get_rate(
+            DISK_WRITE_BYTES, disk_agg, self.prev_disk_agg.get(domain.name(), {}))
+        read_throughput = get_rate(
+            DISK_READ_BYTES, disk_agg, self.prev_disk_agg.get(domain.name(), {}))
+
+        if read_iops != NAN:
+            disk_agg[AGG_READ_IOPS] = read_iops
+        if write_iops != NAN:
+            disk_agg[AGG_WRITE_IOPS] = write_iops
+        if write_throughput != NAN:
+            disk_agg[AGG_WRITE_THROUGHPUT] = round(
+                (float(write_throughput) / (FACTOR * FACTOR * 1.0)), 2)
+        if read_throughput != NAN:
+            disk_agg[AGG_READ_THROUGHPUT] = round(
+                (float(read_throughput) / (FACTOR * FACTOR * 1.0)), 2)
+
+        return
 
     def read(self):
         """
@@ -68,9 +98,19 @@ class LibvirtDisk:
             return
 
         for domain in self.conn.listAllDomains(0):
+            if not domain.isActive():
+                collectd.warning("Failed to collectd dynamic disk "
+                                 "stats for VM %s, VM is not running!" % domain.name())
+                continue
             tree = ElementTree.fromstring(domain.XMLDesc())
             disks = [i.get("file")
                      for i in tree.findall("devices/disk/source")]
+
+            total_disk_read_bytes = 0
+            total_disk_write_bytes = 0
+            total_disk_read_req = 0
+            total_disk_write_req = 0
+
             for disk in disks:
                 if disk:
                     collectd.info("Collecting stats for '%s' disk" % (disk))
@@ -80,8 +120,29 @@ class LibvirtDisk:
                     collectd.info(
                         "Data for disk: %s of VM: %s is dispatched" %
                         (disk, domain.name()))
+
+                    total_disk_read_bytes = total_disk_read_bytes + disk_dict[DISK_READ_BYTES]
+                    total_disk_write_bytes = total_disk_write_bytes + disk_dict[DISK_WRITE_BYTES]
+                    total_disk_read_req = total_disk_read_req + disk_dict[DISK_READ_REQ]
+                    total_disk_write_req = total_disk_write_req + disk_dict[DISK_WRITE_REQ]
+
+            disk_agg = {}
+            disk_agg[TYPE] = AGGREGATE
+            disk_agg[DISK_READ_BYTES] = total_disk_read_bytes
+            disk_agg[DISK_WRITE_BYTES] = total_disk_write_bytes
+            disk_agg[DISK_READ_REQ] = total_disk_read_req
+            disk_agg[DISK_WRITE_REQ] = total_disk_write_req
+
+            self.add_aggregate(domain, disk_agg)
+            self.prev_disk_agg[domain.name()] = disk_agg
+
+            dispatch(disk_agg)
+
         if not self.error:
             self.conn.close()
+
+    def add_common(self, data):
+        data[TIMESTAMP] = time.time()
 
     def collect_disk_stats(self, domain, disk):
         """
@@ -120,23 +181,24 @@ class LibvirtDisk:
             read_throughput = get_rate(
                 DISK_READ_BYTES, data, self.prev_disk_data.get(
                     data[DISK_PATH], {}))
+
             if read_iops != NAN:
                 data[READ_IOPS] = read_iops
             if write_iops != NAN:
                 data[WRITE_IOPS] = write_iops
             if write_throughput != NAN:
                 data[WRITE_THROUGHPIUT] = round(
-                    (float(write_throughput) / (1024.0 * 1024.0)), 2)
+                    (float(write_throughput) / (FACTOR * FACTOR * 1.0)), 2)
             if read_throughput != NAN:
                 data[READ_THROUGHPUT] = round(
-                    (float(read_throughput) / (1024.0 * 1024.0)), 2)
+                    (float(read_throughput) / (FACTOR * FACTOR * 1.0)), 2)
             collectd.info(
                 "Collectd stats for disk '%s' of vm: %s" %
                 (disk, domain.name()))
-        except libvirt.libvirtError:
+        except libvirt.libvirtError as e:
             collectd.warning(
-                "VM is not in Running mode !!, VM: %s" %
-                (domain.name()))
+                "Failed for VM %s, reason: %s" %
+                (domain.name()), e.message)
 
         return data
 

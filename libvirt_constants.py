@@ -17,6 +17,8 @@ RX_ERR = "rxErr"
 VLAN_TAG = "vlanTag"
 VLAN_TRUNKS = "vlanTrunks"
 VM_NIC_NAME = "vm_nic_name"
+AGG_TX_RATE = "agg_"+TX_RATE
+AGG_RX_RATE = "agg_"+RX_RATE
 
 
 # Libvirt common constants
@@ -66,3 +68,8 @@ DISK_READ_REQ = "diskReadReq"
 DISK_WRITE_REQ = "diskWriteReq"
 DISK_ERR = "diskError"
 DISK_PLUGIN = "libvirtDisk"
+
+AGG_READ_IOPS = "aggReadIops"
+AGG_WRITE_IOPS = "aggWriteIops"
+AGG_READ_THROUGHPUT = "aggReadThroughput(Mbps)"
+AGG_WRITE_THROUGHPUT = "aggWriteThroughput(Mbps)"
