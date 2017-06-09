@@ -43,15 +43,18 @@ class LogWatch(Thread):
 
     def tail(self):
         """ Watch for, and enqueue lines appended to a file """
-        tail = subprocess.Popen(
-            ["tail", "-f", self.logfile], stdout=subprocess.PIPE)
-        while not self.killed:
-            line = tail.stdout.readline()
-            self.line_queue.put(line)
-            if not line:
-                collectd.info("No logs are present in the access log file of apache")
-                break
-
+        try:
+            tail = subprocess.Popen(
+                    ["tail", "-f", self.logfile], stdout=subprocess.PIPE)
+            while not self.killed:
+                line = tail.stdout.readline()
+                self.line_queue.put(line)
+                if not line:
+                    collectd.info("No logs are present in the access log file of apache")
+                    break
+        except Exception as e:
+            collectd.info(e)
+            return
 
 class ApacheLog:
     """ Main plugin class """
