@@ -20,12 +20,16 @@ class CpuStatic(object):
     def __init__(self):
         """Initializes interval."""
         self.interval = DEFAULT_INTERVAL
+        self.nodeType = ""
 
     def read_config(self, cfg):
         """Initializes variables from conf files."""
         for children in cfg.children:
             if children.key == INTERVAL:
                 self.interval = children.values[0]
+            if children.key == NODETYPE:
+                self.nodeType = children.values[0]
+
 
     def add_cpu_data(self):
         """Return dictionary with values of  CPUType, HT, CLOCK, SOCKET, TOTAL_CORE
@@ -139,6 +143,8 @@ class CpuStatic(object):
 
     def read(self):
         """Collects all data for interval registered in read callback."""
+        if(self.nodeType == "Virtual"):
+            return
         dict_cpu_static = self.collect_data()
         if not dict_cpu_static:
             return
