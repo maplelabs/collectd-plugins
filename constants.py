@@ -19,6 +19,7 @@ DUMMY = "dummy"
 DUMMY_VAL = 10
 DATADIR = "data"
 NAN = "NaN"
+NODETYPE = "nodeType"
 
 # Interface Plugin Constants
 IF_STATS = "nic_stats"

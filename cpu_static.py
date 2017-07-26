@@ -143,7 +143,7 @@ class CpuStatic(object):
 
     def read(self):
         """Collects all data for interval registered in read callback."""
-        if(self.nodeType == "Virtual"):
+        if(self.nodeType.lower() == "virtual"):
             return
         dict_cpu_static = self.collect_data()
         if not dict_cpu_static:
