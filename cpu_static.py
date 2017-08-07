@@ -1,4 +1,4 @@
-#!/usr/bin/python
+f#!/usr/bin/python
 """Python plugin for collectd to get static CPU information."""
 
 from __future__ import division
@@ -115,7 +115,8 @@ class CpuStatic(object):
         """Adds TIMESTAMP, PLUGIN, PLUGIN_INS to dictionary."""
         timestamp = time.time()
         dict_cpu_static[TIMESTAMP] = timestamp
-        dict_cpu_static[PLUGIN] = CPU_STATIC
+        dict_cpu_static[TYPE] = CPU_STATIC
+        dict_cpu_static[PLUGIN] = LINUX_STATIC
         dict_cpu_static[PLUGIN_INS] = P_INS_ALL
         collectd.info(
             "Plugin cpu_static: Added common parameters successfully")

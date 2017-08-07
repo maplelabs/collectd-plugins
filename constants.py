@@ -20,6 +20,8 @@ DUMMY_VAL = 10
 DATADIR = "data"
 NAN = "NaN"
 NODETYPE = "nodeType"
+LINUX_STATIC = "linux_static"
+LINUX_DYNAMIC = "linux_dynamic"
 
 # Interface Plugin Constants
 IF_STATS = "nic_stats"
