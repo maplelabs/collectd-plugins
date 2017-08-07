@@ -170,7 +170,8 @@ class DiskStats(object):
 
         for disk_name, disk_info in dict_disks.items():
             disk_info[TIMESTAMP] = timestamp
-            disk_info[PLUGIN] = DISKSTAT
+            disk_info[PLUGIN] = LINUX_DYNAMIC
+            disk_info[TYPE] = DISKSTAT
             disk_info[PLUGIN_INS] = disk_name
 
     def add_rate(self, dict_disks):
