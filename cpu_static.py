@@ -1,4 +1,4 @@
-f#!/usr/bin/python
+#!/usr/bin/python
 """Python plugin for collectd to get static CPU information."""
 
 from __future__ import division
