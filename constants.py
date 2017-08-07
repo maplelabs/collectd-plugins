@@ -4,8 +4,8 @@ FAILURE = -1
 HOSTNAMEFAILURE = "Unknown"
 AGG = "agg_"
 # Common Plugin Constants
-HOSTNAME = "hostName"
-PLUGIN = "plugin"
+HOSTNAME = "_hostName"
+PLUGIN = "_plugin"
 PLUGIN_INS = "plugin_instance"
 P_INS_ALL = "all"
 VAL_TYPE = "vtype"
