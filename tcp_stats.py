@@ -113,7 +113,7 @@ class TcpStats(object):
         """Adds TIMESTAMP, PLUGIN, PLUGIN_INS to dictionary."""
         timestamp = time.time()
         dict_tcp[TIMESTAMP] = timestamp
-        dict_tcp[TYPE] = TCP
+        dict_tcp[PLUGINTYPE] = TCP
         dict_tcp[PLUGIN] = LINUX_DYNAMIC
         dict_tcp[PLUGIN_INS] = P_INS_ALL
 
