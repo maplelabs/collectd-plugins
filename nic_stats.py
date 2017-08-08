@@ -131,7 +131,7 @@ class NicStats(object):
 
         for if_name, if_info in dict_nics.items():
             if_info[TIMESTAMP] = timestamp
-            if_info[TYPE] = IF_STATS
+            if_info[PLUGINTYPE] = IF_STATS
             if_info[PLUGIN] = LINUX_DYNAMIC
             if_info[PLUGIN_INS] = if_name
 

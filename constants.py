@@ -22,6 +22,7 @@ NAN = "NaN"
 NODETYPE = "nodeType"
 LINUX_STATIC = "linux_static"
 LINUX_DYNAMIC = "linux_dynamic"
+PLUGINTYPE = "_pluginType"
 
 # Interface Plugin Constants
 IF_STATS = "nic_stats"

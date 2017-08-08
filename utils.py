@@ -39,7 +39,7 @@ def dispatch(data_dict):
 
     # dispatch to other write functions
     metric = collectd.Values()
-    metric.plugin = data_dict[TYPE]
+    metric.plugin = data_dict[PLUGINTYPE]
 
     if PLUGIN_INS in data_dict:
         metric.plugin_instance = data_dict[PLUGIN_INS]
