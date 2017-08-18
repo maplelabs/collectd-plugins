@@ -9,7 +9,7 @@ import utils
 from constants import *
 
 IoTuple = namedtuple(
-    'io', 'read_count write_count read_bytes write_bytes read_mb write_mb')
+    'io', 'read_count write_count read_bytes write_bytes read_mb write_mb read_time write_time')
 
 
 def get_part_to_disk():
@@ -97,5 +97,5 @@ def disk_io_counters():
             wbytes = wsector * sector_size
             rmb = rbytes * float(0.000001)
             wmb = wbytes * float(0.000001)
-            retdict[name] = IoTuple(reads, writes, rbytes, wbytes, rmb, wmb)
+            retdict[name] = IoTuple(reads, writes, rbytes, wbytes, rmb, wmb, rtime, wtime)
     return retdict
