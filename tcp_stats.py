@@ -115,7 +115,7 @@ class TcpStats(object):
         dict_tcp[TIMESTAMP] = timestamp
         dict_tcp[PLUGINTYPE] = TCP
         dict_tcp[PLUGIN] = LINUX_DYNAMIC
-        dict_tcp[PLUGIN_INS] = P_INS_ALL
+        #dict_tcp[PLUGIN_INS] = P_INS_ALL
 
     def collect_data(self):
         """Validates if dictionary is not null.If yes then returns None."""

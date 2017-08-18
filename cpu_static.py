@@ -117,7 +117,7 @@ class CpuStatic(object):
         dict_cpu_static[TIMESTAMP] = timestamp
         dict_cpu_static[PLUGINTYPE] = CPU_STATIC
         dict_cpu_static[PLUGIN] = LINUX_STATIC
-        dict_cpu_static[PLUGIN_INS] = P_INS_ALL
+        #dict_cpu_static[PLUGIN_INS] = P_INS_ALL
         collectd.info(
             "Plugin cpu_static: Added common parameters successfully")
 

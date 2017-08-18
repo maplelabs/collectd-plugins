@@ -81,7 +81,7 @@ TCPRETRANS = "tcpRetrans"
 
 # CPU_Static Plugin Constants
 CPU_STATIC = "cpu_static"
-CPU_TYPE = "CPUType"
+CPU_TYPE = "_CPUType"
 SOCKET = "numSockets"
 TOTAL_CORE = "numCores"
 HT = "HT"
