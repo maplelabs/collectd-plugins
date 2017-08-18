@@ -43,6 +43,8 @@ RX_BYTES = "rx_Bytes"
 TX_BYTES = "tx_Bytes"
 RX_RATE = "rx_Rate"
 TX_RATE = "tx_Rate"
+NIC_NAME = "_nicName"
+NIC_TYPE = "_nicType"
 
 DEFAULT_INTERVAL = 10
 TIME_DIFF_FACTOR = 3
@@ -105,6 +107,8 @@ READBYTE = "readbyte"
 WRITEBYTE = "writebyte"
 USAGE = "usage"
 SWAP = "SWAP"
+DISK_TYPE = "_diskType"
+DISK_NAME = "_diskName"
 
 INDEX_FILE = "index.txt"
 INDEX_NEW_FILE = "-1"

@@ -54,7 +54,7 @@ class DiskStats(object):
             line = list_disk[index]
             if line:
                 parts = re.split(r'\s+', line.strip())
-                disk = {TYPE: parts[1], CAPACITY: round(
+                disk = {DISK_TYPE: parts[1], CAPACITY: round(
                     float(parts[2]) / (FACTOR * FACTOR * FACTOR), FLOATING_FACTOR)}
                 if len(parts) == 4:
                     disk[MOUNTPOINT] = parts[3]
@@ -147,13 +147,13 @@ class DiskStats(object):
         total_writebytes = 0
 
         for name, io_info in dict_disks.items():
-            if io_info[TYPE] == DISK:
+            if io_info[DISK_TYPE] == DISK:
                 total_readbytes += float(io_info[READBYTE])
                 total_writebytes += float(io_info[WRITEBYTE])
                 total_readcount += float(io_info[READCOUNT])
                 total_writecount += float(io_info[WRITECOUNT])
 
-        disk = {TYPE: AGGREGATE, READBYTE: float(total_readbytes), WRITEBYTE: float(total_writebytes),
+        disk = {DISK_TYPE: AGGREGATE, READBYTE: float(total_readbytes), WRITEBYTE: float(total_writebytes),
                 READCOUNT: float(total_readcount), WRITECOUNT: float(total_writecount)}
         agg_cap = self.add_agg_capacity()
         if agg_cap:
@@ -172,7 +172,7 @@ class DiskStats(object):
             disk_info[TIMESTAMP] = timestamp
             disk_info[PLUGIN] = LINUX_DYNAMIC
             disk_info[PLUGINTYPE] = DISKSTAT
-            disk_info[PLUGIN_INS] = disk_name
+            disk_info[DISK_NAME] = disk_name
 
     def add_rate(self, dict_disks):
         """Function to get READTHROUGHPUT, READIOPS, WRITETHROUGHPUT and WRITEIOPS."""
