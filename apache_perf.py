@@ -53,7 +53,7 @@ class ApachePerf:
         port = self.port
         secure = self.secure
         try:
-            if secure:
+            if("true" == secure.lower()):
                 port = 443
                 url = "https://localhost:{}/{}?auto".format(port, self.location)
             else:
@@ -98,10 +98,10 @@ class ApachePerf:
     def add_common_params(result_dict):
         hostname = gethostname()
         timestamp = time.time()
-        result_dict[PLUGIN] = APACHE_PERF
-        result_dict[PLUGIN_INS] = P_INS_ALL
+        result_dict[PLUGIN] = "apache"
         result_dict[HOSTNAME] = hostname
         result_dict[TIMESTAMP] = timestamp
+        result_dict[PLUGINTYPE] = APACHE_PERF
         collectd.info("Plugin apache_perf: Added common parameters successfully")
 
     @staticmethod
