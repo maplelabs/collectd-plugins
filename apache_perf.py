@@ -53,11 +53,11 @@ class ApachePerf:
         port = self.port
         secure = self.secure
         try:
-            if("true" == secure.lower()):
-                port = 443
+            if (secure.lower() == "true"):
                 url = "https://localhost:{}/{}?auto".format(port, self.location)
             else:
                 url = "http://localhost:{}/{}?auto".format(port, self.location)
+            collectd.info("Constructed URL for apache monitoring :" + str(url))
             session = requests.Session()
             session.mount('http://', requests.adapters.HTTPAdapter(max_retries=Retry(3)))
             session.mount('https://', requests.adapters.HTTPAdapter(max_retries=Retry(3)))
