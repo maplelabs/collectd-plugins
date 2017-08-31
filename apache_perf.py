@@ -13,20 +13,20 @@ from utils import *
 
 key_map = {
     "ServerVersion": "apacheVersion",
-    "ServerMPM": "apacheServerMPM",
-    "CurrentTime": "apacheServerTime",
-    "RestartTime": "apacheResetTime",
-    "ServerUptimeSeconds": "apacheServerUpTime",
-    "CPULoad": "apacheCPULoad",
-    "CPUSystem": "apacheCPUSystem",
-    "CPUUser": "apacheCPUUser",
-    "Total Accesses": "apacheTotalAccesses",
-    "ReqPerSec": "apacheReqPerSec",
-    "BytesPerSec": "apacheBytesPerSec",
-    "BytesPerReq": "apacheBytesPerReq",
-    "Total kBytes": "apacheTotalInKB",
-    "BusyWorkers": "apacheActiveWorkers",
-    "IdleWorkers": "apacheIdleWorkers"
+    "ServerMPM": "serverMPM",
+    "CurrentTime": "currentTime",
+    "RestartTime": "resetTime",
+    "ServerUptimeSeconds": "upTime",
+    "CPULoad": "CPULoad",
+    "CPUSystem": "CPUSystem",
+    "CPUUser": "CPUUser",
+    "Total Accesses": "totalAccessCount",
+    "ReqPerSec": "reqPerSec",
+    "BytesPerSec": "bytesPerSec",
+    "BytesPerReq": "bytesPerReq",
+    "Total kBytes": "totalAccessSize",
+    "BusyWorkers": "activeWorkers",
+    "IdleWorkers": "idleWorkers"
 }
 
 
@@ -85,9 +85,9 @@ class ApachePerf:
                 result["apacheVersion"] = None
                 result["apacheOS"] = None
 
-            result["apacheIdleWorkers"] = int(result["apacheIdleWorkers"])
-            result["apacheActiveWorkers"] = int(result["apacheActiveWorkers"])
-            result["apacheTotalWorkers"] = int(result["apacheIdleWorkers"]) + int(result["apacheActiveWorkers"])
+            result["idleWorkers"] = int(result["idleWorkers"])
+            result["activeWorkers"] = int(result["activeWorkers"])
+            result["totalWorkers"] = int(result["idleWorkers"]) + int(result["activeWorkers"])
             session.close()
         except requests.exceptions.RequestException as e:
             collectd.error("Plugin apache_perf : Couldn't connect to apache server")
