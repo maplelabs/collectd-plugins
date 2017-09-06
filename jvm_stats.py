@@ -153,8 +153,9 @@ class JVM(object):
         jvm_res["ramUsage"] = float(ram_usage)
         jvm_res["cpuUsage"] = float(cpu_usage)
         jvm_res["pid"] = float(pid)
-        jvm_res["timeSec"] = float(stime)
-        jvm_res["clkTick"] = float(clk_tick)
+        jvm_res["stime"] = float(stime)
+        jvm_res["utime"] = float(utime)
+        jvm_res["clockTick"] = float(clk_tick)
         self.add_common_params(jvm_res, state, pid)
         self.dispatch_data(jvm_res)
 
@@ -163,12 +164,13 @@ class JVM(object):
         timestamp = time.time()
         jvm_dict[HOSTNAME] = hostname
         jvm_dict[TIMESTAMP] = timestamp
-        jvm_dict[PLUGIN] = JVM_STATS
+        jvm_dict[PLUGIN] = "java"
+        jvm_dict[PLUGINTYPE] = JVM_STATS
         jvm_dict[PLUGIN_INS] = str(pid)
-        jvm_dict[TYPE] = "jvmStatic"
+        #jvm_dict[TYPE] = "jvmStatic"
         jvm_dict[INTERVAL] = int(self.interval)
         jvm_dict[PROCESS_STATE] = state
-        jvm_dict[NAME] = self.process
+        jvm_dict["processName"] = self.process
 
     @staticmethod
     def dispatch_data(jvm_dict):
