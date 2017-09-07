@@ -49,10 +49,10 @@ class NicStats(object):
         return virt_if_list
 
     def get_static_data(self):
-        """Returns dictionary with values of TYPE, IPADDR, MAC, SPEED, MTU and UP info."""
+        """Returns dictionary with values of NIC_TYPE, IPADDR, MAC, SPEED, MTU and UP info."""
         dict_nics = {}  # will contain data for all interfaces
         for if_name, if_info in psutil.net_if_addrs().items():
-            interface = {TYPE: VIRT}
+            interface = {NIC_TYPE: VIRT}
         #    interface[NICNAME] = if_name
             for add_family in if_info:
                 if add_family.family == socket.AF_INET:
@@ -68,7 +68,7 @@ class NicStats(object):
         for if_name, if_info in psutil.net_if_stats().items():
             if if_name in dict_nics:
                 if if_name not in virt_list:
-                    dict_nics[if_name][TYPE] = PHY
+                    dict_nics[if_name][NIC_TYPE] = PHY
                 dict_nics[if_name][SPEED] = round(
                     (float(if_info.speed) / (FACTOR * 8)), FLOATING_FACTOR)
                 dict_nics[if_name][MTU] = if_info.mtu
@@ -90,7 +90,7 @@ class NicStats(object):
     def join_dicts(self, if_static_data, if_dynamic_data):
         """Merges param1 with param2.
 
-        param1: dictionary containing TYPE, IPADDR, MAC, SPEED, MTU and UP keys.
+        param1: dictionary containing NIC_TYPE, IPADDR, MAC, SPEED, MTU and UP keys.
         param2: dictionary containing RX/TX_PKTS, RX/TX_PKTS, RX/TX_DROPS and RX/TX_BYTES keys.
 
         return: param1 which contains merged values of param2.
@@ -111,7 +111,7 @@ class NicStats(object):
         total_tx_bytes = 0
 
         for if_name, if_info in dict_nics.items():
-            if if_info[TYPE] == PHY:
+            if if_info[NIC_TYPE] == PHY:
                 total_rx_pkts = total_rx_pkts + if_info[RX_PKTS]
                 total_tx_pkts = total_tx_pkts + if_info[TX_PKTS]
                 total_rx_drops = total_rx_drops + if_info[RX_DROPS]
@@ -119,7 +119,7 @@ class NicStats(object):
                 total_rx_bytes = total_rx_bytes + if_info[RX_BYTES]
                 total_tx_bytes = total_tx_bytes + if_info[TX_BYTES]
 
-        interface = {TYPE: AGGREGATE, AGG + RX_PKTS: total_rx_pkts, AGG + TX_PKTS: total_tx_pkts,
+        interface = {NIC_TYPE: AGGREGATE, AGG + RX_PKTS: total_rx_pkts, AGG + TX_PKTS: total_tx_pkts,
                      AGG + RX_DROPS: total_rx_drops, AGG + TX_DROPS: total_tx_drops, AGG + RX_BYTES: total_rx_bytes,
                      AGG + TX_BYTES: total_tx_bytes}
         #interface[NICNAME]  = AGGREGATE
@@ -131,14 +131,15 @@ class NicStats(object):
 
         for if_name, if_info in dict_nics.items():
             if_info[TIMESTAMP] = timestamp
-            if_info[PLUGIN] = IF_STATS
-            if_info[PLUGIN_INS] = if_name
+            if_info[PLUGINTYPE] = IF_STATS
+            if_info[PLUGIN] = LINUX_DYNAMIC
+            if_info[NIC_NAME] = if_name
 
     def add_rate(self, dict_nics):
         """Function to get RX_RATE and TX_RATE. Rate is not calculated for virtaual nics."""
         for if_name, if_info in dict_nics.items():
             if self.prev_data and if_name in self.prev_data:
-                if if_info[TYPE] == PHY:
+                if if_info[NIC_TYPE] == PHY:
                     rate = utils.get_rate(
                         RX_BYTES, if_info, self.prev_data[if_name])
                     if rate != NAN:
@@ -149,7 +150,7 @@ class NicStats(object):
                     if rate != NAN:
                         if_info[TX_RATE] = round(
                             (rate / (FACTOR * FACTOR)), FLOATING_FACTOR)
-                elif if_info[TYPE] == AGGREGATE:
+                elif if_info[NIC_TYPE] == AGGREGATE:
                     rate = utils.get_rate(
                         AGG + RX_BYTES, if_info, self.prev_data[if_name])
                     if rate != NAN:

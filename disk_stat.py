@@ -54,7 +54,7 @@ class DiskStats(object):
             line = list_disk[index]
             if line:
                 parts = re.split(r'\s+', line.strip())
-                disk = {TYPE: parts[1], CAPACITY: round(
+                disk = {DISK_TYPE: parts[1], CAPACITY: round(
                     float(parts[2]) / (FACTOR * FACTOR * FACTOR), FLOATING_FACTOR)}
                 if len(parts) == 4:
                     disk[MOUNTPOINT] = parts[3]
@@ -78,7 +78,8 @@ class DiskStats(object):
         for name, disk_ioinfo in disk_part_io.items():
             disk = {READBYTE: float(disk_ioinfo.read_bytes) / (FACTOR * FACTOR), WRITEBYTE: float(
                 disk_ioinfo.write_bytes) / (FACTOR * FACTOR), READCOUNT: disk_ioinfo.read_count,
-                    WRITECOUNT: disk_ioinfo.write_count}
+                    WRITECOUNT: disk_ioinfo.write_count, READTIME: disk_ioinfo.read_time,
+                    WRITETIME: disk_ioinfo.write_time}
             dict_disk[name] = disk
 
         return dict_disk
@@ -145,16 +146,21 @@ class DiskStats(object):
         total_writecount = 0
         total_readbytes = 0
         total_writebytes = 0
+        total_readtime = 0
+        total_writetime = 0
 
         for name, io_info in dict_disks.items():
-            if io_info[TYPE] == DISK:
+            if io_info[DISK_TYPE] == DISK:
                 total_readbytes += float(io_info[READBYTE])
                 total_writebytes += float(io_info[WRITEBYTE])
                 total_readcount += float(io_info[READCOUNT])
                 total_writecount += float(io_info[WRITECOUNT])
+                total_readtime += float(io_info[READTIME])
+                total_writetime += float(io_info[WRITETIME])
 
-        disk = {TYPE: AGGREGATE, READBYTE: float(total_readbytes), WRITEBYTE: float(total_writebytes),
-                READCOUNT: float(total_readcount), WRITECOUNT: float(total_writecount)}
+        disk = {DISK_TYPE: AGGREGATE, READBYTE: float(total_readbytes), WRITEBYTE: float(total_writebytes),
+                READCOUNT: float(total_readcount), WRITECOUNT: float(total_writecount),
+                READTIME: float(total_readtime), WRITETIME: float(total_writetime)}
         agg_cap = self.add_agg_capacity()
         if agg_cap:
             disk[AGG + CAPACITY] = agg_cap
@@ -170,8 +176,9 @@ class DiskStats(object):
 
         for disk_name, disk_info in dict_disks.items():
             disk_info[TIMESTAMP] = timestamp
-            disk_info[PLUGIN] = DISKSTAT
-            disk_info[PLUGIN_INS] = disk_name
+            disk_info[PLUGIN] = LINUX_DYNAMIC
+            disk_info[PLUGINTYPE] = DISKSTAT
+            disk_info[DISK_NAME] = disk_name
 
     def add_rate(self, dict_disks):
         """Function to get READTHROUGHPUT, READIOPS, WRITETHROUGHPUT and WRITEIOPS."""
@@ -218,6 +225,20 @@ class DiskStats(object):
                         disk_info[AGG +
                                   WRITEIOPS] = round(rate, FLOATING_FACTOR)
 
+    def add_latency(self, dict_disks):
+        for disk_name, disk_info in dict_disks.items():
+            if self.prev_data and disk_name in self.prev_data:
+                try:
+                    disk_info[READLATENCY] = (disk_info[READTIME] - self.prev_data[disk_name][READTIME]) / (
+                    disk_info[READCOUNT] - self.prev_data[disk_name][READCOUNT])
+                except ZeroDivisionError as err:
+                    disk_info[READLATENCY] = 0
+                try:
+                    disk_info[WRITELATENCY] = (disk_info[WRITETIME] - self.prev_data[disk_name][WRITETIME]) / (
+                    disk_info[WRITECOUNT] - self.prev_data[disk_name][WRITECOUNT])
+                except ZeroDivisionError as err:
+                    disk_info[READLATENCY] = 0
+
     def collect_data(self):
         """Collects all data."""
         # get static data of disk and part
@@ -247,6 +268,8 @@ class DiskStats(object):
             "Plugin disk_stat: Added common parameters successfully.")
         # calculate rate
         self.add_rate(dict_disks)
+        # calculate latency
+        self.add_latency(dict_disks)
         collectd.info(
             "Plugin disk_stat: Calculated and added rate parameters successfully.")
         # set previous  data to current data

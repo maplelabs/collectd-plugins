@@ -4,8 +4,8 @@ FAILURE = -1
 HOSTNAMEFAILURE = "Unknown"
 AGG = "agg_"
 # Common Plugin Constants
-HOSTNAME = "hostName"
-PLUGIN = "plugin"
+HOSTNAME = "_hostName"
+PLUGIN = "_plugin"
 PLUGIN_INS = "plugin_instance"
 P_INS_ALL = "all"
 VAL_TYPE = "vtype"
@@ -19,6 +19,10 @@ DUMMY = "dummy"
 DUMMY_VAL = 10
 DATADIR = "data"
 NAN = "NaN"
+NODETYPE = "nodeType"
+LINUX_STATIC = "linux_static"
+LINUX_DYNAMIC = "linux_dynamic"
+PLUGINTYPE = "_documentType"
 
 # Interface Plugin Constants
 IF_STATS = "nic_stats"
@@ -39,6 +43,8 @@ RX_BYTES = "rx_Bytes"
 TX_BYTES = "tx_Bytes"
 RX_RATE = "rx_Rate"
 TX_RATE = "tx_Rate"
+NIC_NAME = "_nicName"
+NIC_TYPE = "_nicType"
 
 DEFAULT_INTERVAL = 10
 TIME_DIFF_FACTOR = 3
@@ -77,7 +83,7 @@ TCPRETRANS = "tcpRetrans"
 
 # CPU_Static Plugin Constants
 CPU_STATIC = "cpu_static"
-CPU_TYPE = "CPUType"
+CPU_TYPE = "_CPUType"
 SOCKET = "numSockets"
 TOTAL_CORE = "numCores"
 HT = "HT"
@@ -97,10 +103,16 @@ READTHROUGHPUT = "readThroughput"
 WRITETHROUGHPUT = "writeThroughput"
 READCOUNT = "readCount"
 WRITECOUNT = "writeCount"
+READTIME = "readTime"
+WRITETIME = "writeTime"
+READLATENCY = "readLatency"
+WRITELATENCY = "writeLatency"
 READBYTE = "readbyte"
 WRITEBYTE = "writebyte"
 USAGE = "usage"
 SWAP = "SWAP"
+DISK_TYPE = "_diskType"
+DISK_NAME = "_diskName"
 
 INDEX_FILE = "index.txt"
 INDEX_NEW_FILE = "-1"
@@ -139,14 +151,14 @@ db_query_5 = 'show session status where VARIABLE_NAME like "Created_tmp_files" o
 # JVM CONSTANTS
 PROCESS = "process"
 PROCESS_STATE = "processState"
-JVM_STATS = "jvmStats"
+JVM_STATS = "jvm_stats"
 
 # APACHE CONSTANTS
 DEFAULT_LOCATION = "server-status"
 LOCATION = "location"
 PORT = "port"
 SECURE = "secure"
-APACHE_PERF = "apachePerf"
+APACHE_PERF = "apache_perf"
 DEFAULT_LOG_FILE = "/var/log/apache2/access.log"
 DEFAULT_LOG_FORMAT = '%a %A %B %T %h %H %p %>s %t \"%r\" \"%U\"'
 ACCESS_LOG = "accesslog"

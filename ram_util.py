@@ -40,8 +40,9 @@ class RamUtil(object):
         """Adds TIMESTAMP, PLUGIN, PLUGIN_INS to dictionary."""
         timestamp = time.time()
         dict_ram_util[TIMESTAMP] = timestamp
-        dict_ram_util[PLUGIN] = RAM
-        dict_ram_util[PLUGIN_INS] = P_INS_ALL
+        dict_ram_util[PLUGIN] = LINUX_DYNAMIC
+        dict_ram_util[PLUGINTYPE] = RAM
+        #dict_ram_util[PLUGIN_INS] = P_INS_ALL
         collectd.info("Plugin ram_util: Added common parameters successfully")
 
     def collect_data(self):

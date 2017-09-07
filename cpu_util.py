@@ -53,8 +53,9 @@ class CpuUtil(object):
         """Adds TIMESTAMP, PLUGIN, PLUGIN_INS to dictionary."""
         timestamp = time.time()
         dict_cpu_util[TIMESTAMP] = timestamp
-        dict_cpu_util[PLUGIN] = CPU
-        dict_cpu_util[PLUGIN_INS] = P_INS_ALL
+        dict_cpu_util[PLUGINTYPE] = CPU
+        dict_cpu_util[PLUGIN] = LINUX_DYNAMIC
+        #dict_cpu_util[PLUGIN_INS] = P_INS_ALL
         collectd.info("Plugin cpu_util: Added common parameters successfully")
 
     def collect_data(self):
