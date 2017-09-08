@@ -54,7 +54,7 @@ class CpuUtil(object):
         timestamp = time.time()
         dict_cpu_util[TIMESTAMP] = timestamp
         dict_cpu_util[PLUGINTYPE] = CPU
-        dict_cpu_util[PLUGIN] = LINUX_DYNAMIC
+        dict_cpu_util[PLUGIN] = LINUX
         #dict_cpu_util[PLUGIN_INS] = P_INS_ALL
         collectd.info("Plugin cpu_util: Added common parameters successfully")
 

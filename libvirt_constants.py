@@ -23,6 +23,7 @@ AGG_RX_RATE = "agg_"+RX_RATE
 
 # Libvirt common constants
 HOSTNME = "hostName"
+LIBVIRT = "libvirt"
 VMNAME = "vmName"
 VMID = "vmId"
 PLUGIN_NAME = "pluginName"

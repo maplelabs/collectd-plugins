@@ -162,6 +162,7 @@ class MysqlStats:
             details[TIMESTAMP] = timestamp
             details[PLUGIN] = MYSQL
             details[PLUGIN_INS] = details_type
+            details[PLUGINTYPE] = MYSQL
 
     def collect_data(self):
         # get data of MySQL
