@@ -164,7 +164,7 @@ class JVM(object):
         timestamp = time.time()
         jvm_dict[HOSTNAME] = hostname
         jvm_dict[TIMESTAMP] = timestamp
-        jvm_dict[PLUGIN] = "java"
+        jvm_dict[PLUGIN] = "jvm"
         jvm_dict[PLUGINTYPE] = JVM_STATS
         jvm_dict[PLUGIN_INS] = str(pid)
         #jvm_dict[TYPE] = "jvmStatic"
