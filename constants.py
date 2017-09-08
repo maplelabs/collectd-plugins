@@ -20,6 +20,7 @@ DUMMY_VAL = 10
 DATADIR = "data"
 NAN = "NaN"
 NODETYPE = "nodeType"
+LINUX = "linux"
 LINUX_STATIC = "linux_static"
 LINUX_DYNAMIC = "linux_dynamic"
 PLUGINTYPE = "_documentType"
@@ -151,7 +152,7 @@ db_query_5 = 'show session status where VARIABLE_NAME like "Created_tmp_files" o
 # JVM CONSTANTS
 PROCESS = "process"
 PROCESS_STATE = "processState"
-JVM_STATS = "jvm_stats"
+JVM_STATS = "jvm"
 
 # APACHE CONSTANTS
 DEFAULT_LOCATION = "server-status"

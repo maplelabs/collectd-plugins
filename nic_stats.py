@@ -132,7 +132,7 @@ class NicStats(object):
         for if_name, if_info in dict_nics.items():
             if_info[TIMESTAMP] = timestamp
             if_info[PLUGINTYPE] = IF_STATS
-            if_info[PLUGIN] = LINUX_DYNAMIC
+            if_info[PLUGIN] = LINUX
             if_info[NIC_NAME] = if_name
 
     def add_rate(self, dict_nics):

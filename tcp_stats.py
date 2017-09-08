@@ -114,7 +114,7 @@ class TcpStats(object):
         timestamp = time.time()
         dict_tcp[TIMESTAMP] = timestamp
         dict_tcp[PLUGINTYPE] = TCP
-        dict_tcp[PLUGIN] = LINUX_DYNAMIC
+        dict_tcp[PLUGIN] = LINUX
         #dict_tcp[PLUGIN_INS] = P_INS_ALL
 
     def collect_data(self):
