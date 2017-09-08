@@ -122,7 +122,8 @@ class LibvirtInterface:
             self.conn.close()
 
     def add_aggregate(self, domain, iface):
-        iface[PLUGIN] = IFACE_PLUGIN
+        iface[PLUGINTYPE] = IFACE_PLUGIN
+        iface[PLUGIN] = LIBVIRT
         iface[UTC] = str(datetime.datetime.utcnow())
         iface[INTERVAL] = self.interval
         iface[PLUGIN_INS] = str(domain.name() + "-iface-aggregate")
