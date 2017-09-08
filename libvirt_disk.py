@@ -153,7 +153,8 @@ class LibvirtDisk:
         :return: Dictionary with Disk stats for the domain
         """
         data = dict()
-        data[PLUGIN] = DISK_PLUGIN
+        data[PLUGIN] = LIBVIRT
+        data[PLUGINTYPE] = DISK_PLUGIN
         data[UTC] = str(datetime.datetime.utcnow())
         data[INTERVAL] = self.interval
         data[DISK_NAME] = str(disk.split('/')[-2] + "-" + disk.split('/')[-1])

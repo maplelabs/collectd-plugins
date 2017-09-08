@@ -153,7 +153,8 @@ class LibvirtInterface:
         :return: Dictionary with nic stats
         """
         data = {}
-        data[PLUGIN] = IFACE_PLUGIN
+        data[PLUGIN] = LIBVIRT
+        data[PLUGINTYPE] = IFACE_PLUGIN
         data[UTC] = str(datetime.datetime.utcnow())
         data[INTERVAL] = self.interval
         data[PLUGIN_INS] = str(domain.name() + "-" + iface)
