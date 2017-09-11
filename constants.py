@@ -151,7 +151,7 @@ db_query_5 = 'show session status where VARIABLE_NAME like "Created_tmp_files" o
 
 # JVM CONSTANTS
 PROCESS = "process"
-PROCESS_STATE = "processState"
+PROCESS_STATE = "_processState"
 JVM_STATS = "jvm"
 
 # APACHE CONSTANTS
