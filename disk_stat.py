@@ -101,7 +101,7 @@ class DiskStats(object):
     def add_agg_capacity(self):
         """Function to get total capacity."""
         lsblk, err = utils.get_cmd_output(
-            "lsblk -nbo KNAME,TYPE,SIZE | grep disk | grep sd | awk '{print $3}'")
+            "lsblk -nbo KNAME,TYPE,SIZE | grep disk | grep -v fd | awk '{print $3}'")
         if err:
             collectd.error("Plugin disk_stat : error in lsblk command")
             return None

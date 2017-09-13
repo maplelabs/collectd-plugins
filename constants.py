@@ -2,7 +2,7 @@
 SUCCESS = 1
 FAILURE = -1
 HOSTNAMEFAILURE = "Unknown"
-AGG = "agg_"
+AGG = ""
 # Common Plugin Constants
 HOSTNAME = "_hostName"
 PLUGIN = "_plugin"
