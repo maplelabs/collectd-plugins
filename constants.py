@@ -134,7 +134,7 @@ TABLE_DETAILS = "table_details"
 DB_DETAILS = "db_details"
 MYSQL = "mysql"
 server_query = 'SELECT count(*) FROM information_schema.SCHEMATA where schema_name not in ("information_schema", "mysql", "performance_schema")'
-server_details_query = "select * from information_schema.global_status where VARIABLE_NAME like 'connections' or VARIABLE_NAME like 'aborted_connects'\
+server_details_query = "select * from performance_schema.global_status where VARIABLE_NAME like 'connections' or VARIABLE_NAME like 'aborted_connects'\
                         or VARIABLE_NAME like 'threads_connected' or VARIABLE_NAME like 'threads_cached' or VARIABLE_NAME like 'threads_created'\
                         or VARIABLE_NAME like 'threads_running' or VARIABLE_NAME like 'uptime' or VARIABLE_NAME like 'bytes_received'\
 			or VARIABLE_NAME like 'bytes_sent'"
