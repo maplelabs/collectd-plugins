@@ -122,7 +122,8 @@ class LibvirtInterface:
             self.conn.close()
 
     def add_aggregate(self, domain, iface):
-        iface[PLUGIN] = IFACE_PLUGIN
+        iface[PLUGINTYPE] = IFACE_PLUGIN
+        iface[PLUGIN] = LIBVIRT
         iface[UTC] = str(datetime.datetime.utcnow())
         iface[INTERVAL] = self.interval
         iface[PLUGIN_INS] = str(domain.name() + "-iface-aggregate")
@@ -152,7 +153,8 @@ class LibvirtInterface:
         :return: Dictionary with nic stats
         """
         data = {}
-        data[PLUGIN] = IFACE_PLUGIN
+        data[PLUGIN] = LIBVIRT
+        data[PLUGINTYPE] = IFACE_PLUGIN
         data[UTC] = str(datetime.datetime.utcnow())
         data[INTERVAL] = self.interval
         data[PLUGIN_INS] = str(domain.name() + "-" + iface)

@@ -88,7 +88,8 @@ class LibvirtCompute:
         :return: Dictionary containing CPU and RAM stats of a VM
         """
         data = {}
-        data[PLUGIN] = COMP_PLUGIN
+        data[PLUGINTYPE] = COMP_PLUGIN
+        data[PLUGIN] = LIBVIRT
         data[UTC] = str(datetime.datetime.utcnow())
         data[INTERVAL] = self.interval
         data[PLUGIN_INS] = str(domain.name())

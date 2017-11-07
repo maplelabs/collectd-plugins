@@ -2,7 +2,7 @@
 SUCCESS = 1
 FAILURE = -1
 HOSTNAMEFAILURE = "Unknown"
-AGG = "agg_"
+AGG = ""
 # Common Plugin Constants
 HOSTNAME = "_hostName"
 PLUGIN = "_plugin"
@@ -20,6 +20,7 @@ DUMMY_VAL = 10
 DATADIR = "data"
 NAN = "NaN"
 NODETYPE = "nodeType"
+LINUX = "linux"
 LINUX_STATIC = "linux_static"
 LINUX_DYNAMIC = "linux_dynamic"
 PLUGINTYPE = "_documentType"
@@ -133,7 +134,7 @@ TABLE_DETAILS = "table_details"
 DB_DETAILS = "db_details"
 MYSQL = "mysql"
 server_query = 'SELECT count(*) FROM information_schema.SCHEMATA where schema_name not in ("information_schema", "mysql", "performance_schema")'
-server_details_query = "select * from information_schema.global_status where VARIABLE_NAME like 'connections' or VARIABLE_NAME like 'aborted_connects'\
+server_details_query = "select * from performance_schema.global_status where VARIABLE_NAME like 'connections' or VARIABLE_NAME like 'aborted_connects'\
                         or VARIABLE_NAME like 'threads_connected' or VARIABLE_NAME like 'threads_cached' or VARIABLE_NAME like 'threads_created'\
                         or VARIABLE_NAME like 'threads_running' or VARIABLE_NAME like 'uptime' or VARIABLE_NAME like 'bytes_received'\
 			or VARIABLE_NAME like 'bytes_sent'"
@@ -150,15 +151,15 @@ db_query_5 = 'show session status where VARIABLE_NAME like "Created_tmp_files" o
 
 # JVM CONSTANTS
 PROCESS = "process"
-PROCESS_STATE = "processState"
-JVM_STATS = "jvm_stats"
+PROCESS_STATE = "_processState"
+JVM_STATS = "jvm"
 
 # APACHE CONSTANTS
 DEFAULT_LOCATION = "server-status"
 LOCATION = "location"
 PORT = "port"
 SECURE = "secure"
-APACHE_PERF = "apache_perf"
+APACHE = "apache"
 DEFAULT_LOG_FILE = "/var/log/apache2/access.log"
 DEFAULT_LOG_FORMAT = '%a %A %B %T %h %H %p %>s %t \"%r\" \"%U\"'
 ACCESS_LOG = "accesslog"

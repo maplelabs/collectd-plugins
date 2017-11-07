@@ -57,7 +57,8 @@ class LibvirtDisk:
             self.error = FAILURE
 
     def add_aggregate(self, domain, disk_agg):
-        disk_agg[PLUGIN] = DISK_PLUGIN
+        disk_agg[PLUGINTYPE] = DISK_PLUGIN
+        disk_agg[PLUGIN] = LIBVIRT
         disk_agg[UTC] = str(datetime.datetime.utcnow())
         disk_agg[INTERVAL] = self.interval
         disk_agg[PLUGIN_INS] = str(domain.name() + "-disk-aggregate")
@@ -152,7 +153,8 @@ class LibvirtDisk:
         :return: Dictionary with Disk stats for the domain
         """
         data = dict()
-        data[PLUGIN] = DISK_PLUGIN
+        data[PLUGIN] = LIBVIRT
+        data[PLUGINTYPE] = DISK_PLUGIN
         data[UTC] = str(datetime.datetime.utcnow())
         data[INTERVAL] = self.interval
         data[DISK_NAME] = str(disk.split('/')[-2] + "-" + disk.split('/')[-1])

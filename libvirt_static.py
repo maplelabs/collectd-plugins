@@ -95,7 +95,8 @@ class LibvirtStatic:
             self.conn.close()
 
     def fill_common(self, data_dict):
-        data_dict[PLUGIN] = STATIC_PLUGIN
+        data_dict[PLUGINTYPE] = STATIC_PLUGIN
+        data_dict[PLUGIN] = LIBVIRT
         data_dict[UTC] = str(datetime.datetime.utcnow())
         data_dict[INTERVAL] = self.interval
         data_dict[TIMESTAMP] = time.time()

@@ -136,8 +136,14 @@ class JVM(object):
             return
         heapusage = heapusage.split("\n")
         heapusage = str(heapusage[1]).split()
-        heapusage = ((float(heapusage[2]) + float(heapusage[3]) + float(heapusage[
+        heapusageValue = ((float(heapusage[2]) + float(heapusage[3]) + float(heapusage[
             5]) + float(heapusage[7]) + float(heapusage[9]) + float(heapusage[11])) / 1024)
+
+        #Collect information about Garbage collection
+        gct = float(heapusage[16])
+        ygc = int(heapusage[12])
+        fgc = int(heapusage[14])
+        tgc = ygc + fgc
 
         ram_usage = self.get_ramusage(pid)
         if ram_usage == -1:
@@ -146,16 +152,19 @@ class JVM(object):
         cpu_usage, utime, stime, clk_tick = self.get_cpuusage(pid)
         if cpu_usage == -1:
             return
-        jvm_res["numThreads"] = float(num_threads)
-        jvm_res["numClasses"] = float(classes[5])
+
+        jvm_res["numThreads"] = int(num_threads)
+        jvm_res["numClasses"] = int(classes[5])
         jvm_res["heapSize"] = float(heapsize)
-        jvm_res["heapUsage"] = float(heapusage)
+        jvm_res["heapUsage"] = float(heapusageValue)
         jvm_res["ramUsage"] = float(ram_usage)
         jvm_res["cpuUsage"] = float(cpu_usage)
-        jvm_res["pid"] = float(pid)
+        jvm_res["pid"] = int(pid)
         jvm_res["stime"] = float(stime)
         jvm_res["utime"] = float(utime)
-        jvm_res["clockTick"] = float(clk_tick)
+        jvm_res["clockTick"] = int(clk_tick)
+        jvm_res["gct"] = gct
+        jvm_res["gc"] = tgc
         self.add_common_params(jvm_res, state, pid)
         self.dispatch_data(jvm_res)
 
@@ -164,13 +173,13 @@ class JVM(object):
         timestamp = time.time()
         jvm_dict[HOSTNAME] = hostname
         jvm_dict[TIMESTAMP] = timestamp
-        jvm_dict[PLUGIN] = "java"
+        jvm_dict[PLUGIN] = "jvm"
         jvm_dict[PLUGINTYPE] = JVM_STATS
         jvm_dict[PLUGIN_INS] = str(pid)
         #jvm_dict[TYPE] = "jvmStatic"
         jvm_dict[INTERVAL] = int(self.interval)
         jvm_dict[PROCESS_STATE] = state
-        jvm_dict["processName"] = self.process
+        jvm_dict["_processName"] = self.process
 
     @staticmethod
     def dispatch_data(jvm_dict):

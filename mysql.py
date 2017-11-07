@@ -1,5 +1,7 @@
 """ A collectd-python plugin for retrieving
-    metrics from MYSQL Database server. """
+    metrics from MYSQL Database server.
+    Plugin is valid for mysql version 5.7.6 onwards
+    """
 
 import collectd
 import signal
@@ -52,15 +54,15 @@ class MysqlStats:
             if server_details:
                 server_dict[TYPE] = SERVER_DETAILS
                 server_dict['numDatabases'] = num_databases
-                server_dict['numConnections'] = server_details['CONNECTIONS']
-                server_dict['numAbortedConnects'] = server_details['ABORTED_CONNECTS']
-                server_dict['threadsConnected'] = server_details['THREADS_CONNECTED']
-                server_dict['threadsCached'] = server_details['THREADS_CACHED']
-                server_dict['threadsCreated'] = server_details['THREADS_CREATED']
-                server_dict['threadsRunning'] = server_details['THREADS_RUNNING']
-                server_dict['upTime'] = server_details['UPTIME']
-                server_dict['bytesReceived'] = server_details['BYTES_RECEIVED']
-                server_dict['bytesSent'] = server_details['BYTES_SENT']
+                server_dict['numConnections'] = server_details['Connections']
+                server_dict['numAbortedConnects'] = server_details['Aborted_connects']
+                server_dict['threadsConnected'] = server_details['Threads_connected']
+                server_dict['threadsCached'] = server_details['Threads_cached']
+                server_dict['threadsCreated'] = server_details['Threads_created']
+                server_dict['threadsRunning'] = server_details['Threads_running']
+                server_dict['upTime'] = server_details['Uptime']
+                server_dict['bytesReceived'] = server_details['Bytes_received']
+                server_dict['bytesSent'] = server_details['Bytes_sent']
             else:
                 return
             final_server_dict[SERVER_DETAILS] = server_dict
@@ -114,7 +116,10 @@ class MysqlStats:
                     self.cur.execute(db_query_3_org)
                     index_size = []
                     for ind_size in self.cur.fetchall():
-                        index_size.append(ind_size[0])
+                        if(ind_size[0] is None):
+                            continue
+                        else:
+                            index_size.append(ind_size[0])
                     total_index_size = sum(index_size)
                     db_query_4_org = db_query_4 % db_name
                     self.cur.execute(db_query_4_org)
@@ -162,6 +167,7 @@ class MysqlStats:
             details[TIMESTAMP] = timestamp
             details[PLUGIN] = MYSQL
             details[PLUGIN_INS] = details_type
+            details[PLUGINTYPE] = MYSQL
 
     def collect_data(self):
         # get data of MySQL
