@@ -20,7 +20,13 @@ class WriteJson:
         if PLUGIN not in data:
             collectd.error("Plugin values not set")
             return None
-        path = os.path.join(self.path, DATADIR, data[PLUGIN])
+        # path = os.path.join(self.path, DATADIR, data[PLUGIN])
+
+        if(data[PLUGIN] == "linux"):
+            path = os.path.join(self.path, DATADIR, data[PLUGIN] + "/" + data[PLUGINTYPE])
+        else:
+            path = os.path.join(self.path, DATADIR, data[PLUGIN])
+
         if PLUGIN_INS in data:
             path = os.path.join(path, data[PLUGIN_INS])
         return path
