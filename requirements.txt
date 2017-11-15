@@ -2,5 +2,5 @@ requests==2.10.0
 apache-log-parser==1.7.0
 collectd==1.0
 MYSQL-python==1.2.3
-libvirt-python==2.0.0
+libvirt-python>=2.0.0
 psutil==5.3.0
