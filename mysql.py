@@ -61,8 +61,8 @@ class MysqlStats:
                 server_dict['threadsCreated'] = long(server_details['Threads_created'])
                 server_dict['threadsRunning'] = server_details['Threads_running']
                 server_dict['upTime'] = round(float(server_details['Uptime'])/(60*60),2)
-                server_dict['bytesReceived'] = server_details['Bytes_received']
-                server_dict['bytesSent'] = server_details['Bytes_sent']
+                server_dict['bytesReceivedMB'] = long(server_details['Bytes_received'])/(1024*1024)
+                server_dict['bytesSentMB'] = long(server_details['Bytes_sent'])/(1024*1024)
                 server_dict[PLUGINTYPE] = "serverDetails"
             else:
                 return
@@ -78,18 +78,25 @@ class MysqlStats:
             self.cur.execute(final_table_query)
             fields = map(lambda x: x[0], self.cur.description)
             table_details_list = [dict(zip(fields, row)) for row in self.cur.fetchall()]
+            agg_db_data = {"dataFree" : 0, "dataLen" : 0, "indexSize" : 0}
             for item in table_details_list:
                 table_dict = {}
                 table_dict["_engine"] = str(0) if item["_engine"] is None else str(item["_engine"])
                 table_dict["_dbName"] = str(0) if item["_dbName"] is None else str(item["_dbName"])
                 table_dict["dataFree"] = long(0) if item["dataFree"] is None else long(item["dataFree"])
+                agg_db_data["dataFree"] = agg_db_data["dataFree"] + table_dict["dataFree"]
                 table_dict["dataLen"] = long(0) if item["dataLen"] is None else long(item["dataLen"])
+                agg_db_data["dataLen"] = agg_db_data["dataLen"] + table_dict["dataLen"]
                 table_dict["_tableName"] = str(None) if item["_tableName"] is None else str(item["_tableName"])
                 table_dict["tableRows"] = long(0) if item["tableRows"] is None else long(item["tableRows"])
                 table_dict["indexSize"] = long(0) if item["indexSize"] is None else long(item["indexSize"])
+                agg_db_data["indexSize"] = agg_db_data["indexSize"] + table_dict["indexSize"]
                 table_dict[TYPE] = TABLE_DETAILS
                 table_dict[PLUGINTYPE] = TABLE_DETAILS
                 final_table_dict[table_dict["_tableName"]] = table_dict
+            final_table_dict[db_name]["dataFree"] = agg_db_data["dataFree"]
+            final_table_dict[db_name]["dataLen"] = agg_db_data["dataLen"]
+            final_table_dict[db_name]["indexSize"] = agg_db_data["indexSize"]
         except Exception as e:
             collectd.error("Unable to execute the query:%s" % e)
             return
@@ -133,7 +140,7 @@ class MysqlStats:
                     db_details = dict(self.cur.fetchall())
                     if db_details:
                         db_dict[TYPE] = DB_DETAILS
-                        db_dict['dbName'] = db_name
+                        db_dict['_dbName'] = db_name
                         if db_size is None:
                             db_dict['dbSize'] = int(0)
                         else:
@@ -143,14 +150,14 @@ class MysqlStats:
                         else:
                             db_dict['numTables'] = int(num_tables)
                         db_dict['indexSize'] = int(total_index_size)
-                        db_dict['numCreatedTempFiles'] = int(db_details['Created_tmp_files'])
-                        db_dict['numCreatedTempTables'] = int(db_details['Created_tmp_tables'])
-                        db_dict['numQueries'] = int(db_details['Queries'])
-                        db_dict['numSelect'] = int(db_details['Com_select'])
-                        db_dict['numInsert'] = int(db_details['Com_insert'])
-                        db_dict['numUpdate'] = int(db_details['Com_update'])
-                        db_dict['numDelete'] = int(db_details['Com_delete'])
-                        db_dict['slowQueries'] = int(db_details['Slow_queries'])
+                        # db_dict['numCreatedTempFiles'] = int(db_details['Created_tmp_files'])
+                        # db_dict['numCreatedTempTables'] = int(db_details['Created_tmp_tables'])
+                        # db_dict['numQueries'] = int(db_details['Queries'])
+                        # db_dict['numSelect'] = int(db_details['Com_select'])
+                        # db_dict['numInsert'] = int(db_details['Com_insert'])
+                        # db_dict['numUpdate'] = int(db_details['Com_update'])
+                        # db_dict['numDelete'] = int(db_details['Com_delete'])
+                        # db_dict['slowQueries'] = int(db_details['Slow_queries'])
                         db_dict[PLUGINTYPE] = "databaseDetails"
                     else:
                         collectd.info("Couldn't get the database details")

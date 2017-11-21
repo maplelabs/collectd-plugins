@@ -145,7 +145,7 @@ db_query_1 = "select Round(Sum(data_length + index_length) / 1024 / 1024, 1) 'db
 db_query_2 = "SELECT COUNT(*) as numTables FROM information_schema.tables WHERE table_schema ='%s'"
 db_query_3 = "select index_length FROM information_schema.tables where table_schema='%s'"
 db_query_4 = "use %s"
-db_query_5 = 'show session status where VARIABLE_NAME like "Created_tmp_files" or VARIABLE_NAME like "Created_tmp_tables"\
+db_query_5 = 'show global status where VARIABLE_NAME like "Created_tmp_files" or VARIABLE_NAME like "Created_tmp_tables"\
               or VARIABLE_NAME like "Queries" or VARIABLE_NAME like "Com_select" or VARIABLE_NAME like "Com_insert"\
 	      or VARIABLE_NAME like "Com_update" or VARIABLE_NAME like "Com_delete" or VARIABLE_NAME like "Slow_queries"'
 
