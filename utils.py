@@ -14,7 +14,7 @@ def gethostname():
     try:
         hostname = socket.gethostname()
     except:
-	pass
+        pass
     return hostname
 
 #def gethostname():
