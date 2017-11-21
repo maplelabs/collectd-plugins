@@ -14,7 +14,7 @@ def gethostname():
     try:
         hostname = socket.gethostname()
     except:
-        pass
+	pass
     return hostname
 
 #def gethostname():
@@ -39,7 +39,7 @@ def dispatch(data_dict):
 
     # dispatch to other write functions
     metric = collectd.Values()
-    metric.plugin = data_dict[PLUGINTYPE]
+    metric.plugin = data_dict[PLUGIN]
 
     if PLUGIN_INS in data_dict:
         metric.plugin_instance = data_dict[PLUGIN_INS]

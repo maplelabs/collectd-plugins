@@ -130,7 +130,7 @@ HOST = "host"
 USER = "user"
 PASSWORD = "password"
 SERVER_DETAILS = "server_details"
-TABLE_DETAILS = "table_details"
+TABLE_DETAILS = "tableDetails"
 DB_DETAILS = "db_details"
 MYSQL = "mysql"
 server_query = 'SELECT count(*) FROM information_schema.SCHEMATA where schema_name not in ("information_schema", "mysql", "performance_schema")'
@@ -138,8 +138,8 @@ server_details_query = "select * from performance_schema.global_status where VAR
                         or VARIABLE_NAME like 'threads_connected' or VARIABLE_NAME like 'threads_cached' or VARIABLE_NAME like 'threads_created'\
                         or VARIABLE_NAME like 'threads_running' or VARIABLE_NAME like 'uptime' or VARIABLE_NAME like 'bytes_received'\
 			or VARIABLE_NAME like 'bytes_sent'"
-table_query = "select table_name as 'tableName' ,table_schema as 'databaseName', ENGINE as 'engine', TABLE_Rows as 'tableRows', DATA_LENGTH as 'dataLen',\
-               INDEX_LENGTH as 'indexSize', DATA_FREE as 'dataFree' from information_schema.tables"
+table_query = "select table_name as '_tableName' ,table_schema as '_dbName', ENGINE as '_engine', TABLE_Rows as 'tableRows', DATA_LENGTH as 'dataLen',\
+               INDEX_LENGTH as 'indexSize', DATA_FREE as 'dataFree' from information_schema.tables where table_schema='%s'"
 db_info_query = "select schema_name from information_schema.schemata WHERE schema_name not in ('mysql', 'information_schema', 'performance_schema')"
 db_query_1 = "select Round(Sum(data_length + index_length) / 1024 / 1024, 1) 'dbSize' FROM information_schema.tables where table_schema='%s'"
 db_query_2 = "SELECT COUNT(*) as numTables FROM information_schema.tables WHERE table_schema ='%s'"

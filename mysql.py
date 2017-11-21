@@ -56,13 +56,14 @@ class MysqlStats:
                 server_dict['numDatabases'] = num_databases
                 server_dict['numConnections'] = server_details['Connections']
                 server_dict['numAbortedConnects'] = server_details['Aborted_connects']
-                server_dict['threadsConnected'] = server_details['Threads_connected']
-                server_dict['threadsCached'] = server_details['Threads_cached']
-                server_dict['threadsCreated'] = server_details['Threads_created']
+                server_dict['threadsConnected'] = long(server_details['Threads_connected'])
+                server_dict['threadsCached'] = long(server_details['Threads_cached'])
+                server_dict['threadsCreated'] = long(server_details['Threads_created'])
                 server_dict['threadsRunning'] = server_details['Threads_running']
-                server_dict['upTime'] = server_details['Uptime']
+                server_dict['upTime'] = round(float(server_details['Uptime'])/(60*60),2)
                 server_dict['bytesReceived'] = server_details['Bytes_received']
                 server_dict['bytesSent'] = server_details['Bytes_sent']
+                server_dict[PLUGINTYPE] = "serverDetails"
             else:
                 return
             final_server_dict[SERVER_DETAILS] = server_dict
@@ -71,19 +72,24 @@ class MysqlStats:
             return
         return final_server_dict
 
-    def get_table_data(self, final_table_dict):
+    def get_table_data(self, final_table_dict, db_name):
         try:
-            self.cur.execute(table_query)
+            final_table_query = table_query %db_name
+            self.cur.execute(final_table_query)
             fields = map(lambda x: x[0], self.cur.description)
             table_details_list = [dict(zip(fields, row)) for row in self.cur.fetchall()]
-            for table_dict in table_details_list:
-                for key in table_dict:
-                    if type(table_dict[key]) == long:
-                        table_dict[key] = float(table_dict[key])
-                    if type(table_dict[key]) is None:
-                        table_dict[key] = int(0)
+            for item in table_details_list:
+                table_dict = {}
+                table_dict["_engine"] = str(0) if item["_engine"] is None else str(item["_engine"])
+                table_dict["_dbName"] = str(0) if item["_dbName"] is None else str(item["_dbName"])
+                table_dict["dataFree"] = long(0) if item["dataFree"] is None else long(item["dataFree"])
+                table_dict["dataLen"] = long(0) if item["dataLen"] is None else long(item["dataLen"])
+                table_dict["_tableName"] = str(None) if item["_tableName"] is None else str(item["_tableName"])
+                table_dict["tableRows"] = long(0) if item["tableRows"] is None else long(item["tableRows"])
+                table_dict["indexSize"] = long(0) if item["indexSize"] is None else long(item["indexSize"])
                 table_dict[TYPE] = TABLE_DETAILS
-                final_table_dict[table_dict["tableName"]] = table_dict
+                table_dict[PLUGINTYPE] = TABLE_DETAILS
+                final_table_dict[table_dict["_tableName"]] = table_dict
         except Exception as e:
             collectd.error("Unable to execute the query:%s" % e)
             return
@@ -145,6 +151,7 @@ class MysqlStats:
                         db_dict['numUpdate'] = int(db_details['Com_update'])
                         db_dict['numDelete'] = int(db_details['Com_delete'])
                         db_dict['slowQueries'] = int(db_details['Slow_queries'])
+                        db_dict[PLUGINTYPE] = "databaseDetails"
                     else:
                         collectd.info("Couldn't get the database details")
                         return
@@ -152,6 +159,7 @@ class MysqlStats:
                     print e
                     return
                 final_db_dict[db_name] = db_dict
+                final_db_dict = self.get_table_data(final_db_dict, db_name)
         else:
             collectd.info("Couldn't get the database list")
             return
@@ -167,13 +175,13 @@ class MysqlStats:
             details[TIMESTAMP] = timestamp
             details[PLUGIN] = MYSQL
             details[PLUGIN_INS] = details_type
-            details[PLUGINTYPE] = MYSQL
+            #details[PLUGINTYPE] = MYSQL
 
     def collect_data(self):
         # get data of MySQL
         server_details = self.get_sql_server_data()
-        db_details = self.get_db_data(server_details)
-        final_details = self.get_table_data(db_details)
+        final_details = self.get_db_data(server_details)
+        # final_details = self.get_table_data(db_details)
         if not final_details:
             collectd.error("Plugin MYSQL: Unable to fetch data information of MYSQL.")
             return
