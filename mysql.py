@@ -23,6 +23,11 @@ class MysqlStats:
         self.user = None
         self.password = None
         self.cur = None
+        self.pollCounter = 0
+        self.previousData = {"numCreatedTempFiles": 0, "numCreatedTempTables": 0, "numQueries": 0,
+                             "numSelect": 0, "numInsert": 0, "numUpdate": 0, "numDelete": 0,
+                             "slowQueries": 0 , "bytesReceivedMB" : 0, "bytesSentMB" : 0
+                             }
 
     def read_config(self, cfg):
         for children in cfg.children:
@@ -61,11 +66,46 @@ class MysqlStats:
                 server_dict['threadsCreated'] = long(server_details['Threads_created'])
                 server_dict['threadsRunning'] = server_details['Threads_running']
                 server_dict['upTime'] = round(float(server_details['Uptime'])/(60*60),2)
-                server_dict['bytesReceivedMB'] = long(server_details['Bytes_received'])/(1024*1024)
-                server_dict['bytesSentMB'] = long(server_details['Bytes_sent'])/(1024*1024)
+                if(self.pollCounter <= 1):
+                    self.previousData["bytesReceivedMB"] = long(server_details['Bytes_received'])/(1024*1024)
+                    self.previousData["bytesSentMB"] = long(server_details['Bytes_sent']) / (1024 * 1024)
+                else:
+                    server_dict['bytesReceivedMB'] = long(server_details['Bytes_received'])/(1024*1024) - self.previousData["bytesReceivedMB"]
+                    server_dict['bytesSentMB'] = long(server_details['Bytes_sent'])/(1024*1024) - self.previousData["bytesSentMB"]
+                    self.previousData["bytesReceivedMB"] = long(server_details['Bytes_received']) / (1024 * 1024)
+                    self.previousData["bytesSentMB"] = long(server_details['Bytes_sent']) / (1024 * 1024)
                 server_dict[PLUGINTYPE] = "serverDetails"
             else:
                 return
+            self.cur.execute(db_query_5)
+            server_details1 = dict(self.cur.fetchall())
+            if server_details1:
+                if(self.pollCounter <= 1):
+                    self.previousData["numCreatedTempFiles"] = int(server_details1['Created_tmp_files'])
+                    self.previousData["numCreatedTempTables"] = int(server_details1['Created_tmp_tables'])
+                    self.previousData["numQueries"] = int(server_details1['Queries'])
+                    self.previousData["numSelect"] = int(server_details1['Com_select'])
+                    self.previousData["numInsert"] = int(server_details1['Com_insert'])
+                    self.previousData["numUpdate"] = int(server_details1['Com_update'])
+                    self.previousData["numDelete"] = int(server_details1['Com_delete'])
+                    self.previousData["slowQueries"] = int(server_details1['Slow_queries'])
+                else:
+                    server_dict['numCreatedTempFiles'] = int(server_details1['Created_tmp_files']) - self.previousData["numCreatedTempFiles"]
+                    server_dict['numCreatedTempTables'] = int(server_details1['Created_tmp_tables']) - self.previousData["numCreatedTempTables"]
+                    server_dict['numQueries'] =  int(server_details1['Queries']) - self.previousData["numQueries"]
+                    server_dict['numSelect'] =  int(server_details1['Com_select']) - self.previousData["numSelect"]
+                    server_dict['numInsert'] =  int(server_details1['Com_insert']) - self.previousData["numInsert"]
+                    server_dict['numUpdate'] =  int(server_details1['Com_update']) - self.previousData["numUpdate"]
+                    server_dict['numDelete'] =  int(server_details1['Com_delete']) - self.previousData["numDelete"]
+                    server_dict['slowQueries'] = int(server_details1['Slow_queries']) - self.previousData["slowQueries"]
+                    self.previousData["numCreatedTempFiles"] = int(server_details1['Created_tmp_files'])
+                    self.previousData["numCreatedTempTables"] = int(server_details1['Created_tmp_tables'])
+                    self.previousData["numQueries"] = int(server_details1['Queries'])
+                    self.previousData["numSelect"] = int(server_details1['Com_select'])
+                    self.previousData["numInsert"] = int(server_details1['Com_insert'])
+                    self.previousData["numUpdate"] = int(server_details1['Com_update'])
+                    self.previousData["numDelete"] = int(server_details1['Com_delete'])
+                    self.previousData["slowQueries"] = int(server_details1['Slow_queries'])
             final_server_dict[SERVER_DETAILS] = server_dict
         except Exception as e:
             collectd.error("Unable to execute the provided query:%s" % e)
@@ -115,6 +155,7 @@ class MysqlStats:
 
     def get_db_data(self, final_db_dict):
         db_list = self.get_db_info()
+        agg_server_data = {"dbSize" : 0, "indexSize" : 0}
         if db_list:
             for db_name in db_list:
                 db_dict = {}
@@ -145,19 +186,13 @@ class MysqlStats:
                             db_dict['dbSize'] = int(0)
                         else:
                             db_dict['dbSize'] = int(db_size)
+                        agg_server_data["dbSize"] = agg_server_data["dbSize"] + db_dict["dbSize"]
                         if num_tables is None:
                             db_dict['numTables'] = int(0)
                         else:
                             db_dict['numTables'] = int(num_tables)
                         db_dict['indexSize'] = int(total_index_size)
-                        # db_dict['numCreatedTempFiles'] = int(db_details['Created_tmp_files'])
-                        # db_dict['numCreatedTempTables'] = int(db_details['Created_tmp_tables'])
-                        # db_dict['numQueries'] = int(db_details['Queries'])
-                        # db_dict['numSelect'] = int(db_details['Com_select'])
-                        # db_dict['numInsert'] = int(db_details['Com_insert'])
-                        # db_dict['numUpdate'] = int(db_details['Com_update'])
-                        # db_dict['numDelete'] = int(db_details['Com_delete'])
-                        # db_dict['slowQueries'] = int(db_details['Slow_queries'])
+                        agg_server_data["indexSize"] = agg_server_data["indexSize"] + db_dict["indexSize"]
                         db_dict[PLUGINTYPE] = "databaseDetails"
                     else:
                         collectd.info("Couldn't get the database details")
@@ -166,6 +201,8 @@ class MysqlStats:
                     print e
                     return
                 final_db_dict[db_name] = db_dict
+                final_db_dict[SERVER_DETAILS]["dbSize"] = agg_server_data["dbSize"]
+                final_db_dict[SERVER_DETAILS]["indexSize"] = agg_server_data["indexSize"]
                 final_db_dict = self.get_table_data(final_db_dict, db_name)
         else:
             collectd.info("Couldn't get the database list")
@@ -206,6 +243,7 @@ class MysqlStats:
 
     def read(self):
         try:
+            self.pollCounter += 1
             self.connect_mysql()
             # collect data
             dict_mysql = self.collect_data()
