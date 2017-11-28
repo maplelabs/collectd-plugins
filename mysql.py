@@ -59,12 +59,12 @@ class MysqlStats:
             if server_details:
                 server_dict[TYPE] = SERVER_DETAILS
                 server_dict['numDatabases'] = num_databases
-                server_dict['numConnections'] = server_details['Connections']
-                server_dict['numAbortedConnects'] = server_details['Aborted_connects']
+                server_dict['numConnections'] = long(server_details['Connections'])
+                server_dict['numAbortedConnects'] = long(server_details['Aborted_connects'])
                 server_dict['threadsConnected'] = long(server_details['Threads_connected'])
                 server_dict['threadsCached'] = long(server_details['Threads_cached'])
                 server_dict['threadsCreated'] = long(server_details['Threads_created'])
-                server_dict['threadsRunning'] = server_details['Threads_running']
+                server_dict['threadsRunning'] = long(server_details['Threads_running'])
                 server_dict['upTime'] = round(float(server_details['Uptime'])/(60*60),2)
                 if(self.pollCounter <= 1):
                     self.previousData["bytesReceivedMB"] = long(server_details['Bytes_received'])/(1024*1024)
