@@ -114,6 +114,7 @@ class TcpStats(object):
         timestamp = time.time()
         dict_tcp[TIMESTAMP] = timestamp
         dict_tcp[PLUGINTYPE] = TCP
+        dict_tcp[ACTUALPLUGINTYPE] = TCP
         dict_tcp[PLUGIN] = LINUX
         #dict_tcp[PLUGIN_INS] = P_INS_ALL
 

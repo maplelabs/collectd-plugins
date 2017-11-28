@@ -175,6 +175,7 @@ class JVM(object):
         jvm_dict[TIMESTAMP] = timestamp
         jvm_dict[PLUGIN] = "jvm"
         jvm_dict[PLUGINTYPE] = JVM_STATS
+        jvm_dict[ACTUALPLUGINTYPE] = JVM_STATS
         jvm_dict[PLUGIN_INS] = str(pid)
         #jvm_dict[TYPE] = "jvmStatic"
         jvm_dict[INTERVAL] = int(self.interval)

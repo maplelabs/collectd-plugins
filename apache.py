@@ -102,6 +102,7 @@ class ApachePerf:
         result_dict[HOSTNAME] = hostname
         result_dict[TIMESTAMP] = timestamp
         result_dict[PLUGINTYPE] = APACHE
+        result_dict[ACTUALPLUGINTYPE] = APACHE
         collectd.info("Plugin apache_perf: Added common parameters successfully")
 
     @staticmethod

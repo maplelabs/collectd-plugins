@@ -116,6 +116,7 @@ class CpuStatic(object):
         timestamp = time.time()
         dict_cpu_static[TIMESTAMP] = timestamp
         dict_cpu_static[PLUGINTYPE] = CPU_STATIC
+        dict_cpu_static[ACTUALPLUGINTYPE] = CPU_STATIC
         dict_cpu_static[PLUGIN] = LINUX
         #dict_cpu_static[PLUGIN_INS] = P_INS_ALL
         collectd.info(

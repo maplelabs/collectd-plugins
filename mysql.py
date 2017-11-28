@@ -218,6 +218,7 @@ class MysqlStats:
             details[HOSTNAME] = hostname
             details[TIMESTAMP] = timestamp
             details[PLUGIN] = MYSQL
+            details[ACTUALPLUGINTYPE] = MYSQL
             details[PLUGIN_INS] = details_type
             #details[PLUGINTYPE] = MYSQL
 
