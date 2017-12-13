@@ -95,7 +95,7 @@ CLOCK = "clock"
 
 # DiskStatic Plugin Constants
 NAME = "name"
-DISKSTAT = "disk_stats"
+DISKSTAT = "disk_stat"
 DISK = "disk"
 MOUNTPOINT = "mount"
 CAPACITY = "capacity"
