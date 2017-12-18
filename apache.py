@@ -16,7 +16,7 @@ key_map = {
     "ServerMPM": "apacheServerMPM",
     "CurrentTime": "apacheServerTime",
     "RestartTime": "resetTime",
-    "ServerUptimeSeconds": "upTime",
+    "Uptime": "upTime",
     "CPULoad": "CPULoad",
     "CPUSystem": "CPUSystem",
     "CPUUser": "CPUUser",
