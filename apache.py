@@ -13,18 +13,18 @@ from utils import *
 
 key_map = {
     "ServerVersion": "apacheVersion",
-    "ServerMPM": "serverMPM",
-    "CurrentTime": "currentTime",
+    "ServerMPM": "apacheServerMPM",
+    "CurrentTime": "apacheServerTime",
     "RestartTime": "resetTime",
     "ServerUptimeSeconds": "upTime",
     "CPULoad": "CPULoad",
     "CPUSystem": "CPUSystem",
     "CPUUser": "CPUUser",
-    "Total Accesses": "totalAccessCount",
-    "ReqPerSec": "reqPerSec",
-    "BytesPerSec": "bytesPerSec",
-    "BytesPerReq": "bytesPerReq",
-    "Total kBytes": "totalAccessSize",
+    "Total Accesses": "accessCount",
+    "ReqPerSec": "requestsPerSecond",
+    "BytesPerSec": "bytesPerSecond",
+    "BytesPerReq": "bytesPerRequest",
+    "Total kBytes": "accessSize",
     "BusyWorkers": "activeWorkers",
     "IdleWorkers": "idleWorkers"
 }
@@ -36,6 +36,8 @@ class ApachePerf:
         self.port = 80
         self.location = DEFAULT_LOCATION
         self.secure = False
+        self.pollCounter = 0
+        self.previousData = {}
 
     def read_config(self, cfg):
         for children in cfg.children:
@@ -71,28 +73,71 @@ class ApachePerf:
             else:
                 collectd.info("Couldn't get the data")
                 return
+
+            data_dict = {}
             for key, value in result.items():
                 try:
-                    result[key] = float(value)
+                    if key == 'apacheVersion':
+                        continue
+
+                    if(key == 'accessCount' and self.pollCounter <= 1):
+                        self.previousData['accessCount'] = float(value)
+                        continue
+                    elif(key == 'accessCount' and not self.pollCounter <= 1):
+                        data_dict[key] = float(value) - float(self.previousData['accessCount'])
+                        self.previousData['accessCount'] = float(value)
+                        continue
+
+                    if(key == 'accessSize' and self.pollCounter <= 1):
+                        self.previousData['accessSize'] = float(value)/1024
+                        continue
+                    elif(key == 'accessSize' and not self.pollCounter <= 1):
+                        data_dict[key] = float(value)/1024 - float(self.previousData['accessSize'])
+                        self.previousData['accessSize'] = float(value)/1024
+                        continue
+
+                    if(self.pollCounter <= 1 and key in["bytesPerSecond","requestsPerSecond","bytesPerRequest"]):
+                        continue
+
+                    if(key in ["apacheDomainName","apacheServerTime","apacheIPAddress","apacheTag"]):
+                        continue
+
+                    if(key == "apacheServerMPM"):
+                        data_dict["serverMPM"] = value
+                        continue
+
+                    if (key == "upTime"):
+                        data_dict["upTime"] = int(value)
+                        continue
+
+                    if(key in ["CPUSystem","CPULoad","CPUUser"]):
+                        data_dict[key] = float(value)
+                        continue
+
+                    data_dict[key] = float(value)
                 except ValueError:
                     continue
             try:
                 t_str = result["apacheVersion"]
                 t_str = [j.strip() for i in t_str.split("(") for j in i.split(")")]
-                result["apacheVersion"] = t_str[0]
-                result["apacheOS"] = t_str[1]
+                data_dict["apacheVersion"] = t_str[0]
+                data_dict["apacheOS"] = t_str[1]
             except KeyError:
-                result["apacheVersion"] = None
-                result["apacheOS"] = None
+                data_dict["apacheVersion"] = None
+                data_dict["apacheOS"] = None
 
-            result["idleWorkers"] = int(result["idleWorkers"])
-            result["activeWorkers"] = int(result["activeWorkers"])
-            result["totalWorkers"] = int(result["idleWorkers"]) + int(result["activeWorkers"])
+            data_dict["idleWorkers"] = int(data_dict["idleWorkers"])
+            data_dict["activeWorkers"] = int(data_dict["activeWorkers"])
+            data_dict["totalWorkers"] = int(data_dict["idleWorkers"]) + int(data_dict["activeWorkers"])
+            if (self.pollCounter > 1):
+                data_dict["bytesPerSecond"] = data_dict["accessSize"] * (1024 * 1024) / self.interval
+                data_dict["requestsPerSecond"] = data_dict["accessCount"] / self.interval
+                data_dict["bytesPerRequest"] = data_dict["accessSize"] * (1024 * 1024) / data_dict["accessCount"]
             session.close()
         except requests.exceptions.RequestException as e:
             collectd.error("Plugin apache_perf : Couldn't connect to apache server")
             return
-        return result
+        return data_dict
 
     @staticmethod
     def add_common_params(result_dict):
@@ -111,6 +156,7 @@ class ApachePerf:
         dispatch(result_dict)
 
     def read(self):
+        self.pollCounter += 1
         # collect data
         result_dict = self.poll()
         if not result_dict:
