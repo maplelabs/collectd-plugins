@@ -1,5 +1,6 @@
 """ A collectd-python plugin for retrieving
     metrics from Apache status module. """
+# Apache 2.4.18 metric comapatibility although it is forward and backward compatible
 
 import collectd
 import json
