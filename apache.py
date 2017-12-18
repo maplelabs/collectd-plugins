@@ -130,13 +130,14 @@ class ApachePerf:
             data_dict["activeWorkers"] = int(data_dict["activeWorkers"])
             data_dict["totalWorkers"] = int(data_dict["idleWorkers"]) + int(data_dict["activeWorkers"])
             if (self.pollCounter > 1):
-                data_dict["bytesPerSecond"] = data_dict["accessSize"] * (1024 * 1024) / self.interval
-                data_dict["requestsPerSecond"] = data_dict["accessCount"] / self.interval
+                data_dict["bytesPerSecond"] = data_dict["accessSize"] * (1024 * 1024) / float(self.interval)
+                data_dict["requestsPerSecond"] = data_dict["accessCount"] / float(self.interval)
                 data_dict["bytesPerRequest"] = data_dict["accessSize"] * (1024 * 1024) / data_dict["accessCount"]
             session.close()
         except requests.exceptions.RequestException as e:
             collectd.error("Plugin apache_perf : Couldn't connect to apache server")
             return
+        collectd.info("Collected data for apache metrics :" + str(data_dict))
         return data_dict
 
     @staticmethod
