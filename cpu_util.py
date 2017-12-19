@@ -51,7 +51,7 @@ class CpuUtil(object):
 
     def add_common_params(self, dict_cpu_util):
         """Adds TIMESTAMP, PLUGIN, PLUGIN_INS to dictionary."""
-        timestamp = time.time()
+        timestamp = int(round(time.time()))
         dict_cpu_util[TIMESTAMP] = timestamp
         dict_cpu_util[PLUGINTYPE] = CPU
         dict_cpu_util[ACTUALPLUGINTYPE] = CPU

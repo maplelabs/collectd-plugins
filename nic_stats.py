@@ -127,7 +127,7 @@ class NicStats(object):
 
     def add_common_params(self, dict_nics):
         """Adds TIMESTAMP, PLUGIN, PLUGIN_INS to dictionary."""
-        timestamp = time.time()
+        timestamp = int(round(time.time()))
 
         for if_name, if_info in dict_nics.items():
             if_info[TIMESTAMP] = timestamp

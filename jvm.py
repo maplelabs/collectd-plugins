@@ -170,7 +170,7 @@ class JVM(object):
 
     def add_common_params(self,  jvm_dict, state, pid):
         hostname = gethostname()
-        timestamp = time.time()
+        timestamp = int(round(time.time()))
         jvm_dict[HOSTNAME] = hostname
         jvm_dict[TIMESTAMP] = timestamp
         jvm_dict[PLUGIN] = "jvm"

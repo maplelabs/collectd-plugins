@@ -113,7 +113,7 @@ class CpuStatic(object):
 
     def add_common_params(self, dict_cpu_static):
         """Adds TIMESTAMP, PLUGIN, PLUGIN_INS to dictionary."""
-        timestamp = time.time()
+        timestamp = int(round(time.time()))
         dict_cpu_static[TIMESTAMP] = timestamp
         dict_cpu_static[PLUGINTYPE] = CPU_STATIC
         dict_cpu_static[ACTUALPLUGINTYPE] = CPU_STATIC
