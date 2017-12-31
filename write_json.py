@@ -88,7 +88,9 @@ class WriteJson:
         delete_list = []
         update_dict = {}
         for key, value in data.items():
-            if isinstance(value, str):
+            if key == ACTUALPLUGINTYPE:
+                delete_list.append(key)
+             if isinstance(value, str):
                 if len(value) > 0 and value[0] == "[":
                     delete_list.append(key)
                     value = value.replace("\\", "")
