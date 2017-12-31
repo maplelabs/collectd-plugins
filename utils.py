@@ -33,13 +33,16 @@ def dispatch(data_dict):
     """Dispatches data to collectd."""
     # add hostname to data_dict
     data_dict[HOSTNAME] = gethostname()
+    internal_plugin_name = data_dict[ACTUALPLUGINTYPE]
 
     # first dispatch to write json
+    # write json also cleans up internal plugin names from dictionary.
+    #
     write_json.write(data_dict)
 
     # dispatch to other write functions
     metric = collectd.Values()
-    metric.plugin = data_dict[ACTUALPLUGINTYPE]
+    metric.plugin = internal_plugin_name
 
     if PLUGIN_INS in data_dict:
         metric.plugin_instance = data_dict[PLUGIN_INS]
