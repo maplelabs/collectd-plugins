@@ -9,6 +9,7 @@ import socket
 import json
 import psutil
 import collectd
+import copy
 
 # user imports
 import utils
@@ -84,13 +85,7 @@ class NicStats(object):
             interface = {RX_PKTS: if_info.packets_recv, TX_PKTS: if_info.packets_sent, RX_DROPS: if_info.dropin,
                          TX_DROPS: if_info.dropout, RX_BYTES: if_info.bytes_recv, TX_BYTES: if_info.bytes_sent}
         #    interface[NICNAME]  = if_name
-            if not self.first_poll:
-                #second and successive polls
-                for key, value in interface.items():
-                    dict_nics[if_name][key] = long(interface[key]) - long(self.prev_data[if_name][key])
-
-            self.prev_data[if_name] = interface
-            # dict_nics[if_name] = interface
+            dict_nics[if_name] = interface
 
         return dict_nics
 
@@ -147,26 +142,26 @@ class NicStats(object):
     def add_rate(self, dict_nics):
         """Function to get RX_RATE and TX_RATE. Rate is not calculated for virtaual nics."""
         for if_name, if_info in dict_nics.items():
-            if not self.first_poll and if_name in self.prev_data:
+            if not self.first_poll:
                 if if_info[NIC_TYPE] == PHY:
                     rate = utils.get_rate(
-                        RX_BYTES, if_info, self.interval)
+                        RX_BYTES, if_info, self.prev_data[if_name])
                     if rate != NAN:
                         if_info[RX_RATE] = round(
                             (rate / (FACTOR * FACTOR)), FLOATING_FACTOR)
                     rate = utils.get_rate(
-                        TX_BYTES, if_info, self.interval)
+                        TX_BYTES, if_info, self.prev_data[if_name])
                     if rate != NAN:
                         if_info[TX_RATE] = round(
                             (rate / (FACTOR * FACTOR)), FLOATING_FACTOR)
                 elif if_info[NIC_TYPE] == AGGREGATE:
                     rate = utils.get_rate(
-                        AGG + RX_BYTES, if_info, self.interval)
+                        AGG + RX_BYTES, if_info, self.prev_data[if_name])
                     if rate != NAN:
                         if_info[AGG + RX_RATE] = round(
                             (rate / (FACTOR * FACTOR)), FLOATING_FACTOR)
                     rate = utils.get_rate(
-                        AGG + TX_BYTES, if_info, self.interval)
+                        AGG + TX_BYTES, if_info, self.prev_data[if_name])
                     if rate != NAN:
                         if_info[AGG + TX_RATE] = round(
                             (rate / (FACTOR * FACTOR)), FLOATING_FACTOR)
@@ -202,8 +197,19 @@ class NicStats(object):
         self.add_rate(dict_nics)
         collectd.info(
             "Plugin nic_stats: Calculated and added rate parameters successfully.")
+
+        final_dict = copy.deepcopy(dict_nics)
+        if not self.first_poll:
+            for if_name, if_info in dict_nics.items():
+                dict_nics[if_name][RX_PKTS] = dict_nics[if_name][RX_PKTS] - self.prev_data[if_name][RX_PKTS]
+                dict_nics[if_name][TX_PKTS] = dict_nics[if_name][TX_PKTS] - self.prev_data[if_name][TX_PKTS]
+                dict_nics[if_name][RX_BYTES] = dict_nics[if_name][RX_BYTES] - self.prev_data[if_name][RX_BYTES]
+                dict_nics[if_name][TX_BYTES] = dict_nics[if_name][TX_BYTES] - self.prev_data[if_name][TX_BYTES]
+                dict_nics[if_name][RX_DROPS] = dict_nics[if_name][RX_DROPS] - self.prev_data[if_name][RX_DROPS]
+                dict_nics[if_name][TX_DROPS] = dict_nics[if_name][TX_DROPS] - self.prev_data[if_name][TX_DROPS]
+
         # set previous  data to current data
-        # self.prev_data = dict_nics
+        self.prev_data = final_dict
         self.first_poll = False
         return dict_nics
 
