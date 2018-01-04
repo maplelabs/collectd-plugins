@@ -66,26 +66,18 @@ def get_cmd_output(cmd, shell_value=True, stdout_value=subprocess.PIPE,
     return call.communicate()
 
 
-def get_rate(key, curr_data, prev_data):
+def get_rate(key, curr_data, interval):
     """Calculate and returns rate. Rate=(current_value-prev_value)/time."""
     rate = NAN
-    if not prev_data:
+    if not curr_data:
         return rate
 
-    if key not in prev_data:
-        collectd.error("%s key not in previous data. Shouldn't happen." % key)
+    if key not in curr_data:
+        collectd.error("%s key not in current data. Shouldn't happen." % key)
         return rate
 
-    if TIMESTAMP not in curr_data or TIMESTAMP not in prev_data:
-        collectd.error("%s key not in previous data. Shouldn't happen." % key)
-        return rate
-
-    curr_time = curr_data[TIMESTAMP]
-    prev_time = prev_data[TIMESTAMP]
-
-    if curr_time <= prev_time:
-        collectd.error("Current data time: %s is less than previous data time: %s. "
-                       "Shouldn't happen." % (curr_time, prev_time))
+    if TIMESTAMP not in curr_data :
+        collectd.error("%s key not in current data. Shouldn't happen." % key)
         return rate
 
     """
@@ -95,5 +87,5 @@ def get_rate(key, curr_data, prev_data):
         return rate
     """
 
-    rate = (curr_data[key] - prev_data[key]) / (curr_time - prev_time)
+    rate = (curr_data[key]) / (interval)
     return rate

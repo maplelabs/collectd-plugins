@@ -23,6 +23,7 @@ class NicStats(object):
         """Initializes interval and previous dictionary variable."""
         self.interval = DEFAULT_INTERVAL
         self.prev_data = {}
+        self.first_poll = True
 
     def read_config(self, cfg):
         """Initializes variables from conf files."""
@@ -83,7 +84,13 @@ class NicStats(object):
             interface = {RX_PKTS: if_info.packets_recv, TX_PKTS: if_info.packets_sent, RX_DROPS: if_info.dropin,
                          TX_DROPS: if_info.dropout, RX_BYTES: if_info.bytes_recv, TX_BYTES: if_info.bytes_sent}
         #    interface[NICNAME]  = if_name
-            dict_nics[if_name] = interface
+            if not self.first_poll:
+                #second and successive polls
+                for key, value in interface.items():
+                    dict_nics[if_name][key] = long(interface[key]) - long(self.prev_data[if_name][key])
+
+            self.prev_data[if_name] = interface
+            # dict_nics[if_name] = interface
 
         return dict_nics
 
@@ -111,13 +118,14 @@ class NicStats(object):
         total_tx_bytes = 0
 
         for if_name, if_info in dict_nics.items():
-            if if_info[NIC_TYPE] == PHY:
-                total_rx_pkts = total_rx_pkts + if_info[RX_PKTS]
-                total_tx_pkts = total_tx_pkts + if_info[TX_PKTS]
-                total_rx_drops = total_rx_drops + if_info[RX_DROPS]
-                total_tx_drops = total_tx_drops + if_info[TX_DROPS]
-                total_rx_bytes = total_rx_bytes + if_info[RX_BYTES]
-                total_tx_bytes = total_tx_bytes + if_info[TX_BYTES]
+            if not self.first_poll:
+                if if_info[NIC_TYPE] == PHY:
+                    total_rx_pkts = total_rx_pkts + if_info[RX_PKTS]
+                    total_tx_pkts = total_tx_pkts + if_info[TX_PKTS]
+                    total_rx_drops = total_rx_drops + if_info[RX_DROPS]
+                    total_tx_drops = total_tx_drops + if_info[TX_DROPS]
+                    total_rx_bytes = total_rx_bytes + if_info[RX_BYTES]
+                    total_tx_bytes = total_tx_bytes + if_info[TX_BYTES]
 
         interface = {NIC_TYPE: AGGREGATE, AGG + RX_PKTS: total_rx_pkts, AGG + TX_PKTS: total_tx_pkts,
                      AGG + RX_DROPS: total_rx_drops, AGG + TX_DROPS: total_tx_drops, AGG + RX_BYTES: total_rx_bytes,
@@ -139,26 +147,26 @@ class NicStats(object):
     def add_rate(self, dict_nics):
         """Function to get RX_RATE and TX_RATE. Rate is not calculated for virtaual nics."""
         for if_name, if_info in dict_nics.items():
-            if self.prev_data and if_name in self.prev_data:
+            if not self.first_poll and if_name in self.prev_data:
                 if if_info[NIC_TYPE] == PHY:
                     rate = utils.get_rate(
-                        RX_BYTES, if_info, self.prev_data[if_name])
+                        RX_BYTES, if_info, self.interval)
                     if rate != NAN:
                         if_info[RX_RATE] = round(
                             (rate / (FACTOR * FACTOR)), FLOATING_FACTOR)
                     rate = utils.get_rate(
-                        TX_BYTES, if_info, self.prev_data[if_name])
+                        TX_BYTES, if_info, self.interval)
                     if rate != NAN:
                         if_info[TX_RATE] = round(
                             (rate / (FACTOR * FACTOR)), FLOATING_FACTOR)
                 elif if_info[NIC_TYPE] == AGGREGATE:
                     rate = utils.get_rate(
-                        AGG + RX_BYTES, if_info, self.prev_data[if_name])
+                        AGG + RX_BYTES, if_info, self.interval)
                     if rate != NAN:
                         if_info[AGG + RX_RATE] = round(
                             (rate / (FACTOR * FACTOR)), FLOATING_FACTOR)
                     rate = utils.get_rate(
-                        AGG + TX_BYTES, if_info, self.prev_data[if_name])
+                        AGG + TX_BYTES, if_info, self.interval)
                     if rate != NAN:
                         if_info[AGG + TX_RATE] = round(
                             (rate / (FACTOR * FACTOR)), FLOATING_FACTOR)
@@ -195,7 +203,8 @@ class NicStats(object):
         collectd.info(
             "Plugin nic_stats: Calculated and added rate parameters successfully.")
         # set previous  data to current data
-        self.prev_data = dict_nics
+        # self.prev_data = dict_nics
+        self.first_poll = False
         return dict_nics
 
     def dispatch_data(self, dict_nics):
