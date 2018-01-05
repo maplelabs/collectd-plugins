@@ -210,6 +210,16 @@ class NicStats(object):
 
         # set previous  data to current data
         self.prev_data = final_dict
+
+        if self.first_poll:
+            for if_name, if_info in dict_nics.items():
+                dict_nics[if_name][RX_PKTS] = 0
+                dict_nics[if_name][TX_PKTS] = 0
+                dict_nics[if_name][RX_BYTES] = 0
+                dict_nics[if_name][TX_BYTES] = 0
+                dict_nics[if_name][RX_DROPS] = 0
+                dict_nics[if_name][TX_DROPS] = 0
+
         self.first_poll = False
         return dict_nics
 
