@@ -129,7 +129,7 @@ class MysqlStats:
                 agg_db_data["dataLen"] = agg_db_data["dataLen"] + table_dict["dataLen"]
                 table_dict["_tableName"] = str(None) if item["_tableName"] is None else str(item["_tableName"])
                 table_dict["tableRows"] = long(0) if item["tableRows"] is None else long(item["tableRows"])
-                table_dict["indexSize"] = long(0) if item["indexSize"] is None else long(item["indexSize"])
+                table_dict["indexSize"] = float(0) if item["indexSize"] is None else round(float(item["indexSize"]) / (1024 * 1024), 2)
                 agg_db_data["indexSize"] = agg_db_data["indexSize"] + table_dict["indexSize"]
                 table_dict[TYPE] = TABLE_DETAILS
                 table_dict[PLUGINTYPE] = TABLE_DETAILS
@@ -175,6 +175,7 @@ class MysqlStats:
                         else:
                             index_size.append(ind_size[0])
                     total_index_size = sum(index_size)
+                    total_index_size = float(total_index_size) / (1024 * 1024)
                     db_query_4_org = db_query_4 % db_name
                     self.cur.execute(db_query_4_org)
                     self.cur.execute(db_query_5)
@@ -183,15 +184,15 @@ class MysqlStats:
                         db_dict[TYPE] = DB_DETAILS
                         db_dict['_dbName'] = db_name
                         if db_size is None:
-                            db_dict['dbSize'] = int(0)
+                            db_dict['dbSize'] = float(0)
                         else:
-                            db_dict['dbSize'] = int(db_size)
+                            db_dict['dbSize'] = round(float(db_size), 2)
                         agg_server_data["dbSize"] = agg_server_data["dbSize"] + db_dict["dbSize"]
                         if num_tables is None:
                             db_dict['numTables'] = int(0)
                         else:
                             db_dict['numTables'] = int(num_tables)
-                        db_dict['indexSize'] = int(total_index_size)
+                        db_dict['indexSize'] = total_index_size
                         agg_server_data["indexSize"] = agg_server_data["indexSize"] + db_dict["indexSize"]
                         db_dict[PLUGINTYPE] = "databaseDetails"
                     else:
