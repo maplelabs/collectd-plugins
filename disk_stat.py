@@ -59,7 +59,7 @@ class DiskStats(object):
                 if len(parts) == 4:
                     disk[MOUNTPOINT] = parts[3]
                 else:
-                    disk[MOUNTPOINT] = ""
+                    disk[MOUNTPOINT] = None
                 if SWAP not in disk[MOUNTPOINT]:
                     dict_disk[parts[0]] = disk
                 disk[USAGE] = None
