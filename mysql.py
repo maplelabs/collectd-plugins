@@ -123,9 +123,9 @@ class MysqlStats:
                 table_dict = {}
                 table_dict["_engine"] = str(0) if item["_engine"] is None else str(item["_engine"])
                 table_dict["_dbName"] = str(0) if item["_dbName"] is None else str(item["_dbName"])
-                table_dict["dataFree"] = long(0) if item["dataFree"] is None else long(item["dataFree"])
+                table_dict["dataFree"] = float(0) if item["dataFree"] is None else round(float(item["dataFree"]) / (1024 * 1024), 2)
                 agg_db_data["dataFree"] = agg_db_data["dataFree"] + table_dict["dataFree"]
-                table_dict["dataLen"] = long(0) if item["dataLen"] is None else long(item["dataLen"])
+                table_dict["dataLen"] = float(0) if item["dataLen"] is None else round(float(item["dataLen"]) / (1024 * 1024), 2)
                 agg_db_data["dataLen"] = agg_db_data["dataLen"] + table_dict["dataLen"]
                 table_dict["_tableName"] = str(None) if item["_tableName"] is None else str(item["_tableName"])
                 table_dict["tableRows"] = long(0) if item["tableRows"] is None else long(item["tableRows"])
