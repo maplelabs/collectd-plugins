@@ -62,7 +62,7 @@ class DiskStats(object):
                     disk[MOUNTPOINT] = None
                 if disk[MOUNTPOINT] is None or SWAP not in disk[MOUNTPOINT]:
                     dict_disk[parts[0]] = disk
-                disk[USAGE] = None
+                disk[USAGE] = 0
                 index += 1
             else:
                 break
@@ -80,7 +80,7 @@ class DiskStats(object):
             disk = {READBYTE: float(disk_ioinfo.read_bytes) / (FACTOR * FACTOR), WRITEBYTE: float(
                 disk_ioinfo.write_bytes) / (FACTOR * FACTOR), READCOUNT: disk_ioinfo.read_count,
                     WRITECOUNT: disk_ioinfo.write_count, READTIME: disk_ioinfo.read_time,
-                    WRITETIME: disk_ioinfo.write_time,USAGE: None}
+                    WRITETIME: disk_ioinfo.write_time,USAGE: 0}
             dict_disk[name] = disk
 
         return dict_disk
