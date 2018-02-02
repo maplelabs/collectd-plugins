@@ -26,7 +26,8 @@ class MysqlStats:
         self.pollCounter = 0
         self.previousData = {"numCreatedTempFiles": 0, "numCreatedTempTables": 0, "numQueries": 0,
                              "numSelect": 0, "numInsert": 0, "numUpdate": 0, "numDelete": 0,
-                             "slowQueries": 0 , "bytesReceivedMB" : 0, "bytesSentMB" : 0
+                             "slowQueries": 0 , "bytesReceivedMB" : 0, "bytesSentMB" : 0,
+                             "qcacheHits": 0, "qcacheInserts" : 0
                              }
 
     def read_config(self, cfg):
@@ -89,6 +90,8 @@ class MysqlStats:
                     self.previousData["numUpdate"] = int(server_details1['Com_update'])
                     self.previousData["numDelete"] = int(server_details1['Com_delete'])
                     self.previousData["slowQueries"] = int(server_details1['Slow_queries'])
+                    self.previousData["qcacheHits"] = int(server_details1['Qcache_hits'])
+                    self.previousData["qcacheInserts"] = int(server_details1['Qcache_inserts'])
                 else:
                     server_dict['numCreatedTempFiles'] = int(server_details1['Created_tmp_files']) - self.previousData["numCreatedTempFiles"]
                     server_dict['numCreatedTempTables'] = int(server_details1['Created_tmp_tables']) - self.previousData["numCreatedTempTables"]
@@ -98,6 +101,8 @@ class MysqlStats:
                     server_dict['numUpdate'] =  int(server_details1['Com_update']) - self.previousData["numUpdate"]
                     server_dict['numDelete'] =  int(server_details1['Com_delete']) - self.previousData["numDelete"]
                     server_dict['slowQueries'] = int(server_details1['Slow_queries']) - self.previousData["slowQueries"]
+                    server_dict['qcacheHits'] = int(server_details1['Qcache_hits']) - self.previousData["qcacheHits"]
+                    server_dict['qcacheInserts'] = int(server_details1['Qcache_inserts']) - self.previousData["qcacheInserts"]
                     self.previousData["numCreatedTempFiles"] = int(server_details1['Created_tmp_files'])
                     self.previousData["numCreatedTempTables"] = int(server_details1['Created_tmp_tables'])
                     self.previousData["numQueries"] = int(server_details1['Queries'])
@@ -106,6 +111,8 @@ class MysqlStats:
                     self.previousData["numUpdate"] = int(server_details1['Com_update'])
                     self.previousData["numDelete"] = int(server_details1['Com_delete'])
                     self.previousData["slowQueries"] = int(server_details1['Slow_queries'])
+                    self.previousData["qcacheHits"] = int(server_details1['Qcache_hits'])
+                    self.previousData["qcacheInserts"] = int(server_details1['Qcache_inserts'])
             final_server_dict[SERVER_DETAILS] = server_dict
         except Exception as e:
             collectd.error("Unable to execute the provided query:%s" % e)

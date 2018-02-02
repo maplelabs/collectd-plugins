@@ -148,7 +148,9 @@ db_query_3 = "select index_length FROM information_schema.tables where table_sch
 db_query_4 = "use %s"
 db_query_5 = 'show global status where VARIABLE_NAME like "Created_tmp_files" or VARIABLE_NAME like "Created_tmp_tables"\
               or VARIABLE_NAME like "Queries" or VARIABLE_NAME like "Com_select" or VARIABLE_NAME like "Com_insert"\
-	      or VARIABLE_NAME like "Com_update" or VARIABLE_NAME like "Com_delete" or VARIABLE_NAME like "Slow_queries"'
+	      or VARIABLE_NAME like "Com_update" or VARIABLE_NAME like "Com_delete" or VARIABLE_NAME like "Slow_queries"\
+          or VARIABLE_NAME like "Qcache_hits" or VARIABLE_NAME like "Qcache_inserts"'
+
 
 # JVM CONSTANTS
 PROCESS = "process"
