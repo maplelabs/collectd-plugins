@@ -124,6 +124,7 @@ MAX_LOG_ENTRIES = "MaxEntries"
 PATH = "/opt/collectd/var/lib/"
 WRITE_JSON_ENABLED = True
 FACTOR = 1024
+BITFACTOR = 8
 
 # MYSQL CONSTANTS
 

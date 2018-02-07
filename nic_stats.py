@@ -148,23 +148,23 @@ class NicStats(object):
                         RX_BYTES, if_info, self.prev_data[if_name])
                     if rate != NAN:
                         if_info[RX_RATE] = round(
-                            (rate / (FACTOR * FACTOR)), FLOATING_FACTOR)
+                            ((rate * BITFACTOR )/ (FACTOR * FACTOR)), FLOATING_FACTOR)
                     rate = utils.get_rate(
                         TX_BYTES, if_info, self.prev_data[if_name])
                     if rate != NAN:
                         if_info[TX_RATE] = round(
-                            (rate / (FACTOR * FACTOR)), FLOATING_FACTOR)
+                            ((rate * BITFACTOR ) / (FACTOR * FACTOR)), FLOATING_FACTOR)
                 elif if_info[NIC_TYPE] == AGGREGATE:
                     rate = utils.get_rate(
                         AGG + RX_BYTES, if_info, self.prev_data[if_name])
                     if rate != NAN:
                         if_info[AGG + RX_RATE] = round(
-                            (rate / (FACTOR * FACTOR)), FLOATING_FACTOR)
+                            ((rate * BITFACTOR ) / (FACTOR * FACTOR)), FLOATING_FACTOR)
                     rate = utils.get_rate(
                         AGG + TX_BYTES, if_info, self.prev_data[if_name])
                     if rate != NAN:
                         if_info[AGG + TX_RATE] = round(
-                            (rate / (FACTOR * FACTOR)), FLOATING_FACTOR)
+                            ((rate * BITFACTOR ) / (FACTOR * FACTOR)), FLOATING_FACTOR)
 
     def collect_data(self):
         """Collects all data."""
