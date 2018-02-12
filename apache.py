@@ -131,8 +131,8 @@ class ApachePerf:
             data_dict["activeWorkers"] = int(data_dict["activeWorkers"])
             data_dict["totalWorkers"] = int(data_dict["idleWorkers"]) + int(data_dict["activeWorkers"])
             if (self.pollCounter > 1):
-                data_dict["bytesPerSecond"] = data_dict["accessSize"] * (1024 * 1024) / float(self.interval)
-                data_dict["requestsPerSecond"] = data_dict["accessCount"] / float(self.interval)
+                data_dict["bytesPerSecond"] = round(data_dict["accessSize"] * (1024 * 1024) / float(self.interval), 2)
+                data_dict["requestsPerSecond"] = round(data_dict["accessCount"] / float(self.interval), 2)
                 data_dict["bytesPerRequest"] = data_dict["accessSize"] * (1024 * 1024) / data_dict["accessCount"]
             session.close()
         except requests.exceptions.RequestException as e:
