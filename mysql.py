@@ -74,8 +74,8 @@ class MysqlStats:
                     self.previousData["numAbortedConnects"] = long(server_details['Aborted_connects'])
                     self.previousData["threadsCreated"] = long(server_details['Threads_created'])
                 else:
-                    server_dict['bytesReceivedMB'] = long(server_details['Bytes_received'])/(1024*1024) - self.previousData["bytesReceivedMB"]
-                    server_dict['bytesSentMB'] = long(server_details['Bytes_sent'])/(1024*1024) - self.previousData["bytesSentMB"]
+                    server_dict['bytesReceivedMB'] = (long(server_details['Bytes_received'])/(1024*1024) - self.previousData["bytesReceivedMB"]) / self.interval
+                    server_dict['bytesSentMB'] = (long(server_details['Bytes_sent'])/(1024*1024) - self.previousData["bytesSentMB"]) / self.interval
                     server_dict['numConnections'] = long(server_details['Connections']) - self.previousData["numConnections"]
                     server_dict['numAbortedConnects'] = long(server_details['Aborted_connects']) - self.previousData["numAbortedConnects"]
                     server_dict['threadsCreated'] = long(server_details['Threads_created']) - self.previousData["threadsCreated"]
