@@ -93,7 +93,7 @@ class ApachePerf:
                         self.previousData['accessSize'] = float(value)/1024
                         continue
                     elif(key == 'accessSize' and not self.pollCounter <= 1):
-                        data_dict[key] = float(value)/1024 - float(self.previousData['accessSize'])
+                        data_dict[key] = round(float(value)/1024 - float(self.previousData['accessSize']), 2)
                         self.previousData['accessSize'] = float(value)/1024
                         continue
 
@@ -133,7 +133,7 @@ class ApachePerf:
             if (self.pollCounter > 1):
                 data_dict["bytesPerSecond"] = round(data_dict["accessSize"] * (1024 * 1024) / float(self.interval), 2)
                 data_dict["requestsPerSecond"] = round(data_dict["accessCount"] / float(self.interval), 2)
-                data_dict["bytesPerRequest"] = data_dict["accessSize"] * (1024 * 1024) / data_dict["accessCount"]
+                data_dict["bytesPerRequest"] = round(data_dict["accessSize"] * (1024 * 1024) / data_dict["accessCount"], 2)
             session.close()
         except requests.exceptions.RequestException as e:
             collectd.error("Plugin apache_perf : Couldn't connect to apache server")
