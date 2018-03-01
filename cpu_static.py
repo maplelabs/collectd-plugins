@@ -30,6 +30,40 @@ class CpuStatic(object):
             if children.key == NODETYPE:
                 self.nodeType = children.values[0]
 
+    def get_LLC_stats(self):
+        LLCStats, LLCerr = utils.get_cmd_output("perf stat -a -e LLC-loads,LLC-load-misses sleep 2")
+
+        sdlines = re.split("\n", LLCerr)
+        num_lines = len(sdlines)
+        index = 0
+        LLCLoads = 0
+        LLCLoadMisses = 0
+        LLC = False
+        while index < num_lines:
+            line = sdlines[index]
+            if line:
+                if "perf not found for kernel" in line:
+                    collectd.info(
+                        "Plugin cpu_static: Perf is not installed for the kernel.")
+                    return 0
+                elif "not supported" in line:
+                    collectd.info(
+                        "Plugin cpu_static: LLC Statistics is hidden from Virtual machines.")
+                    return 0
+                elif "LLC-loads" in line:
+                    LLCLoads = float(line.strip(" ").split(" ")[0].replace(",", ""))
+                    LLC = True
+                elif "LLC-load-misses" in line:
+                    LLCLoadMisses = float(line.strip(" ").split(" ")[0].replace(",", ""))
+                    LLC = True
+                index += 1
+            else:
+                index += 1
+        if LLC:
+            return round(((LLCLoadMisses / LLCLoads) * 100), 2)
+
+        return 0
+
 
     def add_cpu_data(self):
         """Return dictionary with values of  CPUType, HT, CLOCK, SOCKET, TOTAL_CORE
@@ -109,6 +143,7 @@ class CpuStatic(object):
         dict_cpu_static[SOCKET] = total_physical_cpus
         dict_cpu_static[TOTAL_LOGICAL_CPU] = total_logical_cpus
         dict_cpu_static[HT] = "On" if int(hyperthreading) else "off"
+        dict_cpu_static["LLCMissRate"] = self.get_LLC_stats()
         return dict_cpu_static
 
     def add_common_params(self, dict_cpu_static):
