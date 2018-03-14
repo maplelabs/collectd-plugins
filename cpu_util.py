@@ -7,6 +7,7 @@ import json
 import time
 import psutil
 import collectd
+import re
 
 # user imports
 import utils
@@ -26,6 +27,41 @@ class CpuUtil(object):
         for children in cfg.children:
             if children.key == INTERVAL:
                 self.interval = children.values[0]
+
+    def get_LLC_stats(self):
+        LLCStats, LLCerr = utils.get_cmd_output("perf stat -a -e LLC-loads,LLC-load-misses sleep 2")
+
+        sdlines = re.split("\n", LLCerr)
+        num_lines = len(sdlines)
+        index = 0
+        LLCLoads = 0
+        LLCLoadMisses = 0
+        LLC = False
+        while index < num_lines:
+            line = sdlines[index]
+            if line:
+                if "perf not found for kernel" in line:
+                    collectd.info(
+                        "Plugin cpu_static: Perf is not installed for the kernel.")
+                    return 0
+                elif "not supported" in line:
+                    collectd.info(
+                        "Plugin cpu_static: LLC Statistics is hidden from Virtual machines.")
+                    return 0
+                elif "LLC-loads" in line:
+                    LLCLoads = float(line.strip(" ").split(" ")[0].replace(",", ""))
+                    LLC = True
+                elif "LLC-load-misses" in line:
+                    LLCLoadMisses = float(line.strip(" ").split(" ")[0].replace(",", ""))
+                    LLC = True
+                index += 1
+            else:
+                index += 1
+        if LLC:
+            return round(((LLCLoadMisses / LLCLoads) * 100), 2)
+
+        return 0
+
 
     def add_cpu_data(self):
         """Returns dictionary with values of total,per core CPU utilization
@@ -47,6 +83,7 @@ class CpuUtil(object):
             elif MEDIUM_RANGE_END < per_cpu_util[i - 1] <= HIGH_RANGE_END:
                 dict_cpu_util[NUM_HIGH_ACTIVE] += 1
 
+        dict_cpu_util["LLCMissRate"] = self.get_LLC_stats()
         return dict_cpu_util
 
     def add_common_params(self, dict_cpu_util):
