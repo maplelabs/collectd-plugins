@@ -67,7 +67,7 @@ class MysqlStats:
                 # server_dict['threadsCreated'] = long(server_details['Threads_created'])
                 server_dict['threadsRunning'] = long(server_details['Threads_running'])
                 server_dict['upTime'] = round(float(server_details['Uptime'])/(60*60),2)
-                if(self.pollCounter <= 1):
+                if(self.pollCounter <= 1 or not "bytesReceivedMB" in self.previousData.keys()):
                     self.previousData["bytesReceivedMB"] = long(server_details['Bytes_received'])/(1024*1024)
                     self.previousData["bytesSentMB"] = long(server_details['Bytes_sent']) / (1024 * 1024)
                     self.previousData["numConnections"] = long(server_details['Connections'])
@@ -90,7 +90,7 @@ class MysqlStats:
             self.cur.execute(db_query_5)
             server_details1 = dict(self.cur.fetchall())
             if server_details1:
-                if(self.pollCounter <= 1):
+                if(self.pollCounter <= 1 or not "numSelect" in self.previousData.keys()):
                     self.previousData["numCreatedTempFiles"] = int(server_details1['Created_tmp_files'])
                     self.previousData["numCreatedTempTables"] = int(server_details1['Created_tmp_tables'])
                     self.previousData["numQueries"] = int(server_details1['Queries'])
