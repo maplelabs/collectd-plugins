@@ -132,17 +132,76 @@ class JVM(object):
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         (heapusage, err) = call.communicate()
         if err:
-            collectd.debug("Error: %s" % err)
-            return
+            collectd.debug("Error: Jstat does not give correct output :" % heapusage)
+
         heapusage = heapusage.split("\n")
         heapusage = str(heapusage[1]).split()
-        heapusageValue = ((float(heapusage[2]) + float(heapusage[3]) + float(heapusage[
-            5]) + float(heapusage[7]) + float(heapusage[9]) + float(heapusage[11])) / 1024)
+
+        heapusageValue = 0
+        try:
+            collectd.debug("Calculating heapUsage by evaluating S0U.")
+            heapusageValue += float(heapusage[2])
+        except:
+            collectd.debug("Error calculating heapUsage by evaluating S0U.")
+
+        try:
+            collectd.debug("Calculating heapUsage by evaluating S1U.")
+            heapusageValue += float(heapusage[3])
+        except:
+            collectd.debug("Error calculating heapUsage by evaluating S1U.")
+
+        try:
+            collectd.debug("Calculating heapUsage by evaluating EU.")
+            heapusageValue += float(heapusage[5])
+        except:
+            collectd.debug("Error calculating heapUsage by evaluating EU.")
+
+        try:
+            collectd.debug("Calculating heapUsage by evaluating OU.")
+            heapusageValue += float(heapusage[7])
+        except:
+            collectd.debug("Error calculating heapUsage by evaluating OU.")
+
+        try:
+            collectd.debug("Calculating heapUsage by evaluating MU.")
+            heapusageValue += float(heapusage[9])
+        except:
+            collectd.debug("Error calculating heapUsage by evaluating MU.")
+
+        try:
+            collectd.debug("Calculating heapUsage by evaluating CCSU.")
+            heapusageValue += float(heapusage[11])
+        except:
+            collectd.debug("Error calculating heapUsage by evaluating CCSU.")
+
+        # heapusageValue = ((float(heapusage[2]) + float(heapusage[3]) + float(heapusage[
+        #     5]) + float(heapusage[7]) + float(heapusage[9]) + float(heapusage[11])) / 1024)
 
         #Collect information about Garbage collection
-        gct = float(heapusage[16])
-        ygc = int(heapusage[12])
-        fgc = int(heapusage[14])
+        try:
+            collectd.debug("Calculating GCT.")
+            gct = float(heapusage[16])
+        except:
+            collectd.debug("Error calculating GCT.")
+            gct = 0
+
+        try:
+            collectd.debug("Calculating YGC.")
+            ygc = float(heapusage[12])
+        except:
+            collectd.debug("Error calculating YGC.")
+            ygc = 0
+
+        try:
+            collectd.debug("Calculating FGC.")
+            fgc = int(heapusage[14])
+        except:
+            collectd.debug("Error calculating FGC.")
+            fgc = 0
+
+        # gct = float(heapusage[16])
+        # ygc = int(heapusage[12])
+        # fgc = int(heapusage[14])
         tgc = ygc + fgc
 
         ram_usage = self.get_ramusage(pid)
@@ -156,7 +215,7 @@ class JVM(object):
         jvm_res["numThreads"] = int(num_threads)
         jvm_res["numClasses"] = int(classes[5])
         jvm_res["heapSize"] = float(heapsize)
-        jvm_res["heapUsage"] = float(heapusageValue)
+        jvm_res["heapUsage"] = float(heapusageValue)/1024
         jvm_res["ramUsage"] = float(ram_usage)
         jvm_res["cpuUsage"] = float(cpu_usage)
         jvm_res["pid"] = int(pid)
