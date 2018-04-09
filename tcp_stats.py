@@ -23,6 +23,11 @@ class TcpStats(object):
     def __init__(self):
         """Initializes interval."""
         self.interval = DEFAULT_INTERVAL
+        self.pollCounter = 0
+        self.previousData = {"readTcpWinLow": 0, "readTcpWinMedium": 0, "readTcpWinHigh": 0,
+                             "writeTcpWinLow": 0, "writeTcpWinMedium": 0, "writeTcpWinHigh": 0,
+                             "tcpRetrans": 0, "tcpReset": 0
+                             }
 
     def read_config(self, cfg):
         """Initializes variables from conf files."""
@@ -39,8 +44,7 @@ class TcpStats(object):
             with open("/proc/net/snmp") as snmp_file:
                 snmp_output = snmp_file.readlines()
         except IOError:
-            collectd.error(
-                "Plugin tcp_stats: Could not open file : /proc/net/snmp")
+            collectd.error("Plugin tcp_stats: Could not open file : /proc/net/snmp")
             return FAILURE, None
 
         flag = 0
@@ -64,48 +68,82 @@ class TcpStats(object):
             with open("/proc/sys/net/ipv4/tcp_wmem") as tcp_wmem_file:
                 wmem_lines = tcp_wmem_file.readline()
         except IOError:
-            collectd.error(
-                "Plugin tcp_stats: Could not open file : /proc/sys/net/ipv4/tcp_wmem")
+            collectd.error("Plugin tcp_stats: Could not open file : /proc/sys/net/ipv4/tcp_wmem")
             return None
 
         try:
             with open("/proc/sys/net/ipv4/tcp_rmem") as tcp_rmem_file:
                 rmem_lines = tcp_rmem_file.readline()
         except IOError:
-            collectd.error(
-                "Plugin tcp_stats: Could not open file : /proc/sys/net/ipv4/tcp_rmem")
+            collectd.error("Plugin tcp_stats: Could not open file : /proc/sys/net/ipv4/tcp_rmem")
             return None
 
 
         read_low, read_medium, read_high = rmem_lines.split("\t")
         write_low, write_medium, write_high = wmem_lines.split("\t")
 
-        dict_tcp[READ_TCPWIN_LOW] = round(
-            float(read_low) / FACTOR, FLOATING_FACTOR)
-        dict_tcp[READ_TCPWIN_MEDIUM] = round(
-            float(read_medium) / FACTOR, FLOATING_FACTOR)
-        dict_tcp[READ_TCPWIN_HIGH] = round(
-            float(read_high) / FACTOR, FLOATING_FACTOR)
-        collectd.info(
-            "Plugin tcp_stats: TCP read buffer size got successfully")
+        if self.pollCounter <= 1:
+            self.previousData["readTcpWinLow"] = round(
+                float(read_low) / FACTOR, FLOATING_FACTOR)
+            self.previousData["readTcpWinMedium"] = round(
+                float(read_medium) / FACTOR, FLOATING_FACTOR)
+            self.previousData["readTcpWinHigh"] = round(
+                float(read_high) / FACTOR, FLOATING_FACTOR)
+            collectd.info("Plugin tcp_stats: TCP read buffer size got successfully")
 
-        dict_tcp[WRITE_TCPWIN_LOW] = round(
-            float(write_low) / FACTOR, FLOATING_FACTOR)
-        dict_tcp[WRITE_TCPWIN_MEDIUM] = round(
-            float(write_medium) / FACTOR, FLOATING_FACTOR)
-        dict_tcp[WRITE_TCPWIN_HIGH] = round(
-            float(write_high) / FACTOR, FLOATING_FACTOR)
-        collectd.info(
-            "Plugin tcp_stats: TCP write buffer size got successfully")
+            self.previousData["writeTcpWinLow"] = round(
+                float(write_low) / FACTOR, FLOATING_FACTOR)
+            self.previousData["writeTcpWinMedium"] = round(
+                float(write_medium) / FACTOR, FLOATING_FACTOR)
+            self.previousData["writeTcpWinHigh"] = round(
+                float(write_high) / FACTOR, FLOATING_FACTOR)
+            collectd.info("Plugin tcp_stats: TCP write buffer size got successfully")
+        else:
+            # Finding the difference from previous poll value and updating previous poll values
+            dict_tcp[READ_TCPWIN_LOW] = round(
+                float(read_low) / FACTOR, FLOATING_FACTOR) - self.previousData["readTcpWinLow"]
+            dict_tcp[READ_TCPWIN_MEDIUM] = round(
+                float(read_medium) / FACTOR, FLOATING_FACTOR) - self.previousData["readTcpWinMedium"]
+            dict_tcp[READ_TCPWIN_HIGH] = round(
+                float(read_high) / FACTOR, FLOATING_FACTOR) - self.previousData["readTcpWinHigh"]
+            collectd.info("Plugin tcp_stats: TCP read buffer size got successfully")
+
+            dict_tcp[WRITE_TCPWIN_LOW] = round(
+                float(write_low) / FACTOR, FLOATING_FACTOR) - self.previousData["writeTcpWinLow"]
+            dict_tcp[WRITE_TCPWIN_MEDIUM] = round(
+                float(write_medium) / FACTOR, FLOATING_FACTOR) - self.previousData["writeTcpWinMedium"]
+            dict_tcp[WRITE_TCPWIN_HIGH] = round(
+                float(write_high) / FACTOR, FLOATING_FACTOR) - self.previousData["writeTcpWinHigh"]
+            collectd.info("Plugin tcp_stats: TCP write buffer size got successfully")
+
+            self.previousData["readTcpWinLow"] = round(
+                float(read_low) / FACTOR, FLOATING_FACTOR)
+            self.previousData["readTcpWinMedium"] = round(
+                float(read_medium) / FACTOR, FLOATING_FACTOR)
+            self.previousData["readTcpWinHigh"] = round(
+                float(read_high) / FACTOR, FLOATING_FACTOR)
+
+            self.previousData["writeTcpWinLow"] = round(
+                float(write_low) / FACTOR, FLOATING_FACTOR)
+            self.previousData["writeTcpWinMedium"] = round(
+                float(write_medium) / FACTOR, FLOATING_FACTOR)
+            self.previousData["writeTcpWinHigh"] = round(
+                float(write_high) / FACTOR, FLOATING_FACTOR)
 
         (status, val_list) = self.get_retransmit_and_reset()
         if status == SUCCESS:
-            collectd.info(
-                "Plugin tcp_stats: TCP reset and retransmit values got successfully")
-
             tcp_resets = float(val_list[1]) + float(val_list[2])
-            dict_tcp[TCPRETRANS] = int(val_list[0])
-            dict_tcp[TCPRESET] = tcp_resets
+            if self.pollCounter <= 1:
+                collectd.info("Plugin tcp_stats: TCP reset and retransmit values got successfully")
+                self.previousData["tcpRetrans"] = int(val_list[0])
+                self.previousData["tcpReset"] = tcp_resets
+            else:
+                #Finding the difference from previous poll value and updating previous poll values
+                collectd.info("Plugin tcp_stats: TCP reset and retransmit values got successfully")
+                dict_tcp[TCPRETRANS] = int(val_list[0]) - self.previousData["tcpRetrans"]
+                dict_tcp[TCPRESET] = tcp_resets - self.previousData["tcpReset"]
+                self.previousData["tcpRetrans"] = int(val_list[0])
+                self.previousData["tcpReset"] = tcp_resets
 
         return dict_tcp
 
@@ -121,7 +159,10 @@ class TcpStats(object):
     def collect_data(self):
         """Validates if dictionary is not null.If yes then returns None."""
         dict_tcp = self.get_tcp_buffersize()
-        if not dict_tcp:
+        # If current poll is first poll, no data will be send to collectd
+        if not dict_tcp and self.pollCounter <= 1:
+            collectd.info("Plugin tcp_stats: First successful poll completed.No data will dispatch")
+        elif not dict_tcp:
             collectd.error("Plugin tcp_stats: Unable to fetch data for tcp.")
             return None
 
@@ -137,12 +178,19 @@ class TcpStats(object):
 
     def read(self):
         """Collects all data for interval registered in read callback."""
-        dict_tcp = self.collect_data()
-        if not dict_tcp:
-            return
+        try:
+            self.pollCounter += 1
+            dict_tcp = self.collect_data()
+            if not dict_tcp:
+                collectd.error("Couldn't read and gather tcp stats")
+                return
 
-        # dispatch data to collectd
-        self.dispatch_data(dict_tcp)
+            # dispatch data to collectd only after first poll
+            if self.pollCounter > 1:
+                self.dispatch_data(dict_tcp)
+        except Exception as e:
+            collectd.error("Couldn't read and gather tcp stats due to the exception :%s" % e)
+            return
 
     def read_temp(self):
         """
@@ -162,3 +210,4 @@ def init():
 OBJ = TcpStats()
 collectd.register_config(OBJ.read_config)
 collectd.register_read(OBJ.read_temp)
+
