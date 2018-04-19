@@ -64,11 +64,11 @@ class PostgresStats:
         try:
             conn_str_db = Postgres.conn_str % (self.host, self.user, self.password, self.port, dbname)
             conn = psycopg2.connect(conn_str_db)
-            collectd.info("Connection to %s database in the host %s is successfull", dbname, self.host)
+            collectd.info("Connection to %s database is successfull"% dbname)
             cursor = conn.cursor()
             conn_flag = True
         except Exception as e:
-            collectd.error("Exception in the connect_db due to %s", e)
+            collectd.error("Exception in the connect_db due to %s" % e)
             conn_flag = False
             cursor = None
         return cursor, conn_flag
@@ -77,15 +77,15 @@ class PostgresStats:
     def get_inventory(self):
         database_names = []
         try:
-            self.cur.execute(db_info_query)
+            self.cur.execute(Postgres.db_info_query)
             db_list = self.cur.fetchall()
             if db_list:
                 for database_name in db_list:
                     database_names.append(database_name[0])
             else:
-                collectd.info("No databases present in the server: %s", self.host)
+                collectd.info("No databases present")
         except Exception as e:
-            collectd.error("Exception from the get_inventory due to %s in %s", e, traceback.format_exc())
+            collectd.error("Exception from the get_inventory due to %s in %s" %(e, traceback.format_exc()))
         return database_names
 
     # To get the postgres server details
@@ -104,7 +104,7 @@ class PostgresStats:
             if ser_version:
                 server_dict["version"] = ser_version[0][0]
             else:
-                collectd.debug("Unable to fetch server version for the host %s", self.host)
+                collectd.debug("Unable to fetch server version")
 
             # Getting log size of the server
             self.cur.execute(Postgres.server_log_size_query)
@@ -112,7 +112,7 @@ class PostgresStats:
             if log_size:
                 server_dict["logSize"] = log_size[0][0]/(1024 * 1024)
             else:
-                collectd.debug("Unable to fetch log size for the host %s", self.host)
+                collectd.debug("Unable to fetch log size")
 
             # UpTime details of the server
             self.cur.execute(Postgres.up_time)
@@ -126,7 +126,7 @@ class PostgresStats:
                     uptime_sec = calendar.timegm(time.gmtime()) - total_epoch[0][0]
                     server_dict["upTime"] = round(uptime_sec / (60 * 60.0), 2)
             else:
-                collectd.debug("Unable to UpTime for the host %s", self.host)
+                collectd.debug("Unable to fetch UpTime")
 
             # Getting number of connections of the server
             self.cur.execute(Postgres.server_connections)
@@ -134,7 +134,7 @@ class PostgresStats:
             if active_conn:
                 server_dict["numConnections"] = active_conn[0][0]
             else:
-                collectd.debug("Unable to fetch connections for the host %s", self.host)
+                collectd.debug("Unable to fetch connections")
 
             # Getting shared buffer size of the server
             self.cur.execute(Postgres.shared_buffer)
@@ -142,7 +142,7 @@ class PostgresStats:
             if shared_buffer_size:
                 server_dict["bufferSize"] = self.get_size(int(shared_buffer_size[0][1]))
             else:
-                collectd.debug("Unable to fetch buffer size for the host %s", self.host)
+                collectd.debug("Unable to fetch buffer size")
 
             # Getting effective cache size of the server
             self.cur.execute(Postgres.effective_cache)
@@ -150,7 +150,7 @@ class PostgresStats:
             if effective_cache_size:
                 server_dict["cacheSize"] = self.get_size(int(effective_cache_size[0][1]))
             else:
-                collectd.debug("Unable to fetch cache size for the host %s", self.host)
+                collectd.debug("Unable to fetch cache size")
 
             # Getting max server connection
             self.cur.execute(Postgres.max_connection)
@@ -158,7 +158,7 @@ class PostgresStats:
             if max_conn:
                 server_dict["maxConnections"] = max_conn[0][0]
             else:
-                collectd.debug("Unable to fetch max connections for the host %s", self.host)
+                collectd.debug("Unable to fetch max connections")
 
             # Getting active process details
             self.cur.execute(Postgres.active_process)
@@ -166,7 +166,7 @@ class PostgresStats:
             if activeCount:
                 server_dict["activeProcesses"] = activeCount[0][0]
             else:
-                collectd.debug("Unable to fetch number of active processes for the host %s", self.host)
+                collectd.debug("Unable to fetch number of active processes")
 
             # Getting idle process details
             self.cur.execute(Postgres.idle_process)
@@ -174,16 +174,15 @@ class PostgresStats:
             if idleCount:
                 server_dict["idleProcesses"] = idleCount[0][0]
             else:
-                collectd.debug("Unable to fetch number of idle processes for the host %s", self.host)
+                collectd.debug("Unable to fetch number of idle processes")
 
             if server_dict:
-                server_dict['type'] = 'serverDetails'
                 server_dict['_documentType'] = 'serverDetails'
                 final_server_dict["serverDetails"] = server_dict
             else:
-                collectd.error("Couldn't fetch any server details for the host %s", self.host)
+                collectd.error("Couldn't fetch any server details")
         except Exception as e:
-            collectd.error("Exception from the server_details due to %s in %s", e, traceback.format_exc())
+            collectd.error("Exception from the server_details due to %s in %s" %( e, traceback.format_exc()))
         return final_server_dict
 
     # Get the TOP 20 longest running queries from the server
@@ -197,13 +196,12 @@ class PostgresStats:
                 for query_dict in query_list:
                     if 'runtime' in query_dict.keys():
                         query_dict['runtime'] = query_dict['runtime'].seconds
-                    query_dict["type"] = "queryDetails"
                     query_dict["_documentType"] = "queryDetails"
                     final_long_runn_dict[query_dict["_queryName"] + query_dict["_dbName"]] = query_dict
             else:
-                collectd.info("Couldn't get any queries which are running for the longer time from the host:%s", self.host)
+                collectd.info("Couldn't get any queries which are running for the longer time")
         except Exception as e:
-            collectd.error("Exception from the query_details due to %s from the host:%s in %s", e, self.host, traceback.format_exc())
+            collectd.error("Exception from the query_details due to %s in %s" %(e, traceback.format_exc()))
         return final_long_runn_dict
 
     # Get the postgres data
@@ -241,7 +239,7 @@ class PostgresStats:
                                              'indexHitRatio': 0}
                 continue
         except Exception as e:
-            collectd.error("Exception from the get_postgres_data due to %s in %s", e, traceback.format_exc())
+            collectd.error("Exception from the get_postgres_data due to %s in %s"%( e, traceback.format_exc()))
         return db_dict
 
     # Get all details per database
@@ -262,15 +260,15 @@ class PostgresStats:
                         db_details_dict["tempFileSize"] = round(db_details_dict["tempFileSize"] / (1024 * 1024.0), 2)
                     final_db_dict[db_name] = db_details_dict
                 else:
-                    collectd.debug("Unable to fetch db details of db %s in the host %s", db_name, self.host)
+                    collectd.debug("Unable to fetch db details of db %s"% db_name)
                 db_size_query_org = Postgres.db_size_query % db_name
                 self.cur.execute(db_size_query_org)
                 db_size_details = self.cur.fetchall()
                 if db_size_details:
-                    final_db_dict[db_name]['dbSize'] = round(db_size_details[0][0] / (1024 * 1024.0), 2)
+                    final_db_dict[db_name]['dbSize'] = round(float(db_size_details[0][0]) / (1024 * 1024.0), 2)
                     self.aggr_server_data['dbSize'] += final_db_dict[db_name]['dbSize']
                 else:
-                    collectd.debug("Unable to fetch db size of db %s in the host %s", db_name, self.host)
+                    collectd.debug("Unable to fetch db size of db %s"% db_name)
 
                 # Using specific db conn to get the count of tables instead of global conn
                 cur.execute(Postgres.db_num_tables_query)
@@ -278,11 +276,10 @@ class PostgresStats:
                 if num_tables:
                     final_db_dict[db_name]['numTables'] = num_tables[0][0]
                 else:
-                    collectd.debug("Unable to fetch number of tables in the db %s in the host %s", db_name, self.host)
+                    collectd.debug("Unable to fetch number of tables in the db %s"% db_name)
 
                 # Checking whether there are any details in the final dict
                 if final_db_dict[db_name]:
-                    final_db_dict[db_name]['type'] = 'databaseDetails'
                     final_db_dict[db_name]['_documentType'] = 'databaseDetails'
                     final_db_dict[db_name]['_dbName'] = db_name
                     # Finding the difference of values between two polls
@@ -291,7 +288,7 @@ class PostgresStats:
                             final_dict_copy = deepcopy(final_db_dict[db_name])
                             previousPoll = self.pollDiff
                             final_db_dict[db_name]["numTransactions"] -= previousPoll[db_name]["numTransactions"]
-                            final_db_dict[db_name]["transPerSec"] = final_db_dict[db_name]["numTransactions"] / self.interval
+                            final_db_dict[db_name]["transPerSec"] = final_db_dict[db_name]["numTransactions"] / int(self.interval)
 
                             self.aggr_server_data["numTransactions"] += final_db_dict[db_name]["numTransactions"]
 
@@ -322,28 +319,29 @@ class PostgresStats:
 
                             final_db_dict[db_name]["blkReadTime"] -= previousPoll[db_name]["blkReadTime"]
                             final_db_dict[db_name]["blkWriteTime"] -= previousPoll[db_name]["blkWriteTime"]
-                            previousPoll[db_name] = final_dict_copy
-                        except:
+                            self.pollDiff[db_name] = final_dict_copy
+                        except Exception as e:
+                            collectd.error("Exception from the db_details due to %s in %s"% (e, traceback.format_exc()))
                             self.pollDiff[db_name] = final_db_dict[db_name]
                             final_db_dict[db_name] = {}
                 else:
-                    collectd.info("Couldn't get any details for the given db %s from the server %s", db_name, self.host)
-
+                    collectd.info("Couldn't get any details for the given db %s"% db_name)
                 # To get table details for the given database
-                if final_db_dict[db_name]['numTables'] != 0:
-                    self.get_table_details(final_db_dict, db_name, cur)
-                else:
-                    collectd.info("No tables found in the db %s from the db_details in host %s", db_name, self.host)
+                if final_db_dict[db_name]:
+                    if final_db_dict[db_name]['numTables'] != 0:
+                        self.get_table_details(final_db_dict, db_name, cur)
+                    else:
+                        collectd.info("No tables found in the db %s from the db_details"% db_name)
             else:
-                collectd.error("Connection to this database %s is not successful to get table details from server %s" % (db_name, self.host))
+                collectd.error("Connection to this database %s is not successful to get table details" % db_name)
         except Exception as e:
-            collectd.error("Exception from the db_details due to %s from the host %s in %s", e, self.host, traceback.format_exc())
+            collectd.error("Exception from the db_details due to %s in %s"% (e, traceback.format_exc()))
             return
 
     def get_table_details(self, final_dict, db_name, cursor):
         try:
             # Get the table details per database
-            cursor.execute(table_query)
+            cursor.execute(Postgres.table_query)
             table_info = cursor.fetchall()
             fields = map(lambda x: x[0], cursor.description)
             if table_info:
@@ -361,7 +359,6 @@ class PostgresStats:
                         table_dict['idxBlksRead'] = 0
                     if not table_dict['idxBlksHit']:
                         table_dict['idxBlksHit'] = 0
-                    table_dict['type'] = "tableDetails"
                     table_dict['_documentType'] = "tableDetails"
                     table_dict['_dbName'] = db_name
                     final_dict[table_dict["_tableName"] + db_name] = table_dict
@@ -394,7 +391,7 @@ class PostgresStats:
                                 final_dict[table_dict]["numDeadTuple"] = tableRow[9]
                                 self.aggr_db_data["numDeadTuple"] += final_dict[table_dict]["numDeadTuple"]
                 else:
-                    collectd.info("No static table details found in the database %s from the host:%s", db_name, self.host)
+                    collectd.info("No static table details found in the database %s"% db_name)
                 # Finding the difference of values between two polls
                 if table_info and stat_table_info:
                     if self.pollCounter > 1:
@@ -456,20 +453,20 @@ class PostgresStats:
                                 final_dict[table_dict["_tableName"] + db_name]["indexScan"] -= \
                                 previousPoll[table_dict["_tableName"] + db_name]["indexScan"]
 
-                                previousPoll[table_dict["_tableName"] + db_name] = final_dict_table_copy
+                                self.pollDiff[table_dict["_tableName"] + db_name] = final_dict_table_copy
                         except:
                             for table_dict in table_details_list:
                                 self.pollDiff[table_dict["_tableName"] + db_name] = final_dict[table_dict["_tableName"] + db_name]
                                 final_dict[table_dict["_tableName"] + db_name] = {}
                 else:
-                    collectd.error("Couldn't find table diffference details for the db %s from the server %s", db_name, self.host)
+                    collectd.error("Couldn't find table diffference details for the db %s"% db_name)
 
                 # To collect the index_details for the given table
                 self.get_index_details(final_dict, db_name, cursor)
             else:
-                collectd.info("No table details found in the database %s from the host:%s", db_name, self.host)
+                collectd.info("No table details found in the database %s"% db_name)
         except Exception as e:
-            collectd.error("Exception from the get_table_details due to %s in %s", e, traceback.format_exc())
+            collectd.error("Exception from the get_table_details due to %s in %s" %( e, traceback.format_exc()))
             return
 
     # To get index details for the given database
@@ -481,7 +478,6 @@ class PostgresStats:
             if index_query_info:
                 index_details_list = [dict(zip(fields, row)) for row in index_query_info]
                 for index_dict in index_details_list:
-                    index_dict['type'] = "indexDetails"
                     index_dict['_documentType'] = "indexDetails"
                     index_dict['_dbName'] = db_name
                     final_db_dict[index_dict["_indexName"] + db_name] = index_dict
@@ -495,7 +491,7 @@ class PostgresStats:
                                 final_db_dict[index_dict]["blksRead"] = stat_index[3]
                                 final_db_dict[index_dict]["blksHit"] = stat_index[4]
                 else:
-                    collectd.debug("Couldn't get any statio index details for the given db %s from the server %s", db_name, self.host)
+                    collectd.debug("Couldn't get any statio index details for the given db %s"% db_name)
                 # Finding the difference of values between two polls
                 if index_query_info and stat_index_query_info:
                     if self.pollCounter > 1:
@@ -518,19 +514,19 @@ class PostgresStats:
                                 final_db_dict[index_dict["_indexName"] + db_name]["blksRead"] -= \
                                 previousPoll[index_dict["_indexName"] + db_name]["blksRead"]
 
-                                previousPoll[index_dict["_indexName"] + db_name] = final_dict_index_copy
+                                self.pollDiff[index_dict["_indexName"] + db_name] = final_dict_index_copy
                         except:
                             for index_dict in index_details_list:
                                 self.pollDiff[index_dict["_indexName"] + db_name] = final_db_dict[index_dict["_indexName"] + db_name]
                                 final_db_dict[index_dict["_indexName"] + db_name] = {}
                 else:
-                    collectd.debug("Couldn't get index difference details and statio details for the given db %s from the server %s", db_name, self.host)
+                    collectd.debug("Couldn't get index difference details and statio details for the given db %s"% db_name)
             else:
-                collectd.debug("Couldn't get any index details for the given db %s from the server %s", db_name, self.host)
+                collectd.debug("Couldn't get any index details for the given db %s"% db_name)
         except Exception as e:
-            collectd.error("Exception from the index_details due to %s from the host %s in %s", e, self.host, traceback.format_exc())
+            collectd.error("Exception from the index_details due to %s in %s"%( e, traceback.format_exc()))
             return
-        
+
     # To collect all the postgres data
     def collect_data(self):
         server_details = self.get_server_details()
@@ -555,7 +551,7 @@ class PostgresStats:
         self.numdatabase = 0
 
         if not db_details:
-            collectd.error("Couldn't fetch any details from the Postgres server host:%s" % self.host)
+            collectd.error("Couldn't fetch any details from the Postgres server")
             return
 
         # Add common parameters
@@ -582,7 +578,7 @@ class PostgresStats:
             dict_postgres = self.collect_data()
             #collectd.info(dict_postgres)
             if dict_postgres:
-                if self.pollCounter > 1:
+                if self.pollCounter >= 1:
                     self.pollDiff = dict_postgres
             else:
                 collectd.error("Plugin Postgres: Unable to fetch data for Postgres.")
@@ -592,13 +588,14 @@ class PostgresStats:
             if self.pollCounter > 1:
                 self.dispatch_data(deepcopy(dict_postgres))
         except Exception as e:
-            collectd.error("Couldn't read and gather the SQL metrics due to the exception :%s" % e)
+                #collectd.error("%s" % traceback.format_exc())
+            collectd.error("Couldn't read and gather the postgres metrics due to the exception :%s" % e)
             return
 
     @staticmethod
     def dispatch_data(dict_disks_copy):
         for details_type, details in dict_disks_copy.items():
-            collectd.debug("Plugin Postgres: Values: " + json.dumps(details))
+            collectd.info("Plugin Postgres: Values: " + json.dumps(details))
             collectd.info("final details are : %s" % details)
             dispatch(details)
 

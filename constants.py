@@ -152,7 +152,6 @@ db_query_5 = 'show global status where VARIABLE_NAME like "Created_tmp_files" or
 	      or VARIABLE_NAME like "Com_update" or VARIABLE_NAME like "Com_delete" or VARIABLE_NAME like "Slow_queries"\
           or VARIABLE_NAME like "Qcache_hits" or VARIABLE_NAME like "Qcache_inserts"'
 
-
 # JVM CONSTANTS
 PROCESS = "process"
 PROCESS_STATE = "_processState"
@@ -168,3 +167,70 @@ DEFAULT_LOG_FILE = "/var/log/apache2/access.log"
 DEFAULT_LOG_FORMAT = '%a %A %B %T %h %H %p %>s %t \"%r\" \"%U\"'
 ACCESS_LOG = "accesslog"
 APACHE_TRANS = "apacheTrans"
+
+#POSTGRES CONSTANTS
+class Postgres(object):
+
+    POSTGRES = "postgres"
+    db_info_query = 'SELECT datname FROM pg_database WHERE datistemplate = false;'
+
+    db_trans_query = "select xact_commit+xact_rollback as \"numTransactions\", blks_read as \"blocksRead\", blks_hit as \"blocksHit\", " \
+                 "tup_returned as \"numReturn\", tup_inserted as \"numInsert\", tup_deleted as \"numDelete\", " \
+                 "tup_updated as \"numUpdate\", tup_fetched as \"numFetch\", temp_files as \"numTempFile\", " \
+                 "temp_bytes as \"tempFileSize\", blk_read_time as \"blkReadTime\", " \
+                 "blk_write_time as \"blkWriteTime\" from pg_stat_database where datname='%s';"
+
+    db_size_query = "select sum(pg_database_size(datname)) as db_size from pg_database where datname = '%s'"
+
+    db_num_tables_query = "select count(*) from pg_stat_user_tables;"
+
+    server_log_size_query = "select CAST(sum((pg_stat_file('pg_xlog/' || pg_ls_dir)).size) AS BIGINT) " \
+                    "from pg_ls_dir('pg_xlog') " \
+                    "where (pg_stat_file('pg_xlog/' || pg_ls_dir)).isdir = false"
+
+    server_connections = "SELECT sum(numbackends) FROM pg_stat_database;"
+
+    table_query = "select schemaname as \"_schemaName\", relname as \"_tableName\", " \
+              "pg_table_size(relid)as \"tableSize\", " \
+              "pg_indexes_size(relid) as \"indexSize\", " \
+              "heap_blks_read as \"heapBlksRead\", heap_blks_hit as \"heapBlksHit\", " \
+              "idx_blks_read as \"idxBlksRead\", idx_blks_hit as \"idxBlksHit\" FROM pg_catalog.pg_statio_user_tables ORDER BY pg_table_size(relid) DESC;"
+
+    long_runn_query = "SELECT now() - query_start as \"runtime\", usename as \"userName\", datname as \"_dbName\", waiting, " \
+                  "state, query as \"_queryName\" FROM pg_stat_activity WHERE now() - query_start > '250 milliseconds'::interval and state='active'" \
+                  "ORDER BY runtime DESC LIMIT 20;"
+
+    conn_str = "host=%s user=%s password=%s port=%s dbname=%s"
+
+    cache_ratio = "SELECT sum(heap_blks_read) as heap_read, sum(heap_blks_hit)  as heap_hit, case sum(heap_blks_read) + sum(heap_blks_hit) when 0 then 0 " \
+              "else (sum(heap_blks_hit)::float / (sum(heap_blks_hit) + sum(heap_blks_read)))*100 end as ratio FROM pg_statio_user_tables;"
+
+    index_cache_ratio = "SELECT sum(idx_blks_read) as idx_read, sum(idx_blks_hit)  as idx_hit, case sum(idx_blks_read) + sum(idx_blks_hit) when 0 then 0 " \
+                    "else (sum(idx_blks_hit)::float / (sum(idx_blks_hit) + sum(idx_blks_read)))*100 end as ratio FROM pg_statio_user_indexes;"
+
+    shared_buffer = "SELECT name, setting, min_val, max_val, context FROM pg_settings WHERE name='shared_buffers';"
+
+    effective_cache = "SELECT name, setting, min_val, max_val, context FROM pg_settings WHERE name = 'effective_cache_size';"
+
+    stat_table_query = "SELECT relname as \"_tableName\", seq_scan as \"seqScan\", seq_tup_read as \"seqScanFetch\", idx_scan as \"indexScan\"," \
+                    "idx_tup_fetch as \"indexScanFetch\", n_tup_ins as \"numInsert\", n_tup_del as \"numDelete\", n_tup_upd as \"numuUdate\"," \
+                    "n_live_tup as \"numLiveTuple\", n_dead_tup as \"numDeadTuple\" FROM pg_stat_user_tables;"
+
+    index_query = "SELECT schemaname as \"_schemaName\", relname as \"_tableName\", indexrelname as \"_indexName\", idx_scan as \"indexScan\"," \
+              "idx_tup_read as \"numReturn\", idx_tup_fetch as \"numFetch\" FROM pg_stat_user_indexes;"
+
+    stat_index_query = "SELECT schemaname as \"_schemaName\", relname as \"_tableName\", indexrelname as \"_indexName\", idx_blks_read as \"blksRead\"," \
+                    "idx_blks_hit as \"blksHit\" FROM pg_statio_user_indexes;"
+
+    check_superuser = "SELECT usename as \"userName\" from pg_user where usesuper = True;"
+
+    max_connection = "SELECT setting::integer FROM pg_settings WHERE name = \'max_connections\';"
+
+    up_time = "SELECT pg_postmaster_start_time() as upTime;"
+    epoch_time = "SELECT EXTRACT(EPOCH FROM TIMESTAMP WITH TIME ZONE '%s');"
+
+    active_process = "SELECT count(*) FROM pg_stat_activity WHERE state ='active';"
+
+    idle_process = "SELECT count(*) FROM pg_stat_activity WHERE state ='idle';"
+
+    server_version = "SHOW server_version;"
