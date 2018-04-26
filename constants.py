@@ -234,3 +234,6 @@ class Postgres(object):
     idle_process = "SELECT count(*) FROM pg_stat_activity WHERE state ='idle';"
 
     server_version = "SHOW server_version;"
+
+# TPCC Plugin constants
+TPCC = "tpcc"
