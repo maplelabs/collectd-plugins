@@ -68,6 +68,9 @@ class CpuUtil(object):
            and no. of cores in low, medium and high range."""
         dict_cpu_util = {CPU_UTIL: psutil.cpu_percent(
             interval=None, percpu=False)}
+        scpu = psutil.cpu_times_percent(interval=None, percpu=False)
+        dict_cpu_util = {'CpuUser': scpu.user, 'CpuSystem' : scpu.system, 'CpuIdle': scpu.idle, 'CpuIoWait':scpu.iowait }
+
         per_cpu_util = psutil.cpu_percent(interval=None, percpu=True)
         no_of_cores = len(per_cpu_util)
 
