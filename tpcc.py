@@ -535,7 +535,8 @@ class TpccResults:
         tpcc_dict[HOSTNAME] = hostname
         tpcc_dict[TIMESTAMP] = timestamp
         tpcc_dict[PLUGIN] = TPCC
-        tpcc_dict[ACTUALPLUGINTYPE] = doc_type
+        tpcc_dict[ACTUALPLUGINTYPE] = TPCC
+        tpcc_dict[PLUGINTYPE] = doc_type
         tpcc_dict[PLUGIN_INS] = doc_type
 
     @staticmethod
