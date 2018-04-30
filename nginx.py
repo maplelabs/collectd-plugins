@@ -9,8 +9,8 @@ import json
 from constants import *
 from utils import *
 
-SERVER_STATS = "server_stats"
-SERVER_DETAILS = "server_details"
+SERVER_STATS = "serverStats"
+SERVER_DETAILS = "serverDetails"
 
 docs = [SERVER_STATS, SERVER_DETAILS]
 
