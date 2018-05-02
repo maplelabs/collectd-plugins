@@ -237,3 +237,7 @@ class Postgres(object):
 
 # TPCC Plugin constants
 TPCC = "tpcc"
+
+# Kafka_jmx plugin constants
+KAFKA_JMX = "kafka_jmx"
+PROCESSNAME = "_processName"
