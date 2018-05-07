@@ -1,4 +1,4 @@
-"""Python plugin for collectd to fetch jmx_stats for process given."""
+"""Python plugin for collectd to fetch kafka_jmx for process given."""
 
 #!/usr/bin/python
 import os
@@ -18,9 +18,10 @@ from contextlib import closing
 import utils
 from constants import *
 
-DOCS = ["MemoryPoolStats", "MemoryStats", "ThreadStats", "GcStats", "ClassLoadingStats",
-        "CompliationStats", "NioStats", "OperatingSysStats", "KafkaStats"]
+DOCS = ["memoryPoolStats", "memoryStats", "threadStats", "gcStats", "classLoadingStats",
+        "compliationStats", "nioStats", "operatingSysStats", "kafkaStats"]
 JOLOKIA_PATH = "/opt/collectd/plugins/"
+DEFAULT_GC = ['G1 Old Generation', 'G1 Young Generation']
 
 class JmxStat(object):
     """Plugin object will be created only once and collects JMX statistics info every interval."""
@@ -68,7 +69,7 @@ class JmxStat(object):
         pid_cmd = "jcmd | grep %s" % self.process
         pids, err = utils.get_cmd_output(pid_cmd)
         if err:
-            collectd.debug("Plugin jmx_stats: Error in collecting pid: %s" % err)
+            collectd.error("Plugin kafka_jmx: Error in collecting pid: %s" % err)
             return False
         pids = pids.split("\n")
         pid_list = []
@@ -83,7 +84,7 @@ class JmxStat(object):
         uid_cmd = "awk '/^Uid:/{print $2}' /proc/%s/status" % pid
         uid, err = utils.get_cmd_output(uid_cmd)
         if err:
-            collectd.error("Plugin jmx_stats:Failed to retrieve uid for pid %s, %s" % (pid, err))
+            collectd.error("Plugin kafka_jmx:Failed to retrieve uid for pid %s, %s" % (pid, err))
             return False
         return uid.strip()
 
@@ -102,15 +103,15 @@ class JmxStat(object):
             port = self.get_free_port()
             status, err, ret = self.run_jolokia_cmd("start", pid, port)
             if err or ret:
-                collectd.error("Plugin jmx_stats: Unable to start jolokia client for pid %s, %s" % (pid, err))
+                collectd.error("Plugin kafka_jmx: Unable to start jolokia client for pid %s, %s" % (pid, err))
                 return False
-            collectd.info("Plugin jmx_stats: started jolokia client for pid %s" % pid)
+            collectd.info("Plugin kafka_jmx: started jolokia client for pid %s" % pid)
             return port
 
         # jolokia id already started and return port
         ip = status.splitlines()[1]
         port = re.findall('\d+', ip.split(':')[2])[0]
-        collectd.debug("Plugin jmx_stats: jolokia client is already running for pid %s" % pid)
+        collectd.debug("Plugin kafka_jmx: jolokia client is already running for pid %s" % pid)
         return port
 
     def connection_available(self, port):
@@ -129,57 +130,57 @@ class JmxStat(object):
             return None
         jolokia_url = "http://127.0.0.1:%s/jolokia/" % port
         jolokiaclient = Jolokia(jolokia_url)
-        if doc == "MemoryPoolStats":
+        if doc == "memoryPoolStats":
             self.add_memory_pool_parameters(jolokiaclient, dict_jmx)
-        elif doc == "MemoryStats":
+        elif doc == "memoryStats":
             self.add_memory_parameters(jolokiaclient, dict_jmx)
-        elif doc == "ThreadStats":
+        elif doc == "threadStats":
             self.add_threading_parameters(jolokiaclient, dict_jmx)
-        elif doc == "GcStats":
+        elif doc == "gcStats":
             self.add_gc_parameters(jolokiaclient, dict_jmx)
-        elif doc == "ClassLoadingStats":
+        elif doc == "classLoadingStats":
             self.add_classloading_parameters(jolokiaclient, dict_jmx)
-        elif doc == "CompliationStats":
+        elif doc == "compliationStats":
             self.add_compilation_parameters(jolokiaclient, dict_jmx)
-        elif doc == "NioStats":
+        elif doc == "nioStats":
             self.add_nio_parameters(jolokiaclient, dict_jmx)
-        elif doc == "OperatingSysStats":
+        elif doc == "operatingSysStats":
             self.add_operating_system_parameters(jolokiaclient, dict_jmx)
-        elif doc == "KafkaStats":
+        elif doc == "kafkaStats":
             self.add_kafka_parameters(jolokiaclient, dict_jmx)
 
     def add_rate(self, pid, dict_jmx):
         """Rate only for kafka jmx metrics"""
-        rate = utils.get_rate("MessagesIn", dict_jmx, self.prev_data[pid])
+        rate = utils.get_rate("messagesIn", dict_jmx, self.prev_data[pid])
         if rate != NAN:
-            dict_jmx["MessagesIn"] = round(rate, FLOATING_FACTOR)
-        rate = utils.get_rate("BytesIn", dict_jmx, self.prev_data[pid])
+            dict_jmx["messagesIn"] = round(rate, FLOATING_FACTOR)
+        rate = utils.get_rate("bytesIn", dict_jmx, self.prev_data[pid])
         if rate != NAN:
-            dict_jmx["BytesIn"] = round(rate, FLOATING_FACTOR)
-        rate = utils.get_rate("BytesOut", dict_jmx, self.prev_data[pid])
+            dict_jmx["bytesIn"] = round(rate, FLOATING_FACTOR)
+        rate = utils.get_rate("bytesOut", dict_jmx, self.prev_data[pid])
         if rate != NAN:
-            dict_jmx["BytesOut"] = round(rate, FLOATING_FACTOR)
-        rate = utils.get_rate("IsrExpands", dict_jmx, self.prev_data[pid])
+            dict_jmx["bytesOut"] = round(rate, FLOATING_FACTOR)
+        rate = utils.get_rate("isrExpands", dict_jmx, self.prev_data[pid])
         if rate != NAN:
-            dict_jmx["IsrExpands"] = round(rate, FLOATING_FACTOR)
-        rate = utils.get_rate("IsrShrinks", dict_jmx, self.prev_data[pid])
+            dict_jmx["isrExpands"] = round(rate, FLOATING_FACTOR)
+        rate = utils.get_rate("isrShrinks", dict_jmx, self.prev_data[pid])
         if rate != NAN:
-            dict_jmx["IsrShrinks"] = round(rate, FLOATING_FACTOR)
-        rate = utils.get_rate("LeaderElection", dict_jmx, self.prev_data[pid])
+            dict_jmx["isrShrinks"] = round(rate, FLOATING_FACTOR)
+        rate = utils.get_rate("leaderElection", dict_jmx, self.prev_data[pid])
         if rate != NAN:
-            dict_jmx["LeaderElection"] = round(rate, FLOATING_FACTOR)
-        rate = utils.get_rate("UncleanLeaderElections", dict_jmx, self.prev_data[pid])
+            dict_jmx["leaderElection"] = round(rate, FLOATING_FACTOR)
+        rate = utils.get_rate("uncleanLeaderElections", dict_jmx, self.prev_data[pid])
         if rate != NAN:
-            dict_jmx["UncleanLeaderElections"] = round(rate, FLOATING_FACTOR)
-        rate = utils.get_rate("ProducerRequests", dict_jmx, self.prev_data[pid])
+            dict_jmx["uncleanLeaderElections"] = round(rate, FLOATING_FACTOR)
+        rate = utils.get_rate("producerRequests", dict_jmx, self.prev_data[pid])
         if rate != NAN:
-            dict_jmx["ProducerRequests"] = round(rate, FLOATING_FACTOR)
-        rate = utils.get_rate("FetchConsumerRequests", dict_jmx, self.prev_data[pid])
+            dict_jmx["producerRequests"] = round(rate, FLOATING_FACTOR)
+        rate = utils.get_rate("fetchConsumerRequests", dict_jmx, self.prev_data[pid])
         if rate != NAN:
-            dict_jmx["FetchConsumerRequests"] = round(rate, FLOATING_FACTOR)
-        rate = utils.get_rate("FetchFollowerRequests", dict_jmx, self.prev_data[pid])
+            dict_jmx["fetchConsumerRequests"] = round(rate, FLOATING_FACTOR)
+        rate = utils.get_rate("fetchFollowerRequests", dict_jmx, self.prev_data[pid])
         if rate != NAN:
-            dict_jmx["FetchFollowerRequests"] = round(rate, FLOATING_FACTOR)
+            dict_jmx["fetchFollowerRequests"] = round(rate, FLOATING_FACTOR)
 
     def add_kafka_parameters(self, jolokiaclient, dict_jmx):
         """Add jmx stats specific to kafka metrics"""
@@ -204,66 +205,72 @@ class JmxStat(object):
         jolokiaclient.add_request(type='read', mbean='kafka.network:type=RequestMetrics,name=TotalTimeMs,request=Produce', attribute='Mean,Max,Min')
         bulkdata = jolokiaclient.getRequests()
         if bulkdata[0]['status'] == 200:
-            dict_jmx['UnderReplicatedPartitions'] = bulkdata[0]['value']
+            dict_jmx['underReplicatedPartitions'] = bulkdata[0]['value']
         if bulkdata[1]['status'] == 200:
-            dict_jmx['MessagesIn'] = bulkdata[1]['value']
+            dict_jmx['messagesIn'] = bulkdata[1]['value']
         if bulkdata[2]['status'] == 200:
-            dict_jmx['BytesIn'] = bulkdata[2]['value']
+            dict_jmx['bytesIn'] = bulkdata[2]['value']
         if bulkdata[3]['status'] == 200:
-            dict_jmx['BytesOut'] = bulkdata[3]['value']
+            dict_jmx['bytesOut'] = bulkdata[3]['value']
         if bulkdata[4]['status'] == 200:
-            dict_jmx['PartitionCount'] = bulkdata[4]['value']
+            dict_jmx['partitionCount'] = bulkdata[4]['value']
         if bulkdata[5]['status'] == 200:
-            dict_jmx['IsrExpands'] = bulkdata[5]['value']
+            dict_jmx['isrExpands'] = bulkdata[5]['value']
         if bulkdata[6]['status'] == 200:
-            dict_jmx['IsrShrinks'] = bulkdata[6]['value']
+            dict_jmx['isrShrinks'] = bulkdata[6]['value']
         if bulkdata[7]['status'] == 200:
-            dict_jmx['RequestHandlerAvgIdle'] = round(bulkdata[7]['value']/1000000000.0, 2)
+            dict_jmx['requestHandlerAvgIdle'] = round(bulkdata[7]['value']/1000000000.0, 2)
         if bulkdata[8]['status'] == 200:
-            dict_jmx['OfflinePartitions'] = bulkdata[8]['value']
+            dict_jmx['offlinePartitions'] = bulkdata[8]['value']
         if bulkdata[9]['status'] == 200:
-            dict_jmx['ActiveController'] = bulkdata[9]['value']
+            dict_jmx['activeController'] = bulkdata[9]['value']
         if bulkdata[10]['status'] == 200:
-            dict_jmx['LeaderElection'] = bulkdata[10]['value']
+            dict_jmx['leaderElection'] = bulkdata[10]['value']
         if bulkdata[11]['status'] == 200:
-            dict_jmx['UncleanLeaderElections'] = bulkdata[11]['value']
+            dict_jmx['uncleanLeaderElections'] = bulkdata[11]['value']
         if bulkdata[12]['status'] == 200:
-            dict_jmx['ProducerRequests'] = bulkdata[12]['value']
+            dict_jmx['producerRequests'] = bulkdata[12]['value']
         if bulkdata[13]['status'] == 200:
-            dict_jmx['FetchConsumerRequests'] = bulkdata[13]['value']
+            dict_jmx['fetchConsumerRequests'] = bulkdata[13]['value']
         if bulkdata[14]['status'] == 200:
-            dict_jmx['FetchFollowerRequests'] = bulkdata[14]['value']
+            dict_jmx['fetchFollowerRequests'] = bulkdata[14]['value']
         if bulkdata[15]['status'] == 200:
-            dict_jmx['NetworkProcessorAvgIdlePercent'] = round(bulkdata[15]['value'], 2)
+            dict_jmx['networkProcessorAvgIdlePercent'] = round(bulkdata[15]['value'], 2)
         if bulkdata[16]['status'] == 200:
-            dict_jmx['TotalTimeMsMax'] = bulkdata[16]['value']['Max']
+            dict_jmx['followerTimeMsMax'] = bulkdata[16]['value']['Max']
+            dict_jmx['followerTimeMsMin'] = bulkdata[16]['value']['Min']
+            dict_jmx['followerTimeMsMean'] = bulkdata[16]['value']['Mean']
         if bulkdata[17]['status'] == 200:
-            dict_jmx['TotalTimeMsMin'] = bulkdata[17]['value']['Min']
+            dict_jmx['consumerTimeMsMax'] = bulkdata[17]['value']['Max']
+            dict_jmx['consumerTimeMsMin'] = bulkdata[17]['value']['Min']
+            dict_jmx['consumerTimeMsMean'] = bulkdata[17]['value']['Mean']
         if bulkdata[18]['status'] == 200:
-            dict_jmx['TotalTimeMsMean'] = bulkdata[18]['value']['Mean']
+            dict_jmx['producerTimeMsMax'] = bulkdata[18]['value']['Max']
+            dict_jmx['producerTimeMsMin'] = bulkdata[18]['value']['Min']
+            dict_jmx['producerTimeMsMean'] = bulkdata[18]['value']['Mean']
 
     def add_operating_system_parameters(self, jolokiaclient, dict_jmx):
         """Add operating system related jmx stats"""
         ops = jolokiaclient.request(type='read', mbean='java.lang:type=OperatingSystem')
         if ops['status'] == 200:
-            dict_jmx['OSArchitecture'] = ops['value']['Arch']
-            dict_jmx['AvailableProcessors'] = ops['value']['AvailableProcessors']
-            self.handle_neg_bytes(ops['value']['CommittedVirtualMemorySize'], 'CommittedVirtualMemorySize', dict_jmx)
-            dict_jmx['FreePhysicalMemorySize'] = round(ops['value']['FreePhysicalMemorySize'] / 1024.0 / 1024.0, 2)
-            dict_jmx['FreeSwapSpaceSize'] = round(ops['value']['FreeSwapSpaceSize']/ 1024.0 / 1024.0, 2)
-            dict_jmx['MaxFileDescriptorCount'] = ops['value']['MaxFileDescriptorCount']
-            dict_jmx['OSName'] = ops['value']['Name']
-            dict_jmx['OpenFileDescriptorCount'] = ops['value']['OpenFileDescriptorCount']
-            dict_jmx['ProcessCpuLoad'] = ops['value']['ProcessCpuLoad']
+            dict_jmx['osArchitecture'] = ops['value']['Arch']
+            dict_jmx['availableProcessors'] = ops['value']['AvailableProcessors']
+            self.handle_neg_bytes(ops['value']['CommittedVirtualMemorySize'], 'committedVirtualMemorySize', dict_jmx)
+            dict_jmx['freePhysicalMemorySize'] = round(ops['value']['FreePhysicalMemorySize'] / 1024.0 / 1024.0, 2)
+            dict_jmx['freeSwapSpaceSize'] = round(ops['value']['FreeSwapSpaceSize']/ 1024.0 / 1024.0, 2)
+            dict_jmx['maxFileDescriptors'] = ops['value']['MaxFileDescriptorCount']
+            dict_jmx['osName'] = ops['value']['Name']
+            dict_jmx['openFileDescriptors'] = ops['value']['OpenFileDescriptorCount']
+            dict_jmx['processCpuLoad'] = ops['value']['ProcessCpuLoad']
             pcputime = ops['value']['ProcessCpuTime']
             if pcputime >= 0:
                 pcputime = round(pcputime / 1000000000.0, 2)
-            dict_jmx['ProcessCpuTime'] = pcputime
-            dict_jmx['TotalPhysicalMemorySize'] = round(ops['value']['TotalPhysicalMemorySize']/ 1024.0 / 1024.0, 2)
-            dict_jmx['TotalSwapSpaceSize'] = round(ops['value']['TotalSwapSpaceSize']/ 1024.0 / 1024.0, 2)
-            dict_jmx['OSVersion'] = ops['value']['Version']
-            dict_jmx['SystemCpuLoad'] = ops['value']['SystemCpuLoad']
-            dict_jmx['SystemLoadAverage'] = ops['value']['SystemLoadAverage']
+            dict_jmx['processCpuTime'] = pcputime
+            dict_jmx['totalPhysicalMemorySize'] = round(ops['value']['TotalPhysicalMemorySize']/ 1024.0 / 1024.0, 2)
+            dict_jmx['totalSwapSpaceSize'] = round(ops['value']['TotalSwapSpaceSize']/ 1024.0 / 1024.0, 2)
+            dict_jmx['osVersion'] = ops['value']['Version']
+            dict_jmx['systemCpuLoad'] = ops['value']['SystemCpuLoad']
+            dict_jmx['systemLoadAverage'] = ops['value']['SystemLoadAverage']
 
     def add_nio_parameters(self, jolokiaclient, dict_jmx):
         """Add network related jmx stats"""
@@ -287,24 +294,35 @@ class JmxStat(object):
         """Add compliation related jmx stats"""
         compilation = jolokiaclient.request(type='read', mbean='java.lang:type=Compilation')
         if compilation['status'] == 200:
-            dict_jmx['CompilerName'] = compilation['value']['Name']
-            dict_jmx['TotalCompilationTime'] = round(compilation['value']['TotalCompilationTime'] * 0.001, 2)
+            dict_jmx['compilerName'] = compilation['value']['Name']
+            dict_jmx['totalCompilationTime'] = round(compilation['value']['TotalCompilationTime'] * 0.001, 2)
 
     def add_classloading_parameters(self, jolokiaclient, dict_jmx):
         """Add classloading related jmx stats"""
         classloading = jolokiaclient.request(type='read', mbean='java.lang:type=ClassLoading')
         if classloading['status'] == 200:
-            dict_jmx['UnloadedClass'] = classloading['value']['UnloadedClassCount']
-            dict_jmx['LoadedClass'] = classloading['value']['LoadedClassCount']
-            dict_jmx['TotalLoadedClass'] = classloading['value']['TotalLoadedClassCount']
+            dict_jmx['unloadedClass'] = classloading['value']['UnloadedClassCount']
+            dict_jmx['loadedClass'] = classloading['value']['LoadedClassCount']
+            dict_jmx['totalLoadedClass'] = classloading['value']['TotalLoadedClassCount']
 
     def add_gc_parameters(self, jolokiaclient, dict_jmx):
         """Add garbage collector related jmx stats"""
+        def memory_gc_usage(self, mempool_gc, key, gc_name, dict_jmx):
+            for name, values in mempool_gc.items():
+                mp_name = ''.join(name.split())
+                self.handle_neg_bytes(values['init'], gc_name+key+mp_name+'Init', dict_jmx)
+                self.handle_neg_bytes(values['max'], gc_name+key+mp_name+'Max', dict_jmx)
+                dict_jmx[gc_name+key+mp_name+'Used'] = round(values['used'] /1024.0 /1024.0, 2)
+                dict_jmx[gc_name+key+mp_name+'Committed'] = round(values['committed'] /1024.0 /1024.0, 2)
+
         gc_json = jolokiaclient.request(type='read', mbean='java.lang:type=GarbageCollector,*', attribute='Name')
         if gc_json['status'] == 200:
             gc_names = []
             for name, value in gc_json['value'].items():
-                gc_names.append(value['Name'])
+                if value['Name'] in DEFAULT_GC:
+                    gc_names.append(value['Name'])
+                else:
+                    collectd.error("Plugin kafka_jmx: not supported for GC %s" % value['Name'])
         if not gc_names:
             return
 
@@ -320,68 +338,56 @@ class JmxStat(object):
                     dict_jmx[gc_name_no_spaces+'CollectionCount'] = gc_values['value']['CollectionCount']
                     if gc_values['value']['LastGcInfo']:
                         dict_jmx[gc_name_no_spaces+'GcThreadCount'] = gc_values['value']['LastGcInfo']['GcThreadCount']
-                        dict_jmx[gc_name_no_spaces+'startTime'] = round(gc_values['value']['LastGcInfo']['startTime'] * 0.001, 2)
-                        dict_jmx[gc_name_no_spaces+'endTime'] = round(gc_values['value']['LastGcInfo']['endTime'] * 0.001, 2)
-                        dict_jmx[gc_name_no_spaces+'duration'] = round(gc_values['value']['LastGcInfo']['duration'] * 0.001, 2)
-                        maftergc = gc_values['value']['LastGcInfo']['memoryUsageAfterGc']
-                        for name, values in maftergc.items():
-                            mp_name = ''.join(name.split())
-                            self.handle_neg_bytes(values['init'], gc_name_no_spaces+'memoryUsageAfterGc'+mp_name+'Init', dict_jmx)
-                            self.handle_neg_bytes(values['max'], gc_name_no_spaces+'memoryUsageAfterGc'+mp_name+'Max', dict_jmx)
-                            dict_jmx[gc_name_no_spaces+'memoryUsageAfterGc'+mp_name+'Used'] = round(values['used'] /1024.0 /1024.0, 2)
-                            dict_jmx[gc_name_no_spaces+'memoryUsageAfterGc'+mp_name+'Committed'] = round(values['committed'] /1024.0 /1024.0, 2)
-                        mbeforegc = gc_values['value']['LastGcInfo']['memoryUsageBeforeGc']
-                        for name, values in mbeforegc.items():
-                            mp_name = ''.join(name.split())
-                            self.handle_neg_bytes(values['init'], gc_name_no_spaces+'memoryUsageBeforeGc'+mp_name+'Init', dict_jmx)
-                            self.handle_neg_bytes(values['max'], gc_name_no_spaces+'memoryUsageBeforeGc'+mp_name+'Max', dict_jmx)
-                            dict_jmx[gc_name_no_spaces+'memoryUsageBeforeGc'+mp_name+'Used'] = round(values['used'] /1024.0 /1024.0, 2)
-                            dict_jmx[gc_name_no_spaces+'memoryUsageBeforeGc'+mp_name+'Committed'] = round(values['committed'] /1024.0 /1024.0, 2)
+                        dict_jmx[gc_name_no_spaces+'StartTime'] = round(gc_values['value']['LastGcInfo']['startTime'] * 0.001, 2)
+                        dict_jmx[gc_name_no_spaces+'EndTime'] = round(gc_values['value']['LastGcInfo']['endTime'] * 0.001, 2)
+                        dict_jmx[gc_name_no_spaces+'Duration'] = round(gc_values['value']['LastGcInfo']['duration'] * 0.001, 2)
+                        mem_aftergc = gc_values['value']['LastGcInfo']['memoryUsageAfterGc']
+                        memory_gc_usage(self, mem_aftergc, 'MemoryUsageAfterGc', gc_name_no_spaces, dict_jmx)
+                        mem_beforegc = gc_values['value']['LastGcInfo']['memoryUsageBeforeGc']
+                        memory_gc_usage(self, mem_beforegc, 'MemoryUsageBeforeGc', gc_name_no_spaces, dict_jmx)
 
     def add_threading_parameters(self, jolokiaclient, dict_jmx):
         """Add thread related jmx stats"""
         mbean_threading = 'java.lang:type=Threading'
         thread_json = jolokiaclient.request(type='read', mbean=mbean_threading)
         if thread_json['status'] == 200:
-            dict_jmx['Threads'] = thread_json['value']['ThreadCount']
-            dict_jmx['PeakThreads'] = thread_json['value']['PeakThreadCount']
-            dict_jmx['DaemonThreads'] = thread_json['value']['DaemonThreadCount']
-            dict_jmx['TotalStartedThreads'] = thread_json['value']['TotalStartedThreadCount']
+            dict_jmx['threads'] = thread_json['value']['ThreadCount']
+            dict_jmx['peakThreads'] = thread_json['value']['PeakThreadCount']
+            dict_jmx['daemonThreads'] = thread_json['value']['DaemonThreadCount']
+            dict_jmx['totalStartedThreads'] = thread_json['value']['TotalStartedThreadCount']
             if thread_json['value']['CurrentThreadCpuTimeSupported']:
-                dict_jmx['CurrentThreadCpuTime'] = round(thread_json['value']['CurrentThreadCpuTime'] / 1000000000.0, 2)
-                dict_jmx['CurrentThreadUserTime'] = round(thread_json['value']['CurrentThreadUserTime'] / 1000000000.0, 2)
-
-        deadlocked_threads = jolokiaclient.request(type='exec', mbean=mbean_threading, operation='findDeadlockedThreads')
-        if deadlocked_threads['status'] == 200:
-            dict_jmx['DeadlockedThreads'] = deadlocked_threads['value']
-        monitor_deadlked_threads = jolokiaclient.request(type='exec', mbean=mbean_threading, operation='findMonitorDeadlockedThreads')
-        if monitor_deadlked_threads['status'] == 200:
-            dict_jmx['MonitorDeadlockedThreads'] = monitor_deadlked_threads['value']
+                dict_jmx['currentThreadCpuTime'] = round(thread_json['value']['CurrentThreadCpuTime'] / 1000000000.0, 2)
+                dict_jmx['currentThreadUserTime'] = round(thread_json['value']['CurrentThreadUserTime'] / 1000000000.0, 2)
 
     def add_memory_parameters(self, jolokiaclient, dict_jmx):
         """Add memory related jmx stats"""
         memory_json = jolokiaclient.request(type='read', mbean='java.lang:type=Memory')
         if memory_json['status'] == 200:
             hp = memory_json['value']['HeapMemoryUsage']
-            self.handle_neg_bytes(hp['init'], 'HeapMemoryUsageInit', dict_jmx)
-            self.handle_neg_bytes(hp['max'], 'HeapMemoryUsageMax', dict_jmx)
-            dict_jmx['HeapMemoryUsageUsed'] = round(hp['used'] / 1024.0/ 1024.0, 2)
-            dict_jmx['HeapMemoryUsageCommitted'] = round(hp['committed'] / 1024.0 /1024.0, 2)
+            self.handle_neg_bytes(hp['init'], 'heapMemoryUsageInit', dict_jmx)
+            self.handle_neg_bytes(hp['max'], 'heapMemoryUsageMax', dict_jmx)
+            dict_jmx['heapMemoryUsageUsed'] = round(hp['used'] / 1024.0/ 1024.0, 2)
+            dict_jmx['heapMemoryUsageCommitted'] = round(hp['committed'] / 1024.0 /1024.0, 2)
 
-            nhp = memory_json['value']['NonHeapMemoryUsage']
-            self.handle_neg_bytes(nhp['init'], 'NonHeapMemoryUsageInit', dict_jmx)
-            self.handle_neg_bytes(nhp['max'], 'NonHeapMemoryUsageMax', dict_jmx)
-            dict_jmx['NonHeapMemoryUsageUsed'] = round(nhp['used'] / 1024.0/ 1024.0, 2)
-            dict_jmx['NonHeapMemoryUsageCommitted'] = round(nhp['committed'] / 1024.0/ 1024.0, 2)
-            dict_jmx['ObjectPendingFinalization'] = memory_json['value']['ObjectPendingFinalizationCount']
+            non_hp = memory_json['value']['NonHeapMemoryUsage']
+            self.handle_neg_bytes(non_hp['init'], 'nonHeapMemoryUsageInit', dict_jmx)
+            self.handle_neg_bytes(non_hp['max'], 'nonHeapMemoryUsageMax', dict_jmx)
+            dict_jmx['nonHeapMemoryUsageUsed'] = round(non_hp['used'] / 1024.0/ 1024.0, 2)
+            dict_jmx['nonHeapMemoryUsageCommitted'] = round(non_hp['committed'] / 1024.0/ 1024.0, 2)
+            dict_jmx['objectPendingFinalization'] = memory_json['value']['ObjectPendingFinalizationCount']
+
+    def get_memory_pool_names(self, jolokiaclient):
+        """Get memory pool names of jvm process"""
+        mempool_json = jolokiaclient.request(type='read', mbean='java.lang:type=MemoryPool,*', attribute='Name')
+        mempool_names = []
+        if mempool_json['status'] == 200:
+            for _, value in mempool_json['value'].items():
+                mempool_names.append(value['Name'])
+        return mempool_names
 
     def add_memory_pool_parameters(self, jolokiaclient, dict_jmx):
         """Add memory pool related jmx stats"""
-        mp_json = jolokiaclient.request(type='read', mbean='java.lang:type=MemoryPool,*', attribute='Name')
-        mp_names = []
-        if mp_json['status'] == 200:
-            for name, value in mp_json['value'].items():
-                mp_names.append(value['Name'])
+        mp_names = self.get_memory_pool_names(jolokiaclient)
         if not mp_names:
             return
 
@@ -439,7 +445,7 @@ class JmxStat(object):
         dict_jmx[PLUGINTYPE] = doc
         dict_jmx[ACTUALPLUGINTYPE] = KAFKA_JMX
         dict_jmx[PROCESSNAME] = self.process
-        collectd.info("Plugin jmx_stats: Added common parameters successfully")
+        collectd.info("Plugin kafka_jmx: Added common parameters successfully")
 
     def get_pid_jmx_stats(self, pid, port, output):
         """Call get_jmx_parameters function for each doc_type and add dict to queue"""
@@ -448,12 +454,12 @@ class JmxStat(object):
                 dict_jmx = {}
                 self.get_jmx_parameters(port, doc, dict_jmx)
                 if dict_jmx:
-                    collectd.info("Plugin jmx_stats: Added doc type %s of pid %s information successfully" % (doc, pid))
+                    collectd.info("Plugin kafka_jmx: Added doc type %s of pid %s information successfully" % (doc, pid))
                     dict_jmx['_processPid'] = pid
                     self.add_common_params(doc, dict_jmx)
                     output.put(dict_jmx)
             except Exception as err:
-                collectd.error("Plugin jmx_stats: Error in collecting stats of doc type %s: %s" % (doc, str(err)))
+                collectd.error("Plugin kafka_jmx: Error in collecting stats of doc type %s: %s" % (doc, str(err)))
 
     def run_process_each_pid(self, list_pid):
         """Spawn process for each pid"""
@@ -479,7 +485,7 @@ class JmxStat(object):
 
         list_pid = self.get_pid()
         if not list_pid:
-            collectd.error("Plugin jmx_stats: No JAVA processes are running")
+            collectd.error("Plugin kafka_jmx: No JAVA processes are running")
             return
 
         procs, output = self.run_process_each_pid(list_pid)
@@ -493,7 +499,7 @@ class JmxStat(object):
 
                 pid = doc_result["_processPid"]
                 # add rate only for "KafkaJmx" docs, first doc won't be sent
-                if doc_result[PLUGINTYPE] == "KafkaStats":
+                if doc_result[PLUGINTYPE] == "kafkaStats":
                     if pid in self.prev_data:
                         self.add_rate(pid, doc_result)
                         self.dispatch_data(doc_result)
@@ -504,8 +510,8 @@ class JmxStat(object):
 
     def dispatch_data(self, result):
         """Dispatch data to collectd."""
-        collectd.info("Plugin jmx_stats: Succesfully sent doctype %s to collectd." % result[PLUGINTYPE])
-        collectd.debug("Plugin jmx_stats: Values dispatched =%s" % json.dumps(result))
+        collectd.info("Plugin kafka_jmx: Succesfully sent doctype %s to collectd." % result[PLUGINTYPE])
+        collectd.debug("Plugin kafka_jmx: Values dispatched =%s" % json.dumps(result))
         utils.dispatch(result)
 
     def read_temp(self):
