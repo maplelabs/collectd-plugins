@@ -19,7 +19,7 @@ import utils
 from constants import *
 
 DOCS = ["memoryPoolStats", "memoryStats", "threadStats", "gcStats", "classLoadingStats",
-        "compliationStats", "nioStats", "operatingSysStats", "kafkaStats"]
+        "compilationStats", "nioStats", "operatingSysStats", "kafkaStats"]
 JOLOKIA_PATH = "/opt/collectd/plugins/"
 DEFAULT_GC = ['G1 Old Generation', 'G1 Young Generation']
 
@@ -140,7 +140,7 @@ class JmxStat(object):
             self.add_gc_parameters(jolokiaclient, dict_jmx)
         elif doc == "classLoadingStats":
             self.add_classloading_parameters(jolokiaclient, dict_jmx)
-        elif doc == "compliationStats":
+        elif doc == "compilationStats":
             self.add_compilation_parameters(jolokiaclient, dict_jmx)
         elif doc == "nioStats":
             self.add_nio_parameters(jolokiaclient, dict_jmx)
@@ -291,7 +291,7 @@ class JmxStat(object):
                 self.handle_neg_bytes(poolinfo['value']['TotalCapacity'], poolname+'BufferPoolTotalCapacity', dict_jmx)
 
     def add_compilation_parameters(self, jolokiaclient, dict_jmx):
-        """Add compliation related jmx stats"""
+        """Add compilation related jmx stats"""
         compilation = jolokiaclient.request(type='read', mbean='java.lang:type=Compilation')
         if compilation['status'] == 200:
             dict_jmx['compilerName'] = compilation['value']['Name']
@@ -403,8 +403,8 @@ class JmxStat(object):
                     if coll_usage:
                         self.handle_neg_bytes(coll_usage['max'], poll_name_no_spaces+'CollectionUsageMax', dict_jmx)
                         self.handle_neg_bytes(coll_usage['init'], poll_name_no_spaces+'CollectionUsageInit', dict_jmx)
-                        dict_jmx[poll_name_no_spaces+'CollectionUsageUsed'] = coll_usage['used']
-                        dict_jmx[poll_name_no_spaces+'CollectionUsageCommitted'] = coll_usage['committed']
+                        dict_jmx[poll_name_no_spaces+'CollectionUsageUsed'] = round(coll_usage['used'] /1024.0/1024.0, 2)
+                        dict_jmx[poll_name_no_spaces+'CollectionUsageCommitted'] = round(coll_usage['committed'] /1024.0/1024.0, 2)
                     usage = mp_values['value']['Usage']
                     self.handle_neg_bytes(usage['max'], poll_name_no_spaces+'UsageMax', dict_jmx)
                     self.handle_neg_bytes(usage['init'], poll_name_no_spaces+'UsageInit', dict_jmx)
