@@ -69,18 +69,39 @@ class DiskStats(object):
 
         return dict_disk
 
+    def get_iostat_data(self):
+        """Returns dictionary with values avgqu_sz  """
+        (iodata, err) = utils.get_cmd_output('iostat -d -x')
+        if err:
+            collectd.error('Plugin disk_stat: error in iostat command or sysstat is not installed')
+            return None
+
+        iodata_info = re.split('\n', iodata)
+        iodata = {}
+        for statline in iodata_info[3:]:
+            if statline:
+                iodata[statline.split()[0]] = statline.split()[8]
+        return iodata
+
     def get_dynamic_data(self):
         """Returns dictionary with values of READBYTE, WRITEBYTE, READCOUNT, WRITECOUNT."""
         dict_disk = {}
+        dict_iostats = self.get_iostat_data()
+        if not dict_iostats:
+           collectd.insert('Plugin disk_stat: error in iostat command or sysstat is not installed')
+           return None
         disk_part_io = libdiskstat.disk_io_counters()
         if disk_part_io == FAILURE:
             return None
 
         for name, disk_ioinfo in disk_part_io.items():
+            avgqusizedata = dict_iostats.get(name)
+            if avgqusizedata:
+               avgqusizedata = float(avgqusizedata)
             disk = {READBYTE: float(disk_ioinfo.read_bytes) / (FACTOR * FACTOR), WRITEBYTE: float(
                 disk_ioinfo.write_bytes) / (FACTOR * FACTOR), READCOUNT: disk_ioinfo.read_count,
                     WRITECOUNT: disk_ioinfo.write_count, READTIME: disk_ioinfo.read_time,
-                    WRITETIME: disk_ioinfo.write_time,USAGE: 0}
+                    WRITETIME: disk_ioinfo.write_time,USAGE: 0,AVGQUEUESIZE: avgqusizedata}
             dict_disk[name] = disk
 
         return dict_disk
