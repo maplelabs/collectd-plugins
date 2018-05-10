@@ -35,7 +35,10 @@ class RamUtil(object):
         dict_ram_util = {'available': round(
             float(mem.available) / (FACTOR * FACTOR * FACTOR), FLOATING_FACTOR), 'RAMUtil': mem.percent,
             'totalRAM': round(float(mem.total) / (FACTOR * FACTOR * FACTOR), FLOATING_FACTOR), 
-            'free': mem.free, 'cached':mem.cached, 'buffered':mem.buffers, 'used': mem.used
+            'free': round(float(mem.free) / (FACTOR * FACTOR * FACTOR), FLOATING_FACTOR),
+            'cached':round(float(mem.cached) / (FACTOR * FACTOR * FACTOR), FLOATING_FACTOR),
+            'buffered':round(float(mem.buffers) / (FACTOR * FACTOR * FACTOR), FLOATING_FACTOR),
+            'used': round(float(mem.used) / (FACTOR * FACTOR * FACTOR), FLOATING_FACTOR)
         }
         return dict_ram_util
 
