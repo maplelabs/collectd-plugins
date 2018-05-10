@@ -66,12 +66,12 @@ class JmxStat(object):
 
     def get_pid(self):
         """Get PIDs of all java process."""
-        pid_cmd = "jcmd | grep %s" % self.process
+        pid_cmd = "jcmd | awk '{print $1 \" \" $2}' | grep %s" % self.process
         pids, err = utils.get_cmd_output(pid_cmd)
         if err:
             collectd.error("Plugin kafka_jmx: Error in collecting pid: %s" % err)
             return False
-        pids = pids.split("\n")
+        pids = pids.splitlines()
         pid_list = []
         for pid in pids:
             if pid is not "":
@@ -309,11 +309,12 @@ class JmxStat(object):
         """Add garbage collector related jmx stats"""
         def memory_gc_usage(self, mempool_gc, key, gc_name, dict_jmx):
             for name, values in mempool_gc.items():
-                mp_name = ''.join(name.split())
-                self.handle_neg_bytes(values['init'], gc_name+key+mp_name+'Init', dict_jmx)
-                self.handle_neg_bytes(values['max'], gc_name+key+mp_name+'Max', dict_jmx)
-                dict_jmx[gc_name+key+mp_name+'Used'] = round(values['used'] /1024.0 /1024.0, 2)
-                dict_jmx[gc_name+key+mp_name+'Committed'] = round(values['committed'] /1024.0 /1024.0, 2)
+                if name in ['G1 Eden Space', 'G1 Old Gen']:
+                    mp_name = ''.join(name.split())
+                    self.handle_neg_bytes(values['init'], gc_name+key+mp_name+'Init', dict_jmx)
+                    self.handle_neg_bytes(values['max'], gc_name+key+mp_name+'Max', dict_jmx)
+                    dict_jmx[gc_name+key+mp_name+'Used'] = round(values['used'] /1024.0 /1024.0, 2)
+                    dict_jmx[gc_name+key+mp_name+'Committed'] = round(values['committed'] /1024.0 /1024.0, 2)
 
         gc_json = jolokiaclient.request(type='read', mbean='java.lang:type=GarbageCollector,*', attribute='Name')
         if gc_json['status'] == 200:
@@ -342,9 +343,9 @@ class JmxStat(object):
                         dict_jmx[gc_name_no_spaces+'EndTime'] = round(gc_values['value']['LastGcInfo']['endTime'] * 0.001, 2)
                         dict_jmx[gc_name_no_spaces+'Duration'] = round(gc_values['value']['LastGcInfo']['duration'] * 0.001, 2)
                         mem_aftergc = gc_values['value']['LastGcInfo']['memoryUsageAfterGc']
-                        memory_gc_usage(self, mem_aftergc, 'MemoryUsageAfterGc', gc_name_no_spaces, dict_jmx)
+                        memory_gc_usage(self, mem_aftergc, 'MemUsageAfGc', gc_name_no_spaces, dict_jmx)
                         mem_beforegc = gc_values['value']['LastGcInfo']['memoryUsageBeforeGc']
-                        memory_gc_usage(self, mem_beforegc, 'MemoryUsageBeforeGc', gc_name_no_spaces, dict_jmx)
+                        memory_gc_usage(self, mem_beforegc, 'MemUsageBfGc', gc_name_no_spaces, dict_jmx)
 
     def add_threading_parameters(self, jolokiaclient, dict_jmx):
         """Add thread related jmx stats"""
@@ -462,7 +463,7 @@ class JmxStat(object):
             except Exception as err:
                 collectd.error("Plugin kafka_jmx: Error in collecting stats of doc type %s: %s" % (doc, str(err)))
 
-    def run_process_each_pid(self, list_pid):
+    def run_pid_process(self, list_pid):
         """Spawn process for each pid"""
         procs = []
         output = multiprocessing.Queue()
@@ -489,7 +490,7 @@ class JmxStat(object):
             collectd.error("Plugin kafka_jmx: No JAVA processes are running")
             return
 
-        procs, output = self.run_process_each_pid(list_pid)
+        procs, output = self.run_pid_process(list_pid)
         for _ in procs:
             for doc in DOCS:
                 try:
