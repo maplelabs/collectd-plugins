@@ -34,7 +34,8 @@ class RamUtil(object):
         mem = psutil.virtual_memory()
         dict_ram_util = {'available': round(
             float(mem.available) / (FACTOR * FACTOR * FACTOR), FLOATING_FACTOR), 'RAMUtil': mem.percent,
-            'totalRAM': round(float(mem.total) / (FACTOR * FACTOR * FACTOR), FLOATING_FACTOR)
+            'totalRAM': round(float(mem.total) / (FACTOR * FACTOR * FACTOR), FLOATING_FACTOR), 
+            'free': mem.free, 'cached':mem.cached, 'buffered':mem.buffers, 'used': mem.used
         }
         return dict_ram_util
 
