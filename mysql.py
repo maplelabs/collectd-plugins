@@ -43,10 +43,20 @@ class MysqlStats:
 
     def connect_mysql(self):
         try:
-            db = MySQLdb.connect(host=self.host, user=self.user, passwd=self.password, db='information_schema')
-            self.cur = db.cursor()
+            retry_flag = True
+            retry_count = 0
+            while retry_flag and retry_count < 3:
+                try:
+                    db = MySQLdb.connect(host=self.host, user=self.user, passwd=self.password, db='information_schema')
+                    self.cur = db.cursor()
+                    retry_flag = False
+                    collectd.info("Connection to MySQL successfull in attempt %s" % (retry_count))
+                except Exception as e:
+                    collectd.error("Retry after 5 sec as connection to MySQL failed in attempt %s" % (retry_count))
+                    retry_count += 1
+                    time.sleep(5)
         except Exception as e:
-            collectd.error("Couldn't connect to the MySQL server: %s" % e)
+            collectd.error("Exception in the connect_mysql due to %s" % e)
             return
 
     def get_sql_server_data(self):
