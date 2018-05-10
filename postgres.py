@@ -54,10 +54,20 @@ class PostgresStats:
     def connect_postgres(self):
         try:
             conn_str_org = Postgres.conn_str % (self.host, self.user, self.password, self.port, 'postgres')
-            self.conn = psycopg2.connect(conn_str_org)
-            self.cur = self.conn.cursor()
+            retry_flag = True
+            retry_count = 0
+            while retry_flag and retry_count < 3:
+                try:
+                    self.conn = psycopg2.connect(conn_str_org)
+                    self.cur = self.conn.cursor()
+                    retry_flag = False
+                    collectd.info("Connection to Postgres is successfull in attempt %s" % retry_count)
+                except Exception as e:
+                    collectd.debug("Retry after 5 sec as connection to Postgres failed in attempt %s" % retry_count)
+                    retry_count += 1
+                    time.sleep(5)
         except Exception as e:
-            collectd.error("Couldn't connect to the Postgres server: %s" % e)
+            collectd.error("Exception in the connect_postgres due to %s" % e)
             return
 
     def connect_db(self, dbname):
