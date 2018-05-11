@@ -66,7 +66,7 @@ class JmxStat(object):
 
     def get_pid(self):
         """Get PIDs of all java process."""
-        pid_cmd = "jcmd | awk '{print $1 \" \" $2}' | grep %s" % self.process
+        pid_cmd = "jcmd | awk '{print $1 \" \" $2}' | grep -w \"%s\"" % self.process
         pids, err = utils.get_cmd_output(pid_cmd)
         if err:
             collectd.error("Plugin kafka_jmx: Error in collecting pid: %s" % err)
