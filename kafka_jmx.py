@@ -488,7 +488,10 @@ class JmxStat(object):
         """Adds TIMESTAMP, PLUGIN, PLUGITYPE to dictionary."""
         timestamp = int(round(time.time()))
         dict_jmx[TIMESTAMP] = timestamp
-        dict_jmx[PLUGIN] = KAFKA_JMX
+        if self.process == "kafka.Kafka":
+            dict_jmx[PLUGIN] = KAFKA_JMX
+        elif self.process == "zookeeper":
+            dict_jmx[PLUGIN] = ZOOK_JMX
         dict_jmx[PLUGINTYPE] = doc
         dict_jmx[ACTUALPLUGINTYPE] = KAFKA_JMX
         dict_jmx[PROCESSNAME] = self.process
