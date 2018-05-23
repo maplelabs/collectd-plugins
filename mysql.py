@@ -68,7 +68,6 @@ class MysqlStats:
             self.cur.execute(server_details_query)
             server_details = dict(self.cur.fetchall())
             if server_details:
-                server_dict[TYPE] = SERVER_DETAILS
                 server_dict['numDatabases'] = num_databases
                 # server_dict['numConnections'] = long(server_details['Connections'])
                 # server_dict['numAbortedConnects'] = long(server_details['Aborted_connects'])
@@ -157,7 +156,6 @@ class MysqlStats:
                 table_dict["tableRows"] = long(0) if item["tableRows"] is None else long(item["tableRows"])
                 table_dict["indexSize"] = float(0) if item["indexSize"] is None else round(float(item["indexSize"]) / (1024 * 1024), 2)
                 agg_db_data["indexSize"] = agg_db_data["indexSize"] + table_dict["indexSize"]
-                table_dict[TYPE] = TABLE_DETAILS
                 table_dict[PLUGINTYPE] = TABLE_DETAILS
                 final_table_dict[table_dict["_tableName"]] = table_dict
             final_table_dict[db_name]["dataFree"] = agg_db_data["dataFree"]
@@ -207,7 +205,6 @@ class MysqlStats:
                     self.cur.execute(db_query_5)
                     db_details = dict(self.cur.fetchall())
                     if db_details:
-                        db_dict[TYPE] = DB_DETAILS
                         db_dict['_dbName'] = db_name
                         if db_size is None:
                             db_dict['dbSize'] = float(0)
