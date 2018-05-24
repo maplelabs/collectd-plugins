@@ -242,5 +242,6 @@ TPCC = "tpcc"
 # Kafka_jmx plugin constants
 KAFKA_JMX = "kafka_jmx"
 ZOOK_JMX = "zookeeper_jmx"
+KAFKA_TOPIC = "kafka_topic"
 PROCESSNAME = "_processName"
 LISTENERIP = "listener_ip"
