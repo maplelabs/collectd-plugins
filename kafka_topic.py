@@ -21,6 +21,8 @@ import utils
 from constants import *
 
 KAFKA_DOCS = ["kafkaStats", "topicStats"]
+BROKER_STATES = {0: "NotRunning", 1: "Starting", 2: "RecoveringFromUncleanShutdown", 3: "RunningAsBroker", \
+                 6: "PendingControlledShutdown", 7: "BrokerShuttingDown"}
 JOLOKIA_PATH = "/opt/collectd/plugins/"
 
 class JmxStat(object):
@@ -229,6 +231,7 @@ class JmxStat(object):
         jolokiaclient.add_request(type='read', mbean='kafka.network:type=RequestMetrics,name=TotalTimeMs,request=FetchFollower', attribute='Mean,Max,Min')
         jolokiaclient.add_request(type='read', mbean='kafka.network:type=RequestMetrics,name=TotalTimeMs,request=FetchConsumer', attribute='Mean,Max,Min')
         jolokiaclient.add_request(type='read', mbean='kafka.network:type=RequestMetrics,name=TotalTimeMs,request=Produce', attribute='Mean,Max,Min')
+        jolokiaclient.add_request(type='read', mbean='kafka.server:name=BrokerState,type=KafkaServer', attribute='Value')
         bulkdata = jolokiaclient.getRequests()
         if bulkdata[0]['status'] == 200:
             dict_jmx['underReplicatedPartitions'] = bulkdata[0]['value']
@@ -274,6 +277,8 @@ class JmxStat(object):
             dict_jmx['producerTimeMsMax'] = bulkdata[18]['value']['Max']
             dict_jmx['producerTimeMsMin'] = bulkdata[18]['value']['Min']
             dict_jmx['producerTimeMsMean'] = round(bulkdata[18]['value']['Mean'], 2)
+        if bulkdata[19]['status'] == 200:
+            dict_jmx['brokerState'] = BROKER_STATES[bulkdata[19]['value']]
 
     def add_topic_parameters(self, jolokiaclient, dict_jmx):
         def get_partitions(topic):
