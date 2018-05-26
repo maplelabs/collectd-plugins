@@ -356,8 +356,7 @@ class JmxStat(object):
                 if topic in self.prev_topic_data[pid]:
                     self.add_topic_rate(pid, topic, topic_info)
                     self.dispatch_data(doc, deepcopy(topic_info))
-                else:
-                    self.prev_topic_data[pid][topic] = topic_info
+                self.prev_topic_data[pid][topic] = topic_info
             else:
                 self.prev_topic_data[pid] = {}
                 self.prev_topic_data[pid][topic] = topic_info
