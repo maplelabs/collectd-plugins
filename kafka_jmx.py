@@ -344,7 +344,7 @@ class JmxStat(object):
         dict_jmx[PLUGINTYPE] = doc
         dict_jmx[ACTUALPLUGINTYPE] = KAFKA_JMX
         dict_jmx[PROCESSNAME] = self.process
-        #dict_jmx[PLUGIN_INS] = doc
+        dict_jmx[PLUGIN_INS] = doc
         collectd.info("Plugin kafka_jmx: Added common parameters successfully")
 
     def get_pid_jmx_stats(self, pid, port, output):

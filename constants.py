@@ -240,8 +240,8 @@ class Postgres(object):
 TPCC = "tpcc"
 
 # Kafka_jmx plugin constants
-KAFKA_JMX = "kafka_jmx"
-ZOOK_JMX = "zookeeper_jmx"
-KAFKA_TOPIC = "kafka_topic"
+KAFKA_JMX = "kafkajmx"
+ZOOK_JMX = "zookeeperjmx"
+KAFKA_TOPIC = "kafkatopic"
 PROCESSNAME = "_processName"
 LISTENERIP = "listener_ip"
