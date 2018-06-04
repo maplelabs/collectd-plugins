@@ -343,14 +343,12 @@ class JmxStat(object):
         dict_jmx[PLUGIN] = KAFKA_TOPIC
         dict_jmx[PLUGINTYPE] = doc
         dict_jmx[ACTUALPLUGINTYPE] = KAFKA_TOPIC
-        dict_jmx[PROCESSNAME] = self.process
         dict_jmx[PLUGIN_INS] = doc
         collectd.info("Plugin kafka_topic: Added common parameters successfully")
 
     def add_rate_dispatch_topic(self, pid, doc, dict_jmx):
         """Rate calculation for topic metrics"""
         for topic, topic_info in dict_jmx.items():
-            topic_info['_processPid'] = pid
             self.add_common_params(doc, topic_info)
             if pid in self.prev_topic_data:
                 if topic in self.prev_topic_data[pid]:
@@ -371,13 +369,12 @@ class JmxStat(object):
                     raise Exception("No data found")
 
                 collectd.info("Plugin kafka_topic: Added doctype %s of pid %s information successfully" % (doc, pid))
-                dict_jmx['_processPid'] = pid
                 if doc == "topicStats":
-                    output.put((doc, dict_jmx))
+                    output.put((pid, doc, dict_jmx))
                     continue
 
                 self.add_common_params(doc, dict_jmx)
-                output.put((doc, dict_jmx))
+                output.put((pid, doc, dict_jmx))
             except Exception as err:
                 collectd.error("Plugin kafka_topic: Error in collecting stats of doc type %s: %s" % (doc, str(err)))
 
@@ -412,14 +409,12 @@ class JmxStat(object):
         for _ in procs:
             for _ in KAFKA_DOCS:
                 try:
-                    doc_name, doc_result = output.get_nowait()
+                    pid, doc_name, doc_result = output.get_nowait()
                 except Queue.Empty:
                     collectd.error("Failed to send one or more doctype document to collectd")
                     continue
 
-                pid = doc_result["_processPid"]
                 if doc_name == "topicStats":
-                    del doc_result["_processPid"]
                     self.add_rate_dispatch_topic(pid, doc_name, doc_result)
                 else:
                     if pid in self.prev_data:
