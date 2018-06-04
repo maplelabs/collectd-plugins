@@ -20,7 +20,7 @@ from contextlib import closing
 import utils
 from constants import *
 
-KAFKA_DOCS = ["kafkaStats", "topicStats"]
+KAFKA_DOCS = ["kafkaStats", "topicStats", "partitionStats"]
 BROKER_STATES = {0: "NotRunning", 1: "Starting", 2: "RecoveringFromUncleanShutdown", 3: "RunningAsBroker", \
                  6: "PendingControlledShutdown", 7: "BrokerShuttingDown"}
 JOLOKIA_PATH = "/opt/collectd/plugins/"
@@ -142,7 +142,9 @@ class JmxStat(object):
         if doc == "kafkaStats":
             self.add_kafka_parameters(jolokiaclient, dict_jmx)
         elif doc == "topicStats":
-            self.add_topic_parameters(jolokiaclient, dict_jmx)
+            self.add_topic_parameters(jolokiaclient, dict_jmx, "topic")
+        elif doc == "partitionStats":
+            self.add_topic_parameters(jolokiaclient, dict_jmx, "partition")
 
     def add_rate(self, pid, dict_jmx):
         """Rate only for kafka jmx metrics"""
@@ -210,6 +212,14 @@ class JmxStat(object):
         if rate != NAN:
             topic_info['bytesRejectedRate'] = round(rate, FLOATING_FACTOR)
 
+    def get_value(self, dict_json, key, sec_key=None):
+        """Add default int value if key not available"""
+        if dict_json['status'] == 200:
+            if sec_key:
+                return dict_json[key][sec_key]
+            return dict_json[key]
+        return 0
+
     def add_kafka_parameters(self, jolokiaclient, dict_jmx):
         """Add jmx stats specific to kafka metrics"""
         jolokiaclient.add_request(type='read', mbean='kafka.server:name=UnderReplicatedPartitions,type=ReplicaManager', attribute='Value')
@@ -233,54 +243,38 @@ class JmxStat(object):
         jolokiaclient.add_request(type='read', mbean='kafka.network:type=RequestMetrics,name=TotalTimeMs,request=Produce', attribute='Mean,Max,Min')
         jolokiaclient.add_request(type='read', mbean='kafka.server:name=BrokerState,type=KafkaServer', attribute='Value')
         bulkdata = jolokiaclient.getRequests()
-        if bulkdata[0]['status'] == 200:
-            dict_jmx['underReplicatedPartitions'] = bulkdata[0]['value']
-        if bulkdata[1]['status'] == 200:
-            dict_jmx['messagesInPerSec'] = bulkdata[1]['value']
-        if bulkdata[2]['status'] == 200:
-            dict_jmx['bytesInPerSec'] = bulkdata[2]['value']
-        if bulkdata[3]['status'] == 200:
-            dict_jmx['bytesOutPerSec'] = bulkdata[3]['value']
-        if bulkdata[4]['status'] == 200:
-            dict_jmx['partitionCount'] = bulkdata[4]['value']
-        if bulkdata[5]['status'] == 200:
-            dict_jmx['isrExpandsPerSec'] = bulkdata[5]['value']
-        if bulkdata[6]['status'] == 200:
-            dict_jmx['isrShrinksPerSec'] = bulkdata[6]['value']
-        if bulkdata[7]['status'] == 200:
-            dict_jmx['requestHandlerAvgIdle'] = round(bulkdata[7]['value']/1000000000.0, 2)
-        if bulkdata[8]['status'] == 200:
-            dict_jmx['offlinePartitions'] = bulkdata[8]['value']
-        if bulkdata[9]['status'] == 200:
-            dict_jmx['activeController'] = bulkdata[9]['value']
-        if bulkdata[10]['status'] == 200:
-            dict_jmx['leaderElectionPerSec'] = bulkdata[10]['value']
-        if bulkdata[11]['status'] == 200:
-            dict_jmx['uncleanLeaderElectionPerSec'] = bulkdata[11]['value']
-        if bulkdata[12]['status'] == 200:
-            dict_jmx['producerRequestsPerSec'] = bulkdata[12]['value']
-        if bulkdata[13]['status'] == 200:
-            dict_jmx['fetchConsumerRequestsPerSec'] = bulkdata[13]['value']
-        if bulkdata[14]['status'] == 200:
-            dict_jmx['fetchFollowerRequestsPerSec'] = bulkdata[14]['value']
-        if bulkdata[15]['status'] == 200:
-            dict_jmx['networkProcessorAvgIdlePercent'] = round(bulkdata[15]['value'], 2)
-        if bulkdata[16]['status'] == 200:
-            dict_jmx['followerTimeMsMax'] = bulkdata[16]['value']['Max']
-            dict_jmx['followerTimeMsMin'] = bulkdata[16]['value']['Min']
-            dict_jmx['followerTimeMsMean'] = round(bulkdata[16]['value']['Mean'], 2)
-        if bulkdata[17]['status'] == 200:
-            dict_jmx['consumerTimeMsMax'] = bulkdata[17]['value']['Max']
-            dict_jmx['consumerTimeMsMin'] = bulkdata[17]['value']['Min']
-            dict_jmx['consumerTimeMsMean'] = round(bulkdata[17]['value']['Mean'], 2)
-        if bulkdata[18]['status'] == 200:
-            dict_jmx['producerTimeMsMax'] = bulkdata[18]['value']['Max']
-            dict_jmx['producerTimeMsMin'] = bulkdata[18]['value']['Min']
-            dict_jmx['producerTimeMsMean'] = round(bulkdata[18]['value']['Mean'], 2)
+        dict_jmx['underReplicatedPartitions'] = self.get_value(bulkdata[0], 'value')
+        dict_jmx['messagesInPerSec'] = self.get_value(bulkdata[1], 'value')
+        dict_jmx['bytesInPerSec'] = self.get_value(bulkdata[2], 'value')
+        dict_jmx['bytesOutPerSec'] = self.get_value(bulkdata[3], 'value')
+        dict_jmx['partitionCount'] = self.get_value(bulkdata[4], 'value')
+        dict_jmx['isrExpandsPerSec'] = self.get_value(bulkdata[5], 'value')
+        dict_jmx['isrShrinksPerSec'] = self.get_value(bulkdata[6], 'value')
+        dict_jmx['requestHandlerAvgIdle'] = round((self.get_value(bulkdata[7], 'value')) /1000000000.0, 2)
+        dict_jmx['offlinePartitions'] = self.get_value(bulkdata[8], 'value')
+        dict_jmx['activeController'] = self.get_value(bulkdata[9], 'value')
+        dict_jmx['leaderElectionPerSec'] = self.get_value(bulkdata[10], 'value')
+        dict_jmx['uncleanLeaderElectionPerSec'] = self.get_value(bulkdata[11], 'value')
+        dict_jmx['producerRequestsPerSec'] = self.get_value(bulkdata[12], 'value')
+        dict_jmx['fetchConsumerRequestsPerSec'] = self.get_value(bulkdata[13], 'value')
+        dict_jmx['fetchFollowerRequestsPerSec'] = self.get_value(bulkdata[14], 'value')
+        dict_jmx['networkProcessorAvgIdlePercent'] = round((self.get_value(bulkdata[15], 'value')), 2)
+        dict_jmx['followerTimeMsMax'] = self.get_value(bulkdata[16], 'value', 'Max')
+        dict_jmx['followerTimeMsMin'] = self.get_value(bulkdata[16], 'value', 'Min')
+        dict_jmx['followerTimeMsMean'] = round(self.get_value(bulkdata[16], 'value', 'Mean'), 2)
+        dict_jmx['consumerTimeMsMax'] = self.get_value(bulkdata[17], 'value', 'Max')
+        dict_jmx['consumerTimeMsMin'] = self.get_value(bulkdata[17], 'value', 'Min')
+        dict_jmx['consumerTimeMsMean'] = round(self.get_value(bulkdata[17], 'value', 'Mean'), 2)
+        dict_jmx['producerTimeMsMax'] = self.get_value(bulkdata[18], 'value', 'Max')
+        dict_jmx['producerTimeMsMin'] = self.get_value(bulkdata[18], 'value', 'Min')
+        dict_jmx['producerTimeMsMean'] = round(self.get_value(bulkdata[18], 'value', 'Mean'), 2)
         if bulkdata[19]['status'] == 200:
             dict_jmx['brokerState'] = BROKER_STATES[bulkdata[19]['value']]
+        else:
+            dict_jmx['brokerState'] = "NotAvailable"
 
-    def add_topic_parameters(self, jolokiaclient, dict_jmx):
+    def add_topic_parameters(self, jolokiaclient, dict_jmx, flag="topic"):
+        """JMX stats specific to topic and partition"""
         def get_partitions(topic):
             client = kafka.KafkaClient(self.listenerip+':'+self.port)
             topic_partition_ids = client.get_partition_ids_for_topic(topic)
@@ -290,51 +284,65 @@ class JmxStat(object):
             consumer = kafka.KafkaConsumer(bootstrap_servers=self.listenerip+':'+self.port)
             return consumer.topics()
 
+        parti_list = []
         topics = get_topics()
         for topic in topics:
-            # get topic partitions
-            dict_jmx[topic] = {}
-            dict_jmx[topic]['_topicName'] = topic
             partitions = get_partitions(topic)
-            dict_jmx[topic]['partitionCount'] = partitions
-            msgIn = jolokiaclient.request(type='read', mbean='kafka.server:name=MessagesInPerSec,topic=%s,type=BrokerTopicMetrics'%topic, attribute='Count')
-            bytesOut = jolokiaclient.request(type='read', mbean='kafka.server:name=BytesOutPerSec,topic=%s,type=BrokerTopicMetrics'%topic, attribute='Count')
-            bytesIn = jolokiaclient.request(type='read', mbean='kafka.server:name=BytesInPerSec,topic=%s,type=BrokerTopicMetrics'%topic, attribute='Count')
-            totalFetch = jolokiaclient.request(type='read', mbean='kafka.server:name=TotalFetchRequestsPerSec,topic=%s,type=BrokerTopicMetrics'%topic, attribute='Count')
-            totalProduce = jolokiaclient.request(type='read', mbean='kafka.server:name=TotalProduceRequestsPerSec,topic=%s,type=BrokerTopicMetrics'%topic, attribute='Count')
-            produceMsg = jolokiaclient.request(type='read', mbean='kafka.server:name=ProduceMessageConversionsPerSec,topic=%s,type=BrokerTopicMetrics'%topic, attribute='Count')
-            failedProduce = jolokiaclient.request(type='read', mbean='kafka.server:name=FailedProduceRequestsPerSec,topic=%s,type=BrokerTopicMetrics'%topic, attribute='Count')
-            fetchMsg = jolokiaclient.request(type='read', mbean='kafka.server:name=FetchMessageConversionsPerSec,topic=%s,type=BrokerTopicMetrics'%topic, attribute='Count')
-            failedFetch = jolokiaclient.request(type='read', mbean='kafka.server:name=FailedFetchRequestsPerSec,topic=%s,type=BrokerTopicMetrics'%topic, attribute='Count')
-            bytesReject = jolokiaclient.request(type='read', mbean='kafka.server:name=BytesRejectedPerSec,topic=%s,type=BrokerTopicMetrics'%topic, attribute='Count')
-            if msgIn['status'] == 200:
-                dict_jmx[topic]['messagesIn'] = msgIn['value']
-            if bytesOut['status'] == 200:
-                dict_jmx[topic]['bytesOut'] = bytesOut['value']
-            if bytesIn['status'] == 200:
-                dict_jmx[topic]['bytesIn'] = bytesIn['value']
-            if totalFetch['status'] == 200:
-                dict_jmx[topic]['totalFetchRequests'] = totalFetch['value']
-            if totalProduce['status'] == 200:
-                dict_jmx[topic]['totalProduceRequests'] = totalProduce['value']
-            if produceMsg['status'] == 200:
-                dict_jmx[topic]['produceMessageConversions'] = produceMsg['value']
-            if failedProduce['status'] == 200:
-                dict_jmx[topic]['failedProduceRequests'] = failedProduce['value']
-            if fetchMsg['status'] == 200:
-                dict_jmx[topic]['fetchMessageConversions'] = fetchMsg['value']
-            if failedFetch['status'] == 200:
-                dict_jmx[topic]['failedFetchRequests'] = failedFetch['value']
-            if bytesReject['status'] == 200:
-                dict_jmx[topic]['bytesRejected'] = bytesReject['value']
+            if flag == "topic":
+                dict_topic = {}
+                msgIn = jolokiaclient.request(type='read', mbean='kafka.server:name=MessagesInPerSec,topic=%s,type=BrokerTopicMetrics'%topic, attribute='Count')
+                bytesOut = jolokiaclient.request(type='read', mbean='kafka.server:name=BytesOutPerSec,topic=%s,type=BrokerTopicMetrics'%topic, attribute='Count')
+                bytesIn = jolokiaclient.request(type='read', mbean='kafka.server:name=BytesInPerSec,topic=%s,type=BrokerTopicMetrics'%topic, attribute='Count')
+                totalFetch = jolokiaclient.request(type='read', mbean='kafka.server:name=TotalFetchRequestsPerSec,topic=%s,type=BrokerTopicMetrics'%topic, attribute='Count')
+                totalProduce = jolokiaclient.request(type='read', mbean='kafka.server:name=TotalProduceRequestsPerSec,topic=%s,type=BrokerTopicMetrics'%topic, attribute='Count')
+                produceMsg = jolokiaclient.request(type='read', mbean='kafka.server:name=ProduceMessageConversionsPerSec,topic=%s,type=BrokerTopicMetrics'%topic, attribute='Count')
+                failedProduce = jolokiaclient.request(type='read', mbean='kafka.server:name=FailedProduceRequestsPerSec,topic=%s,type=BrokerTopicMetrics'%topic, attribute='Count')
+                fetchMsg = jolokiaclient.request(type='read', mbean='kafka.server:name=FetchMessageConversionsPerSec,topic=%s,type=BrokerTopicMetrics'%topic, attribute='Count')
+                failedFetch = jolokiaclient.request(type='read', mbean='kafka.server:name=FailedFetchRequestsPerSec,topic=%s,type=BrokerTopicMetrics'%topic, attribute='Count')
+                bytesReject = jolokiaclient.request(type='read', mbean='kafka.server:name=BytesRejectedPerSec,topic=%s,type=BrokerTopicMetrics'%topic, attribute='Count')
+                if msgIn['status'] == 200:
+                    dict_topic['messagesIn'] = msgIn['value']
+                if bytesOut['status'] == 200:
+                    dict_topic['bytesOut'] = bytesOut['value']
+                if bytesIn['status'] == 200:
+                    dict_topic['bytesIn'] = bytesIn['value']
+                if totalFetch['status'] == 200:
+                    dict_topic['totalFetchRequests'] = totalFetch['value']
+                if totalProduce['status'] == 200:
+                    dict_topic['totalProduceRequests'] = totalProduce['value']
+                if produceMsg['status'] == 200:
+                    dict_topic['produceMessageConversions'] = produceMsg['value']
+                if failedProduce['status'] == 200:
+                    dict_topic['failedProduceRequests'] = failedProduce['value']
+                if fetchMsg['status'] == 200:
+                    dict_topic['fetchMessageConversions'] = fetchMsg['value']
+                if failedFetch['status'] == 200:
+                    dict_topic['failedFetchRequests'] = failedFetch['value']
+                if bytesReject['status'] == 200:
+                    dict_topic['bytesRejected'] = bytesReject['value']
+                if dict_topic:
+                    dict_topic['_topicName'] = topic
+                    dict_topic['partitionCount'] = partitions
+                    dict_jmx[topic] = {}
+                    dict_jmx[topic].update(dict_topic)
+            else:
+                for partition in range(0, partitions):
+                    dict_parti = {}
+                    numLogSegments = jolokiaclient.request(type='read', mbean='kafka.log:name=NumLogSegments,partition=%s,topic=%s,type=Log'%(partition, topic), attribute='Value')
+                    logSize = jolokiaclient.request(type='read', mbean='kafka.log:name=Size,partition=%s,topic=%s,type=Log'%(partition, topic), attribute='Value')
+                    if numLogSegments['status'] == 200:
+                        dict_parti['_topicName'] = topic
+                        dict_parti['_partitionNum'] = partition
+                        dict_parti['partition_'+str(partition)+'_LogSegments'] = numLogSegments['value']
+                        try:
+                            dict_parti['partition_'+str(partition)+'_LogSize'] = round(logSize['value'] / 1024.0/1024.0, 2)
+                        except:
+                            dict_parti['partition_'+str(partition)+'_LogSize'] = 0
+                    if dict_parti:
+                        parti_list.append(dict_parti)
 
-            for partition in range(0, partitions):
-                numLogSegments = jolokiaclient.request(type='read', mbean='kafka.log:name=NumLogSegments,partition=%s,topic=%s,type=Log'%(partition, topic), attribute='Value')
-                logSize = jolokiaclient.request(type='read', mbean='kafka.log:name=Size,partition=%s,topic=%s,type=Log'%(partition, topic), attribute='Value')
-                if numLogSegments['status'] == 200:
-                    dict_jmx[topic]['partition_'+str(partition)+'_LogSegments'] = numLogSegments['value']
-                if logSize['status'] == 200:
-                    dict_jmx[topic]['partition_'+str(partition)+'_LogSize'] = round(logSize['value'] / 1024.0/1024.0, 2)
+        if flag == "partition":
+            dict_jmx["partitionStats"] = parti_list
 
     def add_common_params(self, doc, dict_jmx):
         """Adds TIMESTAMP, PLUGIN, PLUGITYPE to dictionary."""
@@ -359,6 +367,18 @@ class JmxStat(object):
                 self.prev_topic_data[pid] = {}
                 self.prev_topic_data[pid][topic] = topic_info
 
+    def add_rate_dispatch_kafka(self, pid, doc, dict_jmx):
+        if pid in self.prev_data:
+            self.add_rate(pid, dict_jmx)
+            self.dispatch_data(doc, deepcopy(dict_jmx))
+        self.prev_data[pid] = dict_jmx
+
+    def dispatch_partitions(self, doc, dict_jmx):
+        parti_list = dict_jmx["partitionStats"]
+        for parti in parti_list:
+            self.add_common_params(doc, parti)
+            self.dispatch_data(doc, parti)
+
     def get_pid_jmx_stats(self, pid, port, output):
         """Call get_jmx_parameters function for each doc_type and add dict to queue"""
         for doc in KAFKA_DOCS:
@@ -369,7 +389,7 @@ class JmxStat(object):
                     raise Exception("No data found")
 
                 collectd.info("Plugin kafka_topic: Added doctype %s of pid %s information successfully" % (doc, pid))
-                if doc == "topicStats":
+                if doc in ["topicStats", "partitionStats"]:
                     output.put((pid, doc, dict_jmx))
                     continue
 
@@ -416,11 +436,10 @@ class JmxStat(object):
 
                 if doc_name == "topicStats":
                     self.add_rate_dispatch_topic(pid, doc_name, doc_result)
+                elif doc_name == "kafkaStats":
+                    self.add_rate_dispatch_kafka(pid, doc_name, doc_result)
                 else:
-                    if pid in self.prev_data:
-                        self.add_rate(pid, doc_result)
-                        self.dispatch_data(doc_name, deepcopy(doc_result))
-                    self.prev_data[pid] = doc_result
+                    self.dispatch_partitions(doc_name, doc_result)
         output.close()
 
     def dispatch_data(self, doc_name, result):
@@ -434,8 +453,7 @@ class JmxStat(object):
                     pass
                     #collectd.error("Key %s deletion error in topicStats doctype for topic %s: %s" % (item, result['_topicName'], str(err)))
             collectd.info("Plugin kafka_topic: Succesfully sent topicStats: %s" % result['_topicName'])
-            utils.dispatch(result)
-        else:
+        elif doc_name == "kafkaStats":
             for item in ["messagesInPerSec", "bytesInPerSec", "bytesOutPerSec", "isrExpandsPerSec", "isrShrinksPerSec", "leaderElectionPerSec",\
                              "uncleanLeaderElectionPerSec", "producerRequestsPerSec", "fetchConsumerRequestsPerSec", "fetchFollowerRequestsPerSec"]:
                 try:
@@ -446,7 +464,9 @@ class JmxStat(object):
 
             collectd.info("Plugin kafka_topic: Succesfully sent doctype %s to collectd." % doc_name)
             collectd.debug("Plugin kafka_topic: Values dispatched =%s" % json.dumps(result))
-            utils.dispatch(result)
+        else:
+            collectd.info("Plugin kafka_topic: Succesfully sent topic %s of partitionStats: %s." % (result['_topicName'], result['_partitionNum']))
+        utils.dispatch(result)
 
     def read_temp(self):
         """Collectd first calls register_read. At that time default interval is taken,
