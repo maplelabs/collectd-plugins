@@ -333,11 +333,11 @@ class JmxStat(object):
                     if numLogSegments['status'] == 200:
                         dict_parti['_topicName'] = topic
                         dict_parti['_partitionNum'] = partition
-                        dict_parti['partition_'+str(partition)+'_LogSegments'] = numLogSegments['value']
+                        dict_parti['partitionLogSegments'] = numLogSegments['value']
                         try:
-                            dict_parti['partition_'+str(partition)+'_LogSize'] = round(logSize['value'] / 1024.0/1024.0, 2)
+                            dict_parti['partitionLogSize'] = round(logSize['value'] / 1024.0/1024.0, 2)
                         except:
-                            dict_parti['partition_'+str(partition)+'_LogSize'] = 0
+                            dict_parti['partitionLogSize'] = 0
                     if dict_parti:
                         parti_list.append(dict_parti)
 
