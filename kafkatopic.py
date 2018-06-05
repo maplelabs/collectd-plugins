@@ -146,6 +146,18 @@ class JmxStat(object):
         elif doc == "partitionStats":
             self.add_topic_parameters(jolokiaclient, dict_jmx, "partition")
 
+    def add_default_rate_value(self, dict_jmx, doctype):
+        """Add default value to rate key based on type"""
+        if doctype == "kafka":
+            keylist = ["messagesIn", "bytesIn", "bytesOut", "isrExpands", "isrShrinks", "leaderElection", \
+                       "uncleanLeaderElections", "producerRequests", "fetchConsumerRequests", "fetchFollowerRequests"]
+        else:
+            keylist = ["messagesInRate", "bytesOutRate", "bytesInRate", "totalFetchRequestsRate", "totalProduceRequestsRate", \
+                       "produceMessageConversionsRate", "failedProduceRequestsRate", "fetchMessageConversionsRate", "failedFetchRequestsRate",\
+                       "bytesRejectedRate"]
+        for key in keylist:
+            dict_jmx[key] = 0
+
     def add_rate(self, pid, dict_jmx):
         """Rate only for kafka jmx metrics"""
         rate = utils.get_rate("messagesInPerSec", dict_jmx, self.prev_data[pid])
@@ -361,17 +373,23 @@ class JmxStat(object):
             if pid in self.prev_topic_data:
                 if topic in self.prev_topic_data[pid]:
                     self.add_topic_rate(pid, topic, topic_info)
-                    self.dispatch_data(doc, deepcopy(topic_info))
-                self.prev_topic_data[pid][topic] = topic_info
+                else:
+                    self.add_default_rate_value(topic_info, "topic")
             else:
                 self.prev_topic_data[pid] = {}
-                self.prev_topic_data[pid][topic] = topic_info
+                self.add_default_rate_value(topic_info, "topic")
+
+            self.prev_topic_data[pid][topic] = topic_info
+            self.dispatch_data(doc, deepcopy(topic_info))
 
     def add_rate_dispatch_kafka(self, pid, doc, dict_jmx):
         if pid in self.prev_data:
             self.add_rate(pid, dict_jmx)
-            self.dispatch_data(doc, deepcopy(dict_jmx))
+        else:
+            self.add_default_rate_value(dict_jmx, "kafka")
+
         self.prev_data[pid] = dict_jmx
+        self.dispatch_data(doc, deepcopy(dict_jmx))
 
     def dispatch_partitions(self, doc, dict_jmx):
         parti_list = dict_jmx["partitionStats"]
