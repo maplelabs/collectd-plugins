@@ -158,69 +158,94 @@ class JmxStat(object):
         for key in keylist:
             dict_jmx[key] = 0
 
+    def get_rate(self, key, curr_data, prev_data):
+        """Calculate and returns rate. Rate=(current_value-prev_value)/time."""
+        rate = NAN
+        if not prev_data:
+            return rate
+
+        if key not in prev_data:
+            collectd.error("%s key not in previous data. Shouldn't happen." % key)
+            return rate
+
+        if TIMESTAMP not in curr_data or TIMESTAMP not in prev_data:
+            collectd.error("%s key not in previous data. Shouldn't happen." % key)
+            return rate
+
+        curr_time = curr_data[TIMESTAMP]
+        prev_time = prev_data[TIMESTAMP]
+
+        if curr_time <= prev_time:
+            collectd.error("Current data time: %s is less than previous data time: %s. "
+                           "Shouldn't happen." % (curr_time, prev_time))
+            return rate
+
+        rate = (curr_data[key] - prev_data[key]) / float(self.interval)
+        return rate
+
     def add_rate(self, pid, dict_jmx):
         """Rate only for kafka jmx metrics"""
-        rate = utils.get_rate("messagesInPerSec", dict_jmx, self.prev_data[pid])
+        rate = self.get_rate("messagesInPerSec", dict_jmx, self.prev_data[pid])
         if rate != NAN:
             dict_jmx["messagesIn"] = round(rate, FLOATING_FACTOR)
-        rate = utils.get_rate("bytesInPerSec", dict_jmx, self.prev_data[pid])
+        rate = self.get_rate("bytesInPerSec", dict_jmx, self.prev_data[pid])
         if rate != NAN:
             dict_jmx["bytesIn"] = round(rate, FLOATING_FACTOR)
-        rate = utils.get_rate("bytesOutPerSec", dict_jmx, self.prev_data[pid])
+        rate = self.get_rate("bytesOutPerSec", dict_jmx, self.prev_data[pid])
         if rate != NAN:
             dict_jmx["bytesOut"] = round(rate, FLOATING_FACTOR)
-        rate = utils.get_rate("isrExpandsPerSec", dict_jmx, self.prev_data[pid])
+        rate = self.get_rate("isrExpandsPerSec", dict_jmx, self.prev_data[pid])
         if rate != NAN:
             dict_jmx["isrExpands"] = round(rate, FLOATING_FACTOR)
-        rate = utils.get_rate("isrShrinksPerSec", dict_jmx, self.prev_data[pid])
+        rate = self.get_rate("isrShrinksPerSec", dict_jmx, self.prev_data[pid])
         if rate != NAN:
             dict_jmx["isrShrinks"] = round(rate, FLOATING_FACTOR)
-        rate = utils.get_rate("leaderElectionPerSec", dict_jmx, self.prev_data[pid])
+        rate = self.get_rate("leaderElectionPerSec", dict_jmx, self.prev_data[pid])
         if rate != NAN:
             dict_jmx["leaderElection"] = round(rate, FLOATING_FACTOR)
-        rate = utils.get_rate("uncleanLeaderElectionPerSec", dict_jmx, self.prev_data[pid])
+        rate = self.get_rate("uncleanLeaderElectionPerSec", dict_jmx, self.prev_data[pid])
         if rate != NAN:
             dict_jmx["uncleanLeaderElections"] = round(rate, FLOATING_FACTOR)
-        rate = utils.get_rate("producerRequestsPerSec", dict_jmx, self.prev_data[pid])
+        rate = self.get_rate("producerRequestsPerSec", dict_jmx, self.prev_data[pid])
         if rate != NAN:
             dict_jmx["producerRequests"] = round(rate, FLOATING_FACTOR)
-        rate = utils.get_rate("fetchConsumerRequestsPerSec", dict_jmx, self.prev_data[pid])
+        rate = self.get_rate("fetchConsumerRequestsPerSec", dict_jmx, self.prev_data[pid])
         if rate != NAN:
             dict_jmx["fetchConsumerRequests"] = round(rate, FLOATING_FACTOR)
-        rate = utils.get_rate("fetchFollowerRequestsPerSec", dict_jmx, self.prev_data[pid])
+        rate = self.get_rate("fetchFollowerRequestsPerSec", dict_jmx, self.prev_data[pid])
         if rate != NAN:
             dict_jmx["fetchFollowerRequests"] = round(rate, FLOATING_FACTOR)
 
     def add_topic_rate(self, pid, topic_name, topic_info):
         """Rate only for kafka topic metrics"""
-        rate = utils.get_rate('messagesIn', topic_info, self.prev_topic_data[pid][topic_name])
+        rate = self.get_rate('messagesIn', topic_info, self.prev_topic_data[pid][topic_name])
         if rate != NAN:
             topic_info['messagesInRate'] = round(rate, FLOATING_FACTOR)
-        rate = utils.get_rate('bytesOut', topic_info, self.prev_topic_data[pid][topic_name])
+        rate = self.get_rate('bytesOut', topic_info, self.prev_topic_data[pid][topic_name])
         if rate != NAN:
             topic_info['bytesOutRate'] = round(rate, FLOATING_FACTOR)
-        rate = utils.get_rate('bytesIn', topic_info, self.prev_topic_data[pid][topic_name])
+        rate = self.get_rate('bytesIn', topic_info, self.prev_topic_data[pid][topic_name])
         if rate != NAN:
             topic_info['bytesInRate'] = round(rate, FLOATING_FACTOR)
-        rate = utils.get_rate('totalFetchRequests', topic_info, self.prev_topic_data[pid][topic_name])
+        rate = self.get_rate('totalFetchRequests', topic_info, self.prev_topic_data[pid][topic_name])
         if rate != NAN:
             topic_info['totalFetchRequestsRate'] = round(rate, FLOATING_FACTOR)
-        rate = utils.get_rate('totalProduceRequests', topic_info, self.prev_topic_data[pid][topic_name])
+        rate = self.get_rate('totalProduceRequests', topic_info, self.prev_topic_data[pid][topic_name])
         if rate != NAN:
             topic_info['totalProduceRequestsRate'] = round(rate, FLOATING_FACTOR)
-        rate = utils.get_rate('produceMessageConversions', topic_info, self.prev_topic_data[pid][topic_name])
+        rate = self.get_rate('produceMessageConversions', topic_info, self.prev_topic_data[pid][topic_name])
         if rate != NAN:
             topic_info['produceMessageConversionsRate'] = round(rate, FLOATING_FACTOR)
-        rate = utils.get_rate('failedProduceRequests', topic_info, self.prev_topic_data[pid][topic_name])
+        rate = self.get_rate('failedProduceRequests', topic_info, self.prev_topic_data[pid][topic_name])
         if rate != NAN:
             topic_info['failedProduceRequestsRate'] = round(rate, FLOATING_FACTOR)
-        rate = utils.get_rate('fetchMessageConversions', topic_info, self.prev_topic_data[pid][topic_name])
+        rate = self.get_rate('fetchMessageConversions', topic_info, self.prev_topic_data[pid][topic_name])
         if rate != NAN:
             topic_info['fetchMessageConversionsRate'] = round(rate, FLOATING_FACTOR)
-        rate = utils.get_rate('failedFetchRequests', topic_info, self.prev_topic_data[pid][topic_name])
+        rate = self.get_rate('failedFetchRequests', topic_info, self.prev_topic_data[pid][topic_name])
         if rate != NAN:
             topic_info['failedFetchRequestsRate'] = round(rate, FLOATING_FACTOR)
-        rate = utils.get_rate('bytesRejected', topic_info, self.prev_topic_data[pid][topic_name])
+        rate = self.get_rate('bytesRejected', topic_info, self.prev_topic_data[pid][topic_name])
         if rate != NAN:
             topic_info['bytesRejectedRate'] = round(rate, FLOATING_FACTOR)
 
