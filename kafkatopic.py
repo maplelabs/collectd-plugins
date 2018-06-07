@@ -275,9 +275,12 @@ class JmxStat(object):
         jolokiaclient.add_request(type='read', mbean='kafka.network:name=RequestsPerSec,request=FetchConsumer,type=RequestMetrics', attribute='Count')
         jolokiaclient.add_request(type='read', mbean='kafka.network:name=RequestsPerSec,request=FetchFollower,type=RequestMetrics', attribute='Count')
         jolokiaclient.add_request(type='read', mbean='kafka.network:name=NetworkProcessorAvgIdlePercent,type=SocketServer', attribute='Value')
-        jolokiaclient.add_request(type='read', mbean='kafka.network:type=RequestMetrics,name=TotalTimeMs,request=FetchFollower', attribute='Mean,Max,Min')
-        jolokiaclient.add_request(type='read', mbean='kafka.network:type=RequestMetrics,name=TotalTimeMs,request=FetchConsumer', attribute='Mean,Max,Min')
-        jolokiaclient.add_request(type='read', mbean='kafka.network:type=RequestMetrics,name=TotalTimeMs,request=Produce', attribute='Mean,Max,Min')
+        jolokiaclient.add_request(type='read', mbean='kafka.network:type=RequestMetrics,name=TotalTimeMs,request=FetchFollower', attribute='Mean')
+        jolokiaclient.add_request(type='read', mbean='kafka.network:type=RequestMetrics,name=TotalTimeMs,request=FetchConsumer', attribute='Mean')
+        jolokiaclient.add_request(type='read', mbean='kafka.network:type=RequestMetrics,name=TotalTimeMs,request=Produce', attribute='Mean')
+        jolokiaclient.add_request(type='read', mbean='kafka.network:name=ResponseSendTimeMs,request=FetchFollower,type=RequestMetrics', attribute='Mean')
+        jolokiaclient.add_request(type='read', mbean='kafka.network:name=ResponseSendTimeMs,request=FetchConsumer,type=RequestMetrics', attribute='Mean')
+        jolokiaclient.add_request(type='read', mbean='kafka.network:name=ResponseSendTimeMs,request=Produce,type=RequestMetrics', attribute='Mean')
         jolokiaclient.add_request(type='read', mbean='kafka.server:name=BrokerState,type=KafkaServer', attribute='Value')
         bulkdata = jolokiaclient.getRequests()
         dict_jmx['underReplicatedPartitions'] = self.get_value(bulkdata[0], 'value')
@@ -296,17 +299,14 @@ class JmxStat(object):
         dict_jmx['fetchConsumerRequestsPerSec'] = self.get_value(bulkdata[13], 'value')
         dict_jmx['fetchFollowerRequestsPerSec'] = self.get_value(bulkdata[14], 'value')
         dict_jmx['networkProcessorAvgIdlePercent'] = round((self.get_value(bulkdata[15], 'value')), 2)
-        dict_jmx['followerTimeMsMax'] = self.get_value(bulkdata[16], 'value', 'Max')
-        dict_jmx['followerTimeMsMin'] = self.get_value(bulkdata[16], 'value', 'Min')
-        dict_jmx['followerTimeMsMean'] = round(self.get_value(bulkdata[16], 'value', 'Mean'), 2)
-        dict_jmx['consumerTimeMsMax'] = self.get_value(bulkdata[17], 'value', 'Max')
-        dict_jmx['consumerTimeMsMin'] = self.get_value(bulkdata[17], 'value', 'Min')
-        dict_jmx['consumerTimeMsMean'] = round(self.get_value(bulkdata[17], 'value', 'Mean'), 2)
-        dict_jmx['producerTimeMsMax'] = self.get_value(bulkdata[18], 'value', 'Max')
-        dict_jmx['producerTimeMsMin'] = self.get_value(bulkdata[18], 'value', 'Min')
-        dict_jmx['producerTimeMsMean'] = round(self.get_value(bulkdata[18], 'value', 'Mean'), 2)
-        if bulkdata[19]['status'] == 200:
-            dict_jmx['brokerState'] = BROKER_STATES[bulkdata[19]['value']]
+        dict_jmx['followerRequestTime'] = round(self.get_value(bulkdata[16], 'value'), 2)
+        dict_jmx['consumerRequestTime'] = round(self.get_value(bulkdata[17], 'value'), 2)
+        dict_jmx['producerRequestTime'] = round(self.get_value(bulkdata[18], 'value'), 2)
+        dict_jmx['followerResponseTime'] = round(self.get_value(bulkdata[19], 'value'), 2)
+        dict_jmx['consumerResponseTime'] = round(self.get_value(bulkdata[20], 'value'), 2)
+        dict_jmx['producerResponseTime'] = round(self.get_value(bulkdata[21], 'value'), 2)
+        if bulkdata[22]['status'] == 200:
+            dict_jmx['brokerState'] = BROKER_STATES[bulkdata[22]['value']]
         else:
             dict_jmx['brokerState'] = "NotAvailable"
 
