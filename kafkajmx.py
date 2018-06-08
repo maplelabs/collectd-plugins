@@ -18,11 +18,13 @@ from contextlib import closing
 import utils
 from constants import *
 
-GENERIC_DOCS = ["memoryPoolStats", "memoryStats", "threadStats", "gcStats", "classLoadingStats",
-        "compilationStats", "nioStats", "operatingSysStats"]
+#GENERIC_DOCS = ["memoryPoolStats", "memoryStats", "threadStats", "gcStats", "classLoadingStats",
+#        "compilationStats", "nioStats", "operatingSysStats"]
+GENERIC_DOCS = ["jmxStats"]
 
 JOLOKIA_PATH = "/opt/collectd/plugins/"
 DEFAULT_GC = ['G1 Old Generation', 'G1 Young Generation']
+DEFAULT_MP = ['G1 Eden Space', 'G1 Old Gen', 'G1 Survivor Space', 'Metaspace', 'Code Cache', 'Compressed Class Space']
 
 class JmxStat(object):
     """Plugin object will be created only once and collects JMX statistics info every interval."""
@@ -146,6 +148,64 @@ class JmxStat(object):
             self.add_nio_parameters(jolokiaclient, dict_jmx)
         elif doc == "operatingSysStats":
             self.add_operating_system_parameters(jolokiaclient, dict_jmx)
+        elif doc == "jmxStats":
+            self.add_jmxstat_parameters(jolokiaclient, dict_jmx)
+
+    def add_jmxstat_parameters(self, jolokiaclient, dict_jmx):
+        """Add specific jmxstats parameter"""
+        #classloading Stats
+        classloading = jolokiaclient.request(type='read', mbean='java.lang:type=ClassLoading')
+        if classloading['status'] == 200:
+            dict_jmx['unloadedClass'] = classloading['value']['UnloadedClassCount']
+            dict_jmx['loadedClass'] = classloading['value']['LoadedClassCount']
+
+        #threading Stats
+        thread_json = jolokiaclient.request(type='read', mbean='java.lang:type=Threading')
+        if thread_json['status'] == 200:
+            dict_jmx['threads'] = thread_json['value']['ThreadCount']
+
+        #memory Stats
+        memory_json = jolokiaclient.request(type='read', mbean='java.lang:type=Memory')
+        if memory_json['status'] == 200:
+            heap = memory_json['value']['HeapMemoryUsage']
+            self.handle_neg_bytes(heap['init'], 'heapMemoryUsageInit', dict_jmx)
+            dict_jmx['heapMemoryUsageUsed'] = round(heap['used'] / 1024.0/ 1024.0, 2)
+            dict_jmx['heapMemoryUsageCommitted'] = round(heap['committed'] / 1024.0 /1024.0, 2)
+            non_heap = memory_json['value']['NonHeapMemoryUsage']
+            self.handle_neg_bytes(non_heap['init'], 'nonHeapMemoryUsageInit', dict_jmx)
+            dict_jmx['nonHeapMemoryUsageUsed'] = round(non_heap['used'] / 1024.0/ 1024.0, 2)
+            dict_jmx['nonHeapMemoryUsageCommitted'] = round(non_heap['committed'] / 1024.0/ 1024.0, 2)
+
+        #initailize default values
+        param_list = ['G1OldGenerationCollectionTime', 'G1OldGenerationCollectionCount', 'G1YoungGenerationCollectionTime',\
+                      'G1YoungGenerationCollectionCount', 'G1OldGenUsageUsed', 'G1SurvivorSpaceUsageUsed', 'MetaspaceUsageUsed',\
+                      'CodeCacheUsageUsed', 'CompressedClassSpaceUsageUsed', 'G1EdenSpaceUsageUsed']
+        for param in param_list:
+            dict_jmx[param] = 0
+
+        #gc Stats
+        gc_names = self.get_gc_names(jolokiaclient)
+        for gc_name in gc_names:
+            str_mbean = 'java.lang:type=GarbageCollector,name='+gc_name
+            valid = jolokiaclient.request(type='read', mbean=str_mbean, attribute='Valid')
+            if valid['status'] == 200 and valid['value'] == True:
+                str_attribute = 'CollectionTime,CollectionCount'
+                gc_values = jolokiaclient.request(type='read', mbean=str_mbean, attribute=str_attribute)
+                gc_name_no_spaces = ''.join(gc_name.split())
+                if gc_values['status'] == 200:
+                    dict_jmx[gc_name_no_spaces+'CollectionTime'] = round(gc_values['value']['CollectionTime'] * 0.001, 2)
+                    dict_jmx[gc_name_no_spaces+'CollectionCount'] = gc_values['value']['CollectionCount']
+
+        #memoryPool Stats
+        mp_names = self.get_memory_pool_names(jolokiaclient)
+        for pool_name in mp_names:
+            str_mbean = 'java.lang:type=MemoryPool,name='+pool_name
+            valid = jolokiaclient.request(type='read', mbean=str_mbean, attribute='Valid')
+            if valid['status'] == 200 and valid['value'] == True:
+                mp_values = jolokiaclient.request(type='read', mbean=str_mbean, attribute='Usage')
+                pool_name_no_spaces = ''.join(pool_name.split())
+                if mp_values['status'] == 200:
+                    dict_jmx[pool_name_no_spaces+'UsageUsed'] = round(mp_values['value']['used'] / 1024.0/ 1024.0, 2)
 
     def add_operating_system_parameters(self, jolokiaclient, dict_jmx):
         """Add operating system related jmx stats"""
@@ -177,8 +237,6 @@ class JmxStat(object):
         if nio['status'] == 200:
             for _, value in nio['value'].items():
                 bufferpool_names.append(value['Name'])
-        if not bufferpool_names:
-            return
 
         for poolname in bufferpool_names:
             str_mbean = 'java.nio:type=BufferPool,name='+poolname
@@ -203,6 +261,29 @@ class JmxStat(object):
             dict_jmx['loadedClass'] = classloading['value']['LoadedClassCount']
             dict_jmx['totalLoadedClass'] = classloading['value']['TotalLoadedClassCount']
 
+    def get_gc_names(self, jolokiaclient):
+        gc_json = jolokiaclient.request(type='read', mbean='java.lang:type=GarbageCollector,*', attribute='Name')
+        gc_names = []
+        if gc_json['status'] == 200:
+            for _, value in gc_json['value'].items():
+                if value['Name'] in DEFAULT_GC:
+                    gc_names.append(value['Name'])
+                else:
+                    collectd.error("Plugin kafka_jmx: not supported for GC %s" % value['Name'])
+        return gc_names
+
+    def get_memory_pool_names(self, jolokiaclient):
+        """Get memory pool names of jvm process"""
+        mempool_json = jolokiaclient.request(type='read', mbean='java.lang:type=MemoryPool,*', attribute='Name')
+        mempool_names = []
+        if mempool_json['status'] == 200:
+            for _, value in mempool_json['value'].items():
+                if value['Name'] in DEFAULT_MP:
+                    mempool_names.append(value['Name'])
+                else:
+                    collectd.error("Plugin kafka_jmx: not supported for memory pool %s" % value['Name'])
+        return mempool_names
+
     def add_gc_parameters(self, jolokiaclient, dict_jmx):
         """Add garbage collector related jmx stats"""
         def memory_gc_usage(self, mempool_gc, key, gc_name, dict_jmx):
@@ -214,17 +295,7 @@ class JmxStat(object):
                     dict_jmx[gc_name+key+mp_name+'Used'] = round(values['used'] /1024.0 /1024.0, 2)
                     dict_jmx[gc_name+key+mp_name+'Committed'] = round(values['committed'] /1024.0 /1024.0, 2)
 
-        gc_json = jolokiaclient.request(type='read', mbean='java.lang:type=GarbageCollector,*', attribute='Name')
-        if gc_json['status'] == 200:
-            gc_names = []
-            for _, value in gc_json['value'].items():
-                if value['Name'] in DEFAULT_GC:
-                    gc_names.append(value['Name'])
-                else:
-                    collectd.error("Plugin kafka_jmx: not supported for GC %s" % value['Name'])
-        if not gc_names:
-            return
-
+        gc_names = self.get_gc_names(jolokiaclient)
         for gc_name in gc_names:
             str_mbean = 'java.lang:type=GarbageCollector,name='+gc_name
             if_valid = jolokiaclient.request(type='read', mbean=str_mbean, attribute='Valid')
@@ -275,21 +346,9 @@ class JmxStat(object):
             dict_jmx['nonHeapMemoryUsageCommitted'] = round(non_heap['committed'] / 1024.0/ 1024.0, 2)
             dict_jmx['objectPendingFinalization'] = memory_json['value']['ObjectPendingFinalizationCount']
 
-    def get_memory_pool_names(self, jolokiaclient):
-        """Get memory pool names of jvm process"""
-        mempool_json = jolokiaclient.request(type='read', mbean='java.lang:type=MemoryPool,*', attribute='Name')
-        mempool_names = []
-        if mempool_json['status'] == 200:
-            for _, value in mempool_json['value'].items():
-                mempool_names.append(value['Name'])
-        return mempool_names
-
     def add_memory_pool_parameters(self, jolokiaclient, dict_jmx):
         """Add memory pool related jmx stats"""
         mp_names = self.get_memory_pool_names(jolokiaclient)
-        if not mp_names:
-            return
-
         for poll_name in mp_names:
             str_mbean = 'java.lang:type=MemoryPool,name='+poll_name
             if_valid = jolokiaclient.request(type='read', mbean=str_mbean, attribute='Valid')
@@ -357,7 +416,6 @@ class JmxStat(object):
                     raise Exception("No data found")
 
                 collectd.info("Plugin kafka_jmx: Added doctype %s of pid %s information successfully" % (doc, pid))
-                dict_jmx['_processPid'] = pid
                 self.add_common_params(doc, dict_jmx)
                 output.put((doc, dict_jmx))
             except Exception as err:
