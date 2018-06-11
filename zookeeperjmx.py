@@ -14,16 +14,18 @@ import Queue
 import multiprocessing
 from pyjolokia import Jolokia
 from contextlib import closing
+from copy import deepcopy
 # user imports
 import utils
 from constants import *
 
 GENERIC_DOCS = ["memoryPoolStats", "memoryStats", "threadStats", "gcStats", "classLoadingStats",
         "compilationStats", "nioStats", "operatingSysStats"]
-ZOOK_DOCS = GENERIC_DOCS + ["zookeeperStats"]
+ZOOK_DOCS = ["jmxStats", "zookeeperStats"]
 
 JOLOKIA_PATH = "/opt/collectd/plugins/"
 DEFAULT_GC = ['G1 Old Generation', 'G1 Young Generation']
+DEFAULT_MP = ['G1 Eden Space', 'G1 Old Gen', 'G1 Survivor Space', 'Metaspace', 'Code Cache', 'Compressed Class Space']
 
 class JmxStat(object):
     """Plugin object will be created only once and collects JMX statistics info every interval."""
@@ -34,6 +36,7 @@ class JmxStat(object):
         self.listenerip = 'localhost'
         self.process = None
         self.port = None
+        self.prev_data = {}
 
     def config(self, cfg):
         """Initializes variables from conf files."""
@@ -155,6 +158,135 @@ class JmxStat(object):
             self.add_operating_system_parameters(jolokiaclient, dict_jmx)
         elif doc == "zookeeperStats":
             self.add_zookeeper_parameters(jolokiaclient, dict_jmx)
+        elif doc == "jmxStats":
+            self.add_jmxstats_parameters(jolokiaclient, dict_jmx)
+
+    def add_default_rate_value(self, dict_jmx):
+        """Add default value to rate key based on type"""
+        keylist = ["packetsReceivedRate", "packetsSentRate"]
+        for key in keylist:
+            dict_jmx[key] = 0
+
+    def get_rate(self, key, curr_data, prev_data):
+        """Calculate and returns rate. Rate=(current_value-prev_value)/time."""
+        rate = NAN
+        if not prev_data:
+            return rate
+
+        if key not in prev_data:
+            collectd.error("%s key not in previous data. Shouldn't happen." % key)
+            return rate
+
+        if TIMESTAMP not in curr_data or TIMESTAMP not in prev_data:
+            collectd.error("%s key not in previous data. Shouldn't happen." % key)
+            return rate
+
+        curr_time = curr_data[TIMESTAMP]
+        prev_time = prev_data[TIMESTAMP]
+        if curr_time <= prev_time:
+            collectd.error("Current data time: %s is less than previous data time: %s. "
+                           "Shouldn't happen." % (curr_time, prev_time))
+            return rate
+
+        rate = (curr_data[key] - prev_data[key]) / float(self.interval)
+        return rate
+
+    def add_rate(self, pid, dict_jmx):
+        """Rate only for zookeeper jmx metrics"""
+        rate = self.get_rate("packetsReceived", dict_jmx, self.prev_data[pid])
+        if rate != NAN:
+            dict_jmx["packetsReceivedRate"] = round(rate, FLOATING_FACTOR)
+        rate = self.get_rate("packetsSent", dict_jmx, self.prev_data[pid])
+        if rate != NAN:
+            dict_jmx["packetsSentRate"] = round(rate, FLOATING_FACTOR)
+
+    def add_rate_dispatch(self, pid, doc, dict_jmx):
+        """Add default for rate keys in first poll."""
+        if pid in self.prev_data:
+            self.add_rate(pid, dict_jmx)
+        else:
+            self.add_default_rate_value(dict_jmx)
+        self.prev_data[pid] = dict_jmx
+        self.dispatch_data(doc, deepcopy(dict_jmx))
+
+    def get_memory_pool_names(self, jolokiaclient):
+        """Get memory pool names of jvm process"""
+        mempool_json = jolokiaclient.request(type='read', mbean='java.lang:type=MemoryPool,*', attribute='Name')
+        mempool_names = []
+        if mempool_json['status'] == 200:
+            for _, value in mempool_json['value'].items():
+                if value['Name'] in DEFAULT_MP:
+                    mempool_names.append(value['Name'])
+                else:
+                    collectd.error("Plugin zookeeper_jmx: not supported for memory pool %s" % value['Name'])
+        return mempool_names
+
+    def get_gc_names(self, jolokiaclient):
+        gc_json = jolokiaclient.request(type='read', mbean='java.lang:type=GarbageCollector,*', attribute='Name')
+        gc_names = []
+        if gc_json['status'] == 200:
+            for _, value in gc_json['value'].items():
+                if value['Name'] in DEFAULT_GC:
+                    gc_names.append(value['Name'])
+                else:
+                    collectd.error("Plugin zookeeper_jmx: not supported for GC %s" % value['Name'])
+        return gc_names
+
+    def add_jmxstats_parameters(self, jolokiaclient, dict_jmx):
+        """Add specific jmxstats parameter"""
+        #classloading Stats
+        classloading = jolokiaclient.request(type='read', mbean='java.lang:type=ClassLoading')
+        if classloading['status'] == 200:
+            dict_jmx['unloadedClass'] = classloading['value']['UnloadedClassCount']
+            dict_jmx['loadedClass'] = classloading['value']['LoadedClassCount']
+
+        #threading Stats
+        thread_json = jolokiaclient.request(type='read', mbean='java.lang:type=Threading')
+        if thread_json['status'] == 200:
+            dict_jmx['threads'] = thread_json['value']['ThreadCount']
+
+        #memory Stats
+        memory_json = jolokiaclient.request(type='read', mbean='java.lang:type=Memory')
+        if memory_json['status'] == 200:
+            heap = memory_json['value']['HeapMemoryUsage']
+            self.handle_neg_bytes(heap['init'], 'heapMemoryUsageInit', dict_jmx)
+            dict_jmx['heapMemoryUsageUsed'] = round(heap['used'] / 1024.0/ 1024.0, 2)
+            dict_jmx['heapMemoryUsageCommitted'] = round(heap['committed'] / 1024.0 /1024.0, 2)
+            non_heap = memory_json['value']['NonHeapMemoryUsage']
+            self.handle_neg_bytes(non_heap['init'], 'nonHeapMemoryUsageInit', dict_jmx)
+            dict_jmx['nonHeapMemoryUsageUsed'] = round(non_heap['used'] / 1024.0/ 1024.0, 2)
+            dict_jmx['nonHeapMemoryUsageCommitted'] = round(non_heap['committed'] / 1024.0/ 1024.0, 2)
+
+        #initailize default values
+        param_list = ['G1OldGenerationCollectionTime', 'G1OldGenerationCollectionCount', 'G1YoungGenerationCollectionTime',\
+                      'G1YoungGenerationCollectionCount', 'G1OldGenUsageUsed', 'G1SurvivorSpaceUsageUsed', 'MetaspaceUsageUsed',\
+                      'CodeCacheUsageUsed', 'CompressedClassSpaceUsageUsed', 'G1EdenSpaceUsageUsed']
+        for param in param_list:
+            dict_jmx[param] = 0
+
+        #gc Stats
+        gc_names = self.get_gc_names(jolokiaclient)
+        for gc_name in gc_names:
+            str_mbean = 'java.lang:type=GarbageCollector,name='+gc_name
+            valid = jolokiaclient.request(type='read', mbean=str_mbean, attribute='Valid')
+            if valid['status'] == 200 and valid['value'] == True:
+                str_attribute = 'CollectionTime,CollectionCount'
+                gc_values = jolokiaclient.request(type='read', mbean=str_mbean, attribute=str_attribute)
+                gc_name_no_spaces = ''.join(gc_name.split())
+                if gc_values['status'] == 200:
+                    dict_jmx[gc_name_no_spaces+'CollectionTime'] = round(gc_values['value']['CollectionTime'] * 0.001, 2)
+                    dict_jmx[gc_name_no_spaces+'CollectionCount'] = gc_values['value']['CollectionCount']
+
+        #memoryPool Stats
+        mp_names = self.get_memory_pool_names(jolokiaclient)
+        for pool_name in mp_names:
+            str_mbean = 'java.lang:type=MemoryPool,name='+pool_name
+            valid = jolokiaclient.request(type='read', mbean=str_mbean, attribute='Valid')
+            if valid['status'] == 200 and valid['value'] == True:
+                mp_values = jolokiaclient.request(type='read', mbean=str_mbean, attribute='Usage')
+                pool_name_no_spaces = ''.join(pool_name.split())
+                if mp_values['status'] == 200:
+                    dict_jmx[pool_name_no_spaces+'UsageUsed'] = round(mp_values['value']['used'] / 1024.0/ 1024.0, 2)
 
     def add_zookeeper_parameters(self, jolokiaClient, dict_jmx):
         zookper = jolokiaClient.request(type='read', mbean='org.apache.ZooKeeperService:name0=StandaloneServer_port'+self.port)
@@ -212,8 +344,6 @@ class JmxStat(object):
         if nio['status'] == 200:
             for _, value in nio['value'].items():
                 bufferpool_names.append(value['Name'])
-        if not bufferpool_names:
-            return
 
         for poolname in bufferpool_names:
             str_mbean = 'java.nio:type=BufferPool,name='+poolname
@@ -249,17 +379,7 @@ class JmxStat(object):
                     dict_jmx[gc_name+key+mp_name+'Used'] = round(values['used'] /1024.0 /1024.0, 2)
                     dict_jmx[gc_name+key+mp_name+'Committed'] = round(values['committed'] /1024.0 /1024.0, 2)
 
-        gc_json = jolokiaclient.request(type='read', mbean='java.lang:type=GarbageCollector,*', attribute='Name')
-        if gc_json['status'] == 200:
-            gc_names = []
-            for _, value in gc_json['value'].items():
-                if value['Name'] in DEFAULT_GC:
-                    gc_names.append(value['Name'])
-                else:
-                    collectd.error("Plugin zookeeper_jmx: not supported for GC %s" % value['Name'])
-        if not gc_names:
-            return
-
+        gc_names = self.get_gc_names(jolokiaclient)
         for gc_name in gc_names:
             str_mbean = 'java.lang:type=GarbageCollector,name='+gc_name
             if_valid = jolokiaclient.request(type='read', mbean=str_mbean, attribute='Valid')
@@ -310,59 +430,47 @@ class JmxStat(object):
             dict_jmx['nonHeapMemoryUsageCommitted'] = round(non_heap['committed'] / 1024.0/ 1024.0, 2)
             dict_jmx['objectPendingFinalization'] = memory_json['value']['ObjectPendingFinalizationCount']
 
-    def get_memory_pool_names(self, jolokiaclient):
-        """Get memory pool names of jvm process"""
-        mempool_json = jolokiaclient.request(type='read', mbean='java.lang:type=MemoryPool,*', attribute='Name')
-        mempool_names = []
-        if mempool_json['status'] == 200:
-            for _, value in mempool_json['value'].items():
-                mempool_names.append(value['Name'])
-        return mempool_names
-
     def add_memory_pool_parameters(self, jolokiaclient, dict_jmx):
         """Add memory pool related jmx stats"""
         mp_names = self.get_memory_pool_names(jolokiaclient)
-        if not mp_names:
-            return
-
-        for poll_name in mp_names:
-            str_mbean = 'java.lang:type=MemoryPool,name='+poll_name
+        for pool_name in mp_names:
+            str_mbean = 'java.lang:type=MemoryPool,name='+pool_name
             if_valid = jolokiaclient.request(type='read', mbean=str_mbean, attribute='Valid')
             if if_valid['status'] == 200 and if_valid['value'] == True:
                 str_attribute = 'CollectionUsage,PeakUsage,Type,Usage,CollectionUsageThresholdSupported,UsageThresholdSupported'
                 mp_values = jolokiaclient.request(type='read', mbean=str_mbean, attribute=str_attribute)
-                poll_name_no_spaces = ''.join(poll_name.split())
+                pool_name_no_spaces = ''.join(pool_name.split())
                 if mp_values['status'] == 200:
                     coll_usage = mp_values['value']['CollectionUsage']
                     if coll_usage:
-                        self.handle_neg_bytes(coll_usage['max'], poll_name_no_spaces+'CollectionUsageMax', dict_jmx)
-                        self.handle_neg_bytes(coll_usage['init'], poll_name_no_spaces+'CollectionUsageInit', dict_jmx)
-                        dict_jmx[poll_name_no_spaces+'CollectionUsageUsed'] = round(coll_usage['used'] /1024.0/1024.0, 2)
-                        dict_jmx[poll_name_no_spaces+'CollectionUsageCommitted'] = round(coll_usage['committed'] /1024.0/1024.0, 2)
+                        self.handle_neg_bytes(coll_usage['max'], pool_name_no_spaces+'CollectionUsageMax', dict_jmx)
+                        self.handle_neg_bytes(coll_usage['init'], pool_name_no_spaces+'CollectionUsageInit', dict_jmx)
+                        dict_jmx[pool_name_no_spaces+'CollectionUsageUsed'] = round(coll_usage['used'] /1024.0/1024.0, 2)
+                        dict_jmx[pool_name_no_spaces+'CollectionUsageCommitted'] = round(coll_usage['committed'] /1024.0/1024.0, 2)
                     usage = mp_values['value']['Usage']
-                    self.handle_neg_bytes(usage['max'], poll_name_no_spaces+'UsageMax', dict_jmx)
-                    self.handle_neg_bytes(usage['init'], poll_name_no_spaces+'UsageInit', dict_jmx)
-                    dict_jmx[poll_name_no_spaces+'UsageUsed'] = round(usage['used'] / 1024.0/ 1024.0, 2)
-                    dict_jmx[poll_name_no_spaces+'UsageCommitted'] = round(usage['committed'] / 1024.0/ 1024.0, 2)
+                    self.handle_neg_bytes(usage['max'], pool_name_no_spaces+'UsageMax', dict_jmx)
+                    self.handle_neg_bytes(usage['init'], pool_name_no_spaces+'UsageInit', dict_jmx)
+                    dict_jmx[pool_name_no_spaces+'UsageUsed'] = round(usage['used'] / 1024.0/ 1024.0, 2)
+                    dict_jmx[pool_name_no_spaces+'UsageCommitted'] = round(usage['committed'] / 1024.0/ 1024.0, 2)
                     peak_usage = mp_values['value']['PeakUsage']
-                    self.handle_neg_bytes(peak_usage['max'], poll_name_no_spaces+'PeakUsageMax', dict_jmx)
-                    self.handle_neg_bytes(peak_usage['init'], poll_name_no_spaces+'PeakUsageInit', dict_jmx)
-                    dict_jmx[poll_name_no_spaces+'PeakUsageUsed'] = round(peak_usage['used'] / 1024.0/ 1024.0, 2)
-                    dict_jmx[poll_name_no_spaces+'PeakUsageCommitted'] = round(peak_usage['committed'] / 1024.0/ 1024.0, 2)
+                    self.handle_neg_bytes(peak_usage['max'], pool_name_no_spaces+'PeakUsageMax', dict_jmx)
+                    self.handle_neg_bytes(peak_usage['init'], pool_name_no_spaces+'PeakUsageInit', dict_jmx)
+                    dict_jmx[pool_name_no_spaces+'PeakUsageUsed'] = round(peak_usage['used'] / 1024.0/ 1024.0, 2)
+                    dict_jmx[pool_name_no_spaces+'PeakUsageCommitted'] = round(peak_usage['committed'] / 1024.0/ 1024.0, 2)
                     if mp_values['value']['CollectionUsageThresholdSupported']:
                         coll_attr = 'CollectionUsageThreshold,CollectionUsageThresholdCount,CollectionUsageThresholdExceeded'
                         coll_threshold = jolokiaclient.request(type='read', mbean=str_mbean, attribute=coll_attr)
                         if coll_threshold['status'] == 200:
-                            dict_jmx[poll_name_no_spaces+'CollectionUsageThreshold'] = round(coll_threshold['value']['CollectionUsageThreshold'] / 1024.0 / 1024.0, 2)
-                            dict_jmx[poll_name_no_spaces+'CollectionUsageThresholdCount'] = coll_threshold['value']['CollectionUsageThreshold']
-                            dict_jmx[poll_name_no_spaces+'CollectionUsageThresholdExceeded'] = coll_threshold['value']['CollectionUsageThresholdExceeded']
+                            dict_jmx[pool_name_no_spaces+'CollectionUsageThreshold'] = round(coll_threshold['value']['CollectionUsageThreshold'] / 1024.0 / 1024.0, 2)
+                            dict_jmx[pool_name_no_spaces+'CollectionUsageThresholdCount'] = coll_threshold['value']['CollectionUsageThreshold']
+                            dict_jmx[pool_name_no_spaces+'CollectionUsageThresholdExceeded'] = coll_threshold['value']['CollectionUsageThresholdExceeded']
                     if mp_values['value']['UsageThresholdSupported']:
                         usage_attr = 'UsageThreshold,UsageThresholdCount,UsageThresholdExceeded'
                         usage_threshold = jolokiaclient.request(type='read', mbean=str_mbean, attribute=usage_attr)
                         if usage_threshold['status'] == 200:
-                            dict_jmx[poll_name_no_spaces+'UsageThreshold'] = round(usage_threshold['value']['UsageThreshold'] / 1024.0 / 1024.0, 2)
-                            dict_jmx[poll_name_no_spaces+'UsageThresholdCount'] = usage_threshold['value']['UsageThreshold']
-                            dict_jmx[poll_name_no_spaces+'UsageThresholdExceeded'] = usage_threshold['value']['UsageThresholdExceeded']
+                            dict_jmx[pool_name_no_spaces+'UsageThreshold'] = round(usage_threshold['value']['UsageThreshold'] / 1024.0 / 1024.0, 2)
+                            dict_jmx[pool_name_no_spaces+'UsageThresholdCount'] = usage_threshold['value']['UsageThreshold']
+                            dict_jmx[pool_name_no_spaces+'UsageThresholdExceeded'] = usage_threshold['value']['UsageThresholdExceeded']
 
     def handle_neg_bytes(self, value, resultkey, dict_jmx):
         """Condition for byte keys whose return value may be -1 if not supported."""
@@ -378,7 +486,6 @@ class JmxStat(object):
         dict_jmx[PLUGIN] = ZOOK_JMX
         dict_jmx[PLUGINTYPE] = doc
         dict_jmx[ACTUALPLUGINTYPE] = ZOOK_JMX
-        dict_jmx[PROCESSNAME] = self.process
         dict_jmx[PLUGIN_INS] = doc
         collectd.info("Plugin zookeeper_jmx: Added common parameters successfully")
 
@@ -392,9 +499,8 @@ class JmxStat(object):
                     raise Exception("No data found")
 
                 collectd.info("Plugin zookeeper_jmx: Added doctype %s of pid %s information successfully" % (doc, pid))
-                dict_jmx['_processPid'] = pid
                 self.add_common_params(doc, dict_jmx)
-                output.put((doc, dict_jmx))
+                output.put((pid, doc, dict_jmx))
             except Exception as err:
                 collectd.error("Plugin zookeeper_jmx: Error in collecting stats of doctype %s: %s" % (doc, str(err)))
 
@@ -429,15 +535,23 @@ class JmxStat(object):
         for _ in procs:
             for doc in ZOOK_DOCS:
                 try:
-                    doc_name, doc_result = output.get_nowait()
+                    pid, doc_name, doc_result = output.get_nowait()
                 except Queue.Empty:
                     collectd.error("Failed to send one or more doctype document to collectd")
                     continue
-                self.dispatch_data(doc_name, doc_result)
+
+                if doc_name == "zookeeperStats":
+                    self.add_rate_dispatch(pid, doc_name, doc_result)
+                else:
+                    self.dispatch_data(doc_name, doc_result)
         output.close()
 
     def dispatch_data(self, doc_name, result):
         """Dispatch data to collectd."""
+        if doc_name == "zookeeperStats":
+            for item in ["packetsSent", "packetsReceived"]:
+                del result[item]
+
         collectd.info("Plugin zookeeper_jmx: Succesfully sent doctype %s to collectd." % doc_name)
         collectd.debug("Plugin zookeeper_jmx: Values dispatched =%s" % json.dumps(result))
         utils.dispatch(result)
