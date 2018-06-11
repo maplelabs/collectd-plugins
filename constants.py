@@ -245,3 +245,34 @@ ZOOK_JMX = "zookeeperjmx"
 KAFKA_TOPIC = "kafkatopic"
 PROCESSNAME = "_processName"
 LISTENERIP = "listener_ip"
+
+# Hx controller plugin constants
+HX_CONNECT_IP = "hx_connect_ip"
+HX_INTERVAL = 60
+APIVALS_DICT = {
+  "READ_IOPS": {
+    "target": "stats.counters.scvmclient.allhosts.nfsReads.cluster.rate",
+    "key": "read_iops"
+  },
+  "WRITE_IOPS": {
+    "target": "stats.counters.scvmclient.allhosts.nfsWrites.cluster.rate",
+    "key": "write_iops"
+  },
+  "READ_LATENCY": {
+    "target": "divideSeries(stats.timers.scvmclient.allhosts.nfsReadLatency.cluster.total,stats.counters.scvmclient.allhosts.nfsReads.cluster.count)",
+    "key": "read_latency"
+  },
+  "WRITE_LATENCY": {
+    "target": "divideSeries(stats.timers.scvmclient.allhosts.nfsWriteLatency.cluster.total,stats.counters.scvmclient.allhosts.nfsWrites.cluster.count)",
+    "key": "write_latency"
+  },
+  "READ_THROUGHPUT": {
+    "target": "scale(stats.counters.scvmclient.allhosts.nfsBytesRead.cluster.rate, 0.000001)",
+    "key": "read_throughput"
+  },
+  "WRITE_THROUGHPUT": {
+    "target": "scale(stats.counters.scvmclient.allhosts.nfsBytesWritten.cluster.rate, 0.000001)",
+    "key": "write_throughput"
+  }
+}
+PARAMS_LIST = ["READ_IOPS", "WRITE_IOPS", "READ_LATENCY", "WRITE_LATENCY", "READ_THROUGHPUT", "WRITE_THROUGHPUT", "READ_THROUGHPUT", "WRITE_THROUGHPUT"]
