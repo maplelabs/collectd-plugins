@@ -189,6 +189,8 @@ class JmxStat(object):
             return rate
 
         rate = (curr_data[key] - prev_data[key]) / float(self.interval)
+        if rate < 0:
+            rate = 0
         return rate
 
     def add_rate(self, pid, dict_jmx):
@@ -292,8 +294,6 @@ class JmxStat(object):
         zookper = jolokiaClient.request(type='read', mbean='org.apache.ZooKeeperService:name0=StandaloneServer_port'+self.port)
         if zookper['status'] == 200:
             dict_jmx['avgRequestLatency'] = round(zookper['value']['AvgRequestLatency'] * 0.001, 2)
-            dict_jmx['maxRequestLatency'] = round(zookper['value']['MaxRequestLatency'] * 0.001, 2)
-            dict_jmx['minRequestLatency'] = round(zookper['value']['MinRequestLatency'] * 0.001, 2)
             dict_jmx['maxSessionTimeout'] = round(zookper['value']['MaxSessionTimeout'] * 0.001, 2)
             dict_jmx['minSessionTimeout'] = round(zookper['value']['MinSessionTimeout'] * 0.001, 2)
             dict_jmx['maxClientCnxnsPerHost'] = zookper['value']['MaxClientCnxnsPerHost']

@@ -181,6 +181,10 @@ class JmxStat(object):
             return rate
 
         rate = (curr_data[key] - prev_data[key]) / float(self.interval)
+        # rate can get negative if the topic(s) are deleted and created again with the same name
+        # intializing rate to 0 if rates are negative value.
+        if rate < 0:
+            rate = 0.0
         return rate
 
     def add_rate(self, pid, dict_jmx):
@@ -249,14 +253,6 @@ class JmxStat(object):
         if rate != NAN:
             topic_info['bytesRejectedRate'] = round(rate, FLOATING_FACTOR)
 
-    def get_value(self, dict_json, key, sec_key=None):
-        """Add default int value if key not available"""
-        if dict_json['status'] == 200:
-            if sec_key:
-                return dict_json[key][sec_key]
-            return dict_json[key]
-        return 0
-
     def add_kafka_parameters(self, jolokiaclient, dict_jmx):
         """Add jmx stats specific to kafka metrics"""
         jolokiaclient.add_request(type='read', mbean='kafka.server:name=UnderReplicatedPartitions,type=ReplicaManager', attribute='Value')
@@ -283,28 +279,28 @@ class JmxStat(object):
         jolokiaclient.add_request(type='read', mbean='kafka.network:name=ResponseSendTimeMs,request=Produce,type=RequestMetrics', attribute='Mean')
         jolokiaclient.add_request(type='read', mbean='kafka.server:name=BrokerState,type=KafkaServer', attribute='Value')
         bulkdata = jolokiaclient.getRequests()
-        dict_jmx['underReplicatedPartitions'] = self.get_value(bulkdata[0], 'value')
-        dict_jmx['messagesInPerSec'] = self.get_value(bulkdata[1], 'value')
-        dict_jmx['bytesInPerSec'] = self.get_value(bulkdata[2], 'value')
-        dict_jmx['bytesOutPerSec'] = self.get_value(bulkdata[3], 'value')
-        dict_jmx['partitionCount'] = self.get_value(bulkdata[4], 'value')
-        dict_jmx['isrExpandsPerSec'] = self.get_value(bulkdata[5], 'value')
-        dict_jmx['isrShrinksPerSec'] = self.get_value(bulkdata[6], 'value')
-        dict_jmx['requestHandlerAvgIdle'] = float(str(self.get_value(bulkdata[7], 'value'))[:4])
-        dict_jmx['offlinePartitions'] = self.get_value(bulkdata[8], 'value')
-        dict_jmx['activeController'] = self.get_value(bulkdata[9], 'value')
-        dict_jmx['leaderElectionPerSec'] = self.get_value(bulkdata[10], 'value')
-        dict_jmx['uncleanLeaderElectionPerSec'] = self.get_value(bulkdata[11], 'value')
-        dict_jmx['producerRequestsPerSec'] = self.get_value(bulkdata[12], 'value')
-        dict_jmx['fetchConsumerRequestsPerSec'] = self.get_value(bulkdata[13], 'value')
-        dict_jmx['fetchFollowerRequestsPerSec'] = self.get_value(bulkdata[14], 'value')
-        dict_jmx['networkProcessorAvgIdlePercent'] = float(str(self.get_value(bulkdata[15], 'value'))[:4])
-        dict_jmx['followerRequestTime'] = round(self.get_value(bulkdata[16], 'value'), 2)
-        dict_jmx['consumerRequestTime'] = round(self.get_value(bulkdata[17], 'value'), 2)
-        dict_jmx['producerRequestTime'] = round(self.get_value(bulkdata[18], 'value'), 2)
-        dict_jmx['followerResponseTime'] = round(self.get_value(bulkdata[19], 'value'), 2)
-        dict_jmx['consumerResponseTime'] = round(self.get_value(bulkdata[20], 'value'), 2)
-        dict_jmx['producerResponseTime'] = round(self.get_value(bulkdata[21], 'value'), 2)
+        dict_jmx['underReplicatedPartitions'] = bulkdata[0].get('value', 0)
+        dict_jmx['messagesInPerSec'] = bulkdata[1].get('value', 0)
+        dict_jmx['bytesInPerSec'] = bulkdata[2].get('value', 0)
+        dict_jmx['bytesOutPerSec'] = bulkdata[3].get('value', 0)
+        dict_jmx['partitionCount'] = bulkdata[4].get('value', 0)
+        dict_jmx['isrExpandsPerSec'] = bulkdata[5].get('value', 0)
+        dict_jmx['isrShrinksPerSec'] = bulkdata[6].get('value', 0)
+        dict_jmx['requestHandlerAvgIdle'] = float(str(bulkdata[7].get('value', 0))[:4])
+        dict_jmx['offlinePartitions'] = bulkdata[8].get('value', 0)
+        dict_jmx['activeController'] = bulkdata[9].get('value', 0)
+        dict_jmx['leaderElectionPerSec'] = bulkdata[10].get('value', 0)
+        dict_jmx['uncleanLeaderElectionPerSec'] = bulkdata[11].get('value', 0)
+        dict_jmx['producerRequestsPerSec'] = bulkdata[12].get('value', 0)
+        dict_jmx['fetchConsumerRequestsPerSec'] = bulkdata[13].get('value', 0)
+        dict_jmx['fetchFollowerRequestsPerSec'] = bulkdata[14].get('value', 0)
+        dict_jmx['networkProcessorAvgIdlePercent'] = float(str(bulkdata[15].get('value', 0))[:4])
+        dict_jmx['followerRequestTime'] = round(bulkdata[16].get('value', 0), 2)
+        dict_jmx['consumerRequestTime'] = round(bulkdata[17].get('value', 0), 2)
+        dict_jmx['producerRequestTime'] = round(bulkdata[18].get('value', 0), 2)
+        dict_jmx['followerResponseTime'] = round(bulkdata[19].get('value', 0), 2)
+        dict_jmx['consumerResponseTime'] = round(bulkdata[20].get('value', 0), 2)
+        dict_jmx['producerResponseTime'] = round(bulkdata[21].get('value', 0), 2)
         if bulkdata[22]['status'] == 200:
             dict_jmx['brokerState'] = BROKER_STATES[bulkdata[22]['value']]
         else:
