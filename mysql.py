@@ -199,7 +199,7 @@ class MysqlStats:
                         else:
                             index_size.append(ind_size[0])
                     total_index_size = sum(index_size)
-                    total_index_size = float(total_index_size) / (1024 * 1024)
+                    total_index_size = round(float(total_index_size) / (1024 * 1024), 2)
                     db_query_4_org = db_query_4 % db_name
                     self.cur.execute(db_query_4_org)
                     self.cur.execute(db_query_5)
