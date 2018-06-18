@@ -2,28 +2,23 @@
 
 #!/usr/bin/python
 import os
-import subprocess
-import re
 import signal
 import json
 import time
 import collectd
-import requests
-import socket
 import Queue
 import multiprocessing
 from pyjolokia import Jolokia
-from contextlib import closing
 from copy import deepcopy
 # user imports
 import utils
 from constants import *
+from libjolokia import JolokiaClient
 
-GENERIC_DOCS = ["memoryPoolStats", "memoryStats", "threadStats", "gcStats", "classLoadingStats",
-        "compilationStats", "nioStats", "operatingSysStats"]
+#GENERIC_DOCS = ["memoryPoolStats", "memoryStats", "threadStats", "gcStats", "classLoadingStats",
+#        "compilationStats", "nioStats", "operatingSysStats"]
 ZOOK_DOCS = ["jmxStats", "zookeeperStats"]
 
-JOLOKIA_PATH = "/opt/collectd/plugins/"
 DEFAULT_GC = ['G1 Old Generation', 'G1 Young Generation']
 DEFAULT_MP = ['G1 Eden Space', 'G1 Old Gen', 'G1 Survivor Space', 'Metaspace', 'Code Cache', 'Compressed Class Space']
 
@@ -32,112 +27,25 @@ class JmxStat(object):
 
     def __init__(self):
         """Initializes interval and previous dictionary variable."""
+        self.process = 'zookeeper'
         self.interval = DEFAULT_INTERVAL
         self.listenerip = 'localhost'
-        self.process = None
         self.port = None
         self.prev_data = {}
+        self.jclient = JolokiaClient(os.path.basename(__file__)[:-3], self.process)
 
     def config(self, cfg):
         """Initializes variables from conf files."""
         for children in cfg.children:
             if children.key == INTERVAL:
                 self.interval = children.values[0]
-            if children.key == PROCESS:
-                self.process = children.values[0]
             if children.key == LISTENERIP:
                 self.listenerip = children.values[0]
             if children.key == PORT:
                 self.port = children.values[0]
 
-    def get_cmd_output(self, cmd, shell_value=True, stdout_value=subprocess.PIPE,
-                       stderr_value=subprocess.PIPE):
-        """Returns subprocess output and return code of cmd passed in argument."""
-        call = subprocess.Popen(cmd, shell=shell_value,
-                                stdout=stdout_value, stderr=stderr_value)
-        call.wait()
-        status, err = call.communicate()
-        returncode = call.returncode
-        return status, err, returncode
-
-    def check_prerequiste(self):
-        """Need to run plugin as root."""
-        if not os.geteuid() == 0:
-            collectd.error("Please run collectd as root. Jmx_stats plugin requires root privileges")
-            return False
-        return True
-
-    @staticmethod
-    def get_free_port():
-        """To get free port to run jolokia client."""
-        with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as sockt:
-            sockt.bind(('localhost', 0))
-            return sockt.getsockname()[1]
-
-    def get_pid(self):
-        """Get PIDs of all java process."""
-        pid_cmd = "jcmd | awk '{print $1 \" \" $2}' | grep -w \"%s\"" % self.process
-        pids, err = utils.get_cmd_output(pid_cmd)
-        if err:
-            collectd.error("Plugin zookeeper_jmx: Error in collecting pid: %s" % err)
-            return False
-        pids = pids.splitlines()
-        pid_list = []
-        for pid in pids:
-            if pid is not "":
-                pidval = pid.split()
-                pid_list.append(pidval[0])
-        return pid_list
-
-    def get_uid(self, pid):
-        """Jolokia needs to be run with same user of the process attached"""
-        uid_cmd = "awk '/^Uid:/{print $2}' /proc/%s/status" % pid
-        uid, err = utils.get_cmd_output(uid_cmd)
-        if err:
-            collectd.error("Plugin zookeeper_jmx:Failed to retrieve uid for pid %s, %s" % (pid, err))
-            return False
-        return uid.strip()
-
-    def run_jolokia_cmd(self, cmd, pid, port=None):
-        """Common logic to run jolokia cmds."""
-        process_uid = self.get_uid(pid)
-        jolokia_cmd = "sudo -u '#{0}' java -jar {1}jolokia.jar --host=127.0.0.1 {2} {3}".format(process_uid, JOLOKIA_PATH, cmd, pid)
-        if port:
-            jolokia_cmd += " --port=%s" % port
-        return self.get_cmd_output(jolokia_cmd)
-
-    def get_pid_port(self, pid):
-        """check if jmx jolokia agent already running, if running get port"""
-        status, err, ret = self.run_jolokia_cmd("status", pid)
-        if err or ret:
-            port = self.get_free_port()
-            status, err, ret = self.run_jolokia_cmd("start", pid, port)
-            if err or ret:
-                collectd.error("Plugin zookeeper_jmx: Unable to start jolokia client for pid %s, %s" % (pid, err))
-                return False
-            collectd.info("Plugin zookeeper_jmx: started jolokia client for pid %s" % pid)
-            return port
-
-        # jolokia id already started and return port
-        joloip = status.splitlines()[1]
-        port = re.findall('\d+', joloip.split(':')[2])[0]
-        collectd.debug("Plugin zookeeper_jmx: jolokia client is already running for pid %s" % pid)
-        return port
-
-    def connection_available(self, port):
-        """Check if jolokia client is up."""
-        try:
-            jolokia_url = "http://127.0.0.1:%s/jolokia/version" % port
-            resp = requests.get(jolokia_url)
-            if resp.status_code == 200:
-                return True
-        except requests.exceptions.ConnectionError:
-            return False
-
     def get_jmx_parameters(self, port, doc, dict_jmx):
         """Fetch stats based on doc_type"""
-        if not self.connection_available(port):
-            return None
         jolokia_url = "http://127.0.0.1:%s/jolokia/" % port
         jolokiaclient = Jolokia(jolokia_url)
         if doc == "memoryPoolStats":
@@ -169,6 +77,7 @@ class JmxStat(object):
 
     def get_rate(self, key, curr_data, prev_data):
         """Calculate and returns rate. Rate=(current_value-prev_value)/time."""
+        #TODO The code is similar to the one in utils.py.
         rate = NAN
         if not prev_data:
             return rate
@@ -220,7 +129,7 @@ class JmxStat(object):
                 if value['Name'] in DEFAULT_MP:
                     mempool_names.append(value['Name'])
                 else:
-                    collectd.error("Plugin zookeeper_jmx: not supported for memory pool %s" % value['Name'])
+                    collectd.error("Plugin zookeeperjmx: not supported for memory pool %s" % value['Name'])
         return mempool_names
 
     def get_gc_names(self, jolokiaclient):
@@ -231,7 +140,7 @@ class JmxStat(object):
                 if value['Name'] in DEFAULT_GC:
                     gc_names.append(value['Name'])
                 else:
-                    collectd.error("Plugin zookeeper_jmx: not supported for GC %s" % value['Name'])
+                    collectd.error("Plugin zookeeperjmx: not supported for GC %s" % value['Name'])
         return gc_names
 
     def add_jmxstats_parameters(self, jolokiaclient, dict_jmx):
@@ -487,7 +396,7 @@ class JmxStat(object):
         dict_jmx[PLUGINTYPE] = doc
         dict_jmx[ACTUALPLUGINTYPE] = ZOOK_JMX
         dict_jmx[PLUGIN_INS] = doc
-        collectd.info("Plugin zookeeper_jmx: Added common parameters successfully")
+        collectd.info("Plugin zookeeperjmx: Added common parameters successfully for %s doctype" % doc)
 
     def get_pid_jmx_stats(self, pid, port, output):
         """Call get_jmx_parameters function for each doc_type and add dict to queue"""
@@ -496,21 +405,21 @@ class JmxStat(object):
                 dict_jmx = {}
                 self.get_jmx_parameters(port, doc, dict_jmx)
                 if not dict_jmx:
-                    raise Exception("No data found")
+                    raise ValueError("No data found")
 
-                collectd.info("Plugin zookeeper_jmx: Added doctype %s of pid %s information successfully" % (doc, pid))
+                collectd.info("Plugin zookeeperjmx: Added %s doctype information successfully for pid %s" % (doc, pid))
                 self.add_common_params(doc, dict_jmx)
                 output.put((pid, doc, dict_jmx))
             except Exception as err:
-                collectd.error("Plugin zookeeper_jmx: Error in collecting stats of doctype %s: %s" % (doc, str(err)))
+                collectd.error("Plugin zookeeperjmx: Error in collecting stats of %s doctype: %s" % (doc, str(err)))
 
     def run_pid_process(self, list_pid):
         """Spawn process for each pid"""
         procs = []
         output = multiprocessing.Queue()
         for pid in list_pid:
-            port = self.get_pid_port(pid)
-            if port:
+            port = self.jclient.get_jolokia_port(pid)
+            if port and self.jclient.connection_available(port):
                 proc = multiprocessing.Process(target=self.get_pid_jmx_stats, args=(pid, port, output))
                 procs.append(proc)
                 proc.start()
@@ -523,17 +432,14 @@ class JmxStat(object):
 
     def collect_jmx_data(self):
         """Collects stats and spawns process for each pids."""
-        if not self.check_prerequiste():
-            return
-
-        list_pid = self.get_pid()
+        list_pid = self.jclient.get_pid()
         if not list_pid:
-            collectd.error("Plugin zookeeper_jmx: No %s processes are running" % self.process)
+            collectd.error("Plugin zookeeperjmx: No %s processes are running" % self.process)
             return
 
         procs, output = self.run_pid_process(list_pid)
         for _ in procs:
-            for doc in ZOOK_DOCS:
+            for _ in ZOOK_DOCS:
                 try:
                     pid, doc_name, doc_result = output.get_nowait()
                 except Queue.Empty:
@@ -552,8 +458,8 @@ class JmxStat(object):
             for item in ["packetsSent", "packetsReceived"]:
                 del result[item]
 
-        collectd.info("Plugin zookeeper_jmx: Succesfully sent doctype %s to collectd." % doc_name)
-        collectd.debug("Plugin zookeeper_jmx: Values dispatched =%s" % json.dumps(result))
+        collectd.info("Plugin zookeeperjmx: Succesfully sent %s doctype to collectd." % doc_name)
+        collectd.debug("Plugin zookeeperjmx: Values dispatched =%s" % json.dumps(result))
         utils.dispatch(result)
 
     def read_temp(self):

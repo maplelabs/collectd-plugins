@@ -2,28 +2,23 @@
 
 #!/usr/bin/python
 import os
-import subprocess
-import re
 import signal
 import json
 import time
 import collectd
-import requests
-import socket
 import Queue
 import multiprocessing
 import kafka
 from copy import deepcopy
 from pyjolokia import Jolokia
-from contextlib import closing
 # user imports
 import utils
 from constants import *
+from libjolokia import JolokiaClient
 
 KAFKA_DOCS = ["kafkaStats", "topicStats", "partitionStats"]
 BROKER_STATES = {0: "NotRunning", 1: "Starting", 2: "RecoveringFromUncleanShutdown", 3: "RunningAsBroker", \
                  6: "PendingControlledShutdown", 7: "BrokerShuttingDown"}
-JOLOKIA_PATH = "/opt/collectd/plugins/"
 
 class JmxStat(object):
     """Plugin object will be created only once and collects JMX statistics info every interval."""
@@ -31,112 +26,25 @@ class JmxStat(object):
     def __init__(self):
         """Initializes interval and previous dictionary variable."""
         self.interval = DEFAULT_INTERVAL
-        self.process = None
+        self.process = 'kafka.Kafka'
         self.listenerip = 'localhost'
         self.prev_topic_data = {}
         self.prev_data = {}
         self.port = None
+        self.jclient = JolokiaClient(os.path.basename(__file__)[:-3], self.process)
 
     def config(self, cfg):
         """Initializes variables from conf files."""
         for children in cfg.children:
             if children.key == INTERVAL:
                 self.interval = children.values[0]
-            if children.key == PROCESS:
-                self.process = children.values[0]
             if children.key == LISTENERIP:
                 self.listenerip = children.values[0]
             if children.key == PORT:
                 self.port = children.values[0]
 
-    def get_cmd_output(self, cmd, shell_value=True, stdout_value=subprocess.PIPE,
-                       stderr_value=subprocess.PIPE):
-        """Returns subprocess output and return code of cmd passed in argument."""
-        call = subprocess.Popen(cmd, shell=shell_value,
-                                stdout=stdout_value, stderr=stderr_value)
-        call.wait()
-        status, err = call.communicate()
-        returncode = call.returncode
-        return status, err, returncode
-
-    def check_prerequiste(self):
-        """Need to run plugin as root."""
-        if not os.geteuid() == 0:
-            collectd.error("Please run collectd as root. Jmx_stats plugin requires root privileges")
-            return False
-        return True
-
-    @staticmethod
-    def get_free_port():
-        """To get free port to run jolokia client."""
-        with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as sockt:
-            sockt.bind(('localhost', 0))
-            return sockt.getsockname()[1]
-
-    def get_pid(self):
-        """Get PIDs of all java process."""
-        pid_cmd = "jcmd | awk '{print $1 \" \" $2}' | grep -w \"%s\"" % self.process
-        pids, err = utils.get_cmd_output(pid_cmd)
-        if err:
-            collectd.error("Plugin kafka_topic: Error in collecting pid: %s" % err)
-            return False
-        pids = pids.splitlines()
-        pid_list = []
-        for pid in pids:
-            if pid is not "":
-                pidval = pid.split()
-                pid_list.append(pidval[0])
-        return pid_list
-
-    def get_uid(self, pid):
-        """Jolokia needs to be run with same user of the process attached"""
-        uid_cmd = "awk '/^Uid:/{print $2}' /proc/%s/status" % pid
-        uid, err = utils.get_cmd_output(uid_cmd)
-        if err:
-            collectd.error("Plugin kafka_topic:Failed to retrieve uid for pid %s, %s" % (pid, err))
-            return False
-        return uid.strip()
-
-    def run_jolokia_cmd(self, cmd, pid, port=None):
-        """Common logic to run jolokia cmds."""
-        process_uid = self.get_uid(pid)
-        jolokia_cmd = "sudo -u '#{0}' java -jar {1}jolokia.jar --host=127.0.0.1 {2} {3}".format(process_uid, JOLOKIA_PATH, cmd, pid)
-        if port:
-            jolokia_cmd += " --port=%s" % port
-        return self.get_cmd_output(jolokia_cmd)
-
-    def get_pid_port(self, pid):
-        """check if jmx jolokia agent already running, if running get port"""
-        status, err, ret = self.run_jolokia_cmd("status", pid)
-        if err or ret:
-            port = self.get_free_port()
-            status, err, ret = self.run_jolokia_cmd("start", pid, port)
-            if err or ret:
-                collectd.error("Plugin kafka_topic: Unable to start jolokia client for pid %s, %s" % (pid, err))
-                return False
-            collectd.info("Plugin kafka_topic: started jolokia client for pid %s" % pid)
-            return port
-
-        # jolokia id already started and return port
-        joloip = status.splitlines()[1]
-        port = re.findall('\d+', joloip.split(':')[2])[0]
-        collectd.debug("Plugin kafka_topic: jolokia client is already running for pid %s" % pid)
-        return port
-
-    def connection_available(self, port):
-        """Check if jolokia client is up."""
-        try:
-            jolokia_url = "http://127.0.0.1:%s/jolokia/version" % port
-            resp = requests.get(jolokia_url)
-            if resp.status_code == 200:
-                return True
-        except requests.exceptions.ConnectionError:
-            return False
-
     def get_jmx_parameters(self, port, doc, dict_jmx):
         """Fetch stats based on doc_type"""
-        if not self.connection_available(port):
-            return None
         jolokia_url = "http://127.0.0.1:%s/jolokia/" % port
         jolokiaclient = Jolokia(jolokia_url)
         if doc == "kafkaStats":
@@ -160,6 +68,7 @@ class JmxStat(object):
 
     def get_rate(self, key, curr_data, prev_data):
         """Calculate and returns rate. Rate=(current_value-prev_value)/time."""
+        #TODO The code is similar to the one in utils.py.
         rate = NAN
         if not prev_data:
             return rate
@@ -385,7 +294,7 @@ class JmxStat(object):
         dict_jmx[PLUGINTYPE] = doc
         dict_jmx[ACTUALPLUGINTYPE] = KAFKA_TOPIC
         dict_jmx[PLUGIN_INS] = doc
-        collectd.info("Plugin kafka_topic: Added common parameters successfully")
+        collectd.info("Plugin kafkatopic: Added common parameters successfully for %s doctype" % doc)
 
     def add_rate_dispatch_topic(self, pid, doc, dict_jmx):
         """Rate calculation for topic metrics"""
@@ -425,9 +334,9 @@ class JmxStat(object):
                 dict_jmx = {}
                 self.get_jmx_parameters(port, doc, dict_jmx)
                 if not dict_jmx:
-                    raise Exception("No data found")
+                    raise ValueError("No data found")
 
-                collectd.info("Plugin kafka_topic: Added doctype %s of pid %s information successfully" % (doc, pid))
+                collectd.info("Plugin kafkatopic: Added %s doctype information successfully for pid %s" % (doc, pid))
                 if doc in ["topicStats", "partitionStats"]:
                     output.put((pid, doc, dict_jmx))
                     continue
@@ -435,15 +344,15 @@ class JmxStat(object):
                 self.add_common_params(doc, dict_jmx)
                 output.put((pid, doc, dict_jmx))
             except Exception as err:
-                collectd.error("Plugin kafka_topic: Error in collecting stats of doc type %s: %s" % (doc, str(err)))
+                collectd.error("Plugin kafkatopic: Error in collecting stats of %s doctype: %s" % (doc, str(err)))
 
     def run_pid_process(self, list_pid):
         """Spawn process for each pid"""
         procs = []
         output = multiprocessing.Queue()
         for pid in list_pid:
-            port = self.get_pid_port(pid)
-            if port:
+            port = self.jclient.get_jolokia_port(pid)
+            if port and self.jclient.connection_available(port):
                 proc = multiprocessing.Process(target=self.get_pid_jmx_stats, args=(pid, port, output))
                 procs.append(proc)
                 proc.start()
@@ -456,12 +365,9 @@ class JmxStat(object):
 
     def collect_jmx_data(self):
         """Collects stats and spawns process for each pids."""
-        if not self.check_prerequiste():
-            return
-
-        list_pid = self.get_pid()
+        list_pid = self.jclient.get_pid()
         if not list_pid:
-            collectd.error("Plugin kafka_topic: No %s processes are running" % self.process)
+            collectd.error("Plugin kafkatopic: No %s processes are running" % self.process)
             return
 
         procs, output = self.run_pid_process(list_pid)
@@ -488,23 +394,23 @@ class JmxStat(object):
                          'failedProduceRequests', 'fetchMessageConversions', 'failedFetchRequests', 'bytesRejected']:
                 try:
                     del result[item]
-                except Exception as err:
+                except KeyError:
                     pass
                     #collectd.error("Key %s deletion error in topicStats doctype for topic %s: %s" % (item, result['_topicName'], str(err)))
-            collectd.info("Plugin kafka_topic: Succesfully sent topicStats: %s" % result['_topicName'])
+            collectd.info("Plugin kafkatopic: Succesfully sent topicStats: %s" % result['_topicName'])
         elif doc_name == "kafkaStats":
             for item in ["messagesInPerSec", "bytesInPerSec", "bytesOutPerSec", "isrExpandsPerSec", "isrShrinksPerSec", "leaderElectionPerSec",\
                              "uncleanLeaderElectionPerSec", "producerRequestsPerSec", "fetchConsumerRequestsPerSec", "fetchFollowerRequestsPerSec"]:
                 try:
                     del result[item]
-                except Exception as err:
+                except KeyError:
                     pass
                     #collectd.error("Key %s deletion error in kafkaStats doctype: %s" % (item, str(err)))
 
-            collectd.info("Plugin kafka_topic: Succesfully sent doctype %s to collectd." % doc_name)
-            collectd.debug("Plugin kafka_topic: Values dispatched =%s" % json.dumps(result))
+            collectd.info("Plugin kafkatopic: Succesfully sent %s doctype to collectd." % doc_name)
+            collectd.debug("Plugin kafkatopic: Values dispatched =%s" % json.dumps(result))
         else:
-            collectd.info("Plugin kafka_topic: Succesfully sent topic %s of partitionStats: %s." % (result['_topicName'], result['_partitionNum']))
+            collectd.info("Plugin kafkatopic: Succesfully sent topic %s of partitionStats: %s." % (result['_topicName'], result['_partitionNum']))
         utils.dispatch(result)
 
     def read_temp(self):

@@ -2,27 +2,22 @@
 
 #!/usr/bin/python
 import os
-import subprocess
-import re
 import signal
 import json
 import time
 import collectd
-import requests
-import socket
 import Queue
 import multiprocessing
 from pyjolokia import Jolokia
-from contextlib import closing
 # user imports
 import utils
 from constants import *
+from libjolokia import JolokiaClient
 
 #GENERIC_DOCS = ["memoryPoolStats", "memoryStats", "threadStats", "gcStats", "classLoadingStats",
 #        "compilationStats", "nioStats", "operatingSysStats"]
 GENERIC_DOCS = ["jmxStats"]
 
-JOLOKIA_PATH = "/opt/collectd/plugins/"
 DEFAULT_GC = ['G1 Old Generation', 'G1 Young Generation']
 DEFAULT_MP = ['G1 Eden Space', 'G1 Old Gen', 'G1 Survivor Space', 'Metaspace', 'Code Cache', 'Compressed Class Space']
 
@@ -31,8 +26,9 @@ class JmxStat(object):
 
     def __init__(self):
         """Initializes interval and previous dictionary variable."""
-        self.interval = DEFAULT_INTERVAL
+        self.jclient = None
         self.process = None
+        self.interval = DEFAULT_INTERVAL
 
     def config(self, cfg):
         """Initializes variables from conf files."""
@@ -41,95 +37,11 @@ class JmxStat(object):
                 self.interval = children.values[0]
             if children.key == PROCESS:
                 self.process = children.values[0]
-
-    def get_cmd_output(self, cmd, shell_value=True, stdout_value=subprocess.PIPE,
-                       stderr_value=subprocess.PIPE):
-        """Returns subprocess output and return code of cmd passed in argument."""
-        call = subprocess.Popen(cmd, shell=shell_value,
-                                stdout=stdout_value, stderr=stderr_value)
-        call.wait()
-        status, err = call.communicate()
-        returncode = call.returncode
-        return status, err, returncode
-
-    def check_prerequiste(self):
-        """Need to run plugin as root."""
-        if not os.geteuid() == 0:
-            collectd.error("Please run collectd as root. Jmx_stats plugin requires root privileges")
-            return False
-        return True
-
-    @staticmethod
-    def get_free_port():
-        """To get free port to run jolokia client."""
-        with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as sockt:
-            sockt.bind(('localhost', 0))
-            return sockt.getsockname()[1]
-
-    def get_pid(self):
-        """Get PIDs of all java process."""
-        pid_cmd = "jcmd | awk '{print $1 \" \" $2}' | grep -w \"%s\"" % self.process
-        pids, err = utils.get_cmd_output(pid_cmd)
-        if err:
-            collectd.error("Plugin kafka_jmx: Error in collecting pid: %s" % err)
-            return False
-        pids = pids.splitlines()
-        pid_list = []
-        for pid in pids:
-            if pid is not "":
-                pidval = pid.split()
-                pid_list.append(pidval[0])
-        return pid_list
-
-    def get_uid(self, pid):
-        """Jolokia needs to be run with same user of the process attached"""
-        uid_cmd = "awk '/^Uid:/{print $2}' /proc/%s/status" % pid
-        uid, err = utils.get_cmd_output(uid_cmd)
-        if err:
-            collectd.error("Plugin kafka_jmx:Failed to retrieve uid for pid %s, %s" % (pid, err))
-            return False
-        return uid.strip()
-
-    def run_jolokia_cmd(self, cmd, pid, port=None):
-        """Common logic to run jolokia cmds."""
-        process_uid = self.get_uid(pid)
-        jolokia_cmd = "sudo -u '#{0}' java -jar {1}jolokia.jar --host=127.0.0.1 {2} {3}".format(process_uid, JOLOKIA_PATH, cmd, pid)
-        if port:
-            jolokia_cmd += " --port=%s" % port
-        return self.get_cmd_output(jolokia_cmd)
-
-    def get_pid_port(self, pid):
-        """check if jmx jolokia agent already running, if running get port"""
-        status, err, ret = self.run_jolokia_cmd("status", pid)
-        if err or ret:
-            port = self.get_free_port()
-            status, err, ret = self.run_jolokia_cmd("start", pid, port)
-            if err or ret:
-                collectd.error("Plugin kafka_jmx: Unable to start jolokia client for pid %s, %s" % (pid, err))
-                return False
-            collectd.info("Plugin kafka_jmx: started jolokia client for pid %s" % pid)
-            return port
-
-        # jolokia id already started and return port
-        joloip = status.splitlines()[1]
-        port = re.findall('\d+', joloip.split(':')[2])[0]
-        collectd.debug("Plugin kafka_jmx: jolokia client is already running for pid %s" % pid)
-        return port
-
-    def connection_available(self, port):
-        """Check if jolokia client is up."""
-        try:
-            jolokia_url = "http://127.0.0.1:%s/jolokia/version" % port
-            resp = requests.get(jolokia_url)
-            if resp.status_code == 200:
-                return True
-        except requests.exceptions.ConnectionError:
-            return False
+                #get jolokia instance
+                self.jclient = JolokiaClient(os.path.basename(__file__)[:-3], self.process)
 
     def get_jmx_parameters(self, port, doc, dict_jmx):
         """Fetch stats based on doc_type"""
-        if not self.connection_available(port):
-            return None
         jolokia_url = "http://127.0.0.1:%s/jolokia/" % port
         jolokiaclient = Jolokia(jolokia_url)
         if doc == "memoryPoolStats":
@@ -261,29 +173,6 @@ class JmxStat(object):
             dict_jmx['loadedClass'] = classloading['value']['LoadedClassCount']
             dict_jmx['totalLoadedClass'] = classloading['value']['TotalLoadedClassCount']
 
-    def get_gc_names(self, jolokiaclient):
-        gc_json = jolokiaclient.request(type='read', mbean='java.lang:type=GarbageCollector,*', attribute='Name')
-        gc_names = []
-        if gc_json['status'] == 200:
-            for _, value in gc_json['value'].items():
-                if value['Name'] in DEFAULT_GC:
-                    gc_names.append(value['Name'])
-                else:
-                    collectd.error("Plugin kafka_jmx: not supported for GC %s" % value['Name'])
-        return gc_names
-
-    def get_memory_pool_names(self, jolokiaclient):
-        """Get memory pool names of jvm process"""
-        mempool_json = jolokiaclient.request(type='read', mbean='java.lang:type=MemoryPool,*', attribute='Name')
-        mempool_names = []
-        if mempool_json['status'] == 200:
-            for _, value in mempool_json['value'].items():
-                if value['Name'] in DEFAULT_MP:
-                    mempool_names.append(value['Name'])
-                else:
-                    collectd.error("Plugin kafka_jmx: not supported for memory pool %s" % value['Name'])
-        return mempool_names
-
     def add_gc_parameters(self, jolokiaclient, dict_jmx):
         """Add garbage collector related jmx stats"""
         def memory_gc_usage(self, mempool_gc, key, gc_name, dict_jmx):
@@ -388,6 +277,29 @@ class JmxStat(object):
                             dict_jmx[poll_name_no_spaces+'UsageThresholdCount'] = usage_threshold['value']['UsageThreshold']
                             dict_jmx[poll_name_no_spaces+'UsageThresholdExceeded'] = usage_threshold['value']['UsageThresholdExceeded']
 
+    def get_gc_names(self, jolokiaclient):
+        gc_json = jolokiaclient.request(type='read', mbean='java.lang:type=GarbageCollector,*', attribute='Name')
+        gc_names = []
+        if gc_json['status'] == 200:
+            for _, value in gc_json['value'].items():
+                if value['Name'] in DEFAULT_GC:
+                    gc_names.append(value['Name'])
+                else:
+                    collectd.error("Plugin kafkajmx: not supported for GC %s" % value['Name'])
+        return gc_names
+
+    def get_memory_pool_names(self, jolokiaclient):
+        """Get memory pool names of jvm process"""
+        mempool_json = jolokiaclient.request(type='read', mbean='java.lang:type=MemoryPool,*', attribute='Name')
+        mempool_names = []
+        if mempool_json['status'] == 200:
+            for _, value in mempool_json['value'].items():
+                if value['Name'] in DEFAULT_MP:
+                    mempool_names.append(value['Name'])
+                else:
+                    collectd.error("Plugin kafkajmx: not supported for memory pool %s" % value['Name'])
+        return mempool_names
+
     def handle_neg_bytes(self, value, resultkey, dict_jmx):
         """Condition for byte keys whose return value may be -1 if not supported."""
         if value == -1:
@@ -404,7 +316,7 @@ class JmxStat(object):
         dict_jmx[ACTUALPLUGINTYPE] = KAFKA_JMX
         dict_jmx[PROCESSNAME] = self.process
         dict_jmx[PLUGIN_INS] = doc
-        collectd.info("Plugin kafka_jmx: Added common parameters successfully")
+        collectd.info("Plugin kafkajmx: Added common parameters successfully for %s doctype" % doc)
 
     def get_pid_jmx_stats(self, pid, port, output):
         """Call get_jmx_parameters function for each doc_type and add dict to queue"""
@@ -413,21 +325,21 @@ class JmxStat(object):
                 dict_jmx = {}
                 self.get_jmx_parameters(port, doc, dict_jmx)
                 if not dict_jmx:
-                    raise Exception("No data found")
+                    raise ValueError("No data found")
 
-                collectd.info("Plugin kafka_jmx: Added doctype %s of pid %s information successfully" % (doc, pid))
+                collectd.info("Plugin kafkajmx: Added %s doctype information successfully for pid %s" % (doc, pid))
                 self.add_common_params(doc, dict_jmx)
                 output.put((doc, dict_jmx))
             except Exception as err:
-                collectd.error("Plugin kafka_jmx: Error in collecting stats of doctype %s: %s" % (doc, str(err)))
+                collectd.error("Plugin kafkajmx: Error in collecting stats of %s doctype: %s" % (doc, str(err)))
 
     def run_pid_process(self, list_pid):
         """Spawn process for each pid"""
         procs = []
         output = multiprocessing.Queue()
         for pid in list_pid:
-            port = self.get_pid_port(pid)
-            if port:
+            port = self.jclient.get_jolokia_port(pid)
+            if port and self.jclient.connection_available(port):
                 proc = multiprocessing.Process(target=self.get_pid_jmx_stats, args=(pid, port, output))
                 procs.append(proc)
                 proc.start()
@@ -440,12 +352,9 @@ class JmxStat(object):
 
     def collect_jmx_data(self):
         """Collects stats and spawns process for each pids."""
-        if not self.check_prerequiste():
-            return
-
-        list_pid = self.get_pid()
+        list_pid = self.jclient.get_pid()
         if not list_pid:
-            collectd.error("Plugin kafka_jmx: No %s processes are running" % self.process)
+            collectd.error("Plugin kafkajmx: No %s processes are running" % self.process)
             return
 
         procs, output = self.run_pid_process(list_pid)
@@ -461,8 +370,8 @@ class JmxStat(object):
 
     def dispatch_data(self, doc_name, result):
         """Dispatch data to collectd."""
-        collectd.info("Plugin kafka_jmx: Succesfully sent doctype %s to collectd." % doc_name)
-        collectd.debug("Plugin kafka_jmx: Values dispatched =%s" % json.dumps(result))
+        collectd.info("Plugin kafkajmx: Succesfully sent %s doctype to collectd." % doc_name)
+        collectd.debug("Plugin kafkajmx: Values dispatched =%s" % json.dumps(result))
         utils.dispatch(result)
 
     def read_temp(self):
