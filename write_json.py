@@ -22,7 +22,7 @@ class WriteJson:
             return None
         # path = os.path.join(self.path, DATADIR, data[PLUGIN])
 
-        if(data[PLUGIN] == "linux"):
+        if(data[PLUGIN] in ["linux", "kafkajmx", "kafkatopic", "zookeeperjmx"]):
             path = os.path.join(self.path, DATADIR, data[PLUGIN] + "/" + data[PLUGINTYPE])
         else:
             path = os.path.join(self.path, DATADIR, data[PLUGIN])
