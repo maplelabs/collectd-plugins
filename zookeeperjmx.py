@@ -395,7 +395,7 @@ class JmxStat(object):
         dict_jmx[PLUGIN] = ZOOK_JMX
         dict_jmx[PLUGINTYPE] = doc
         dict_jmx[ACTUALPLUGINTYPE] = ZOOK_JMX
-        dict_jmx[PLUGIN_INS] = doc
+        #dict_jmx[PLUGIN_INS] = doc
         collectd.info("Plugin zookeeperjmx: Added common parameters successfully for %s doctype" % doc)
 
     def get_pid_jmx_stats(self, pid, port, output):

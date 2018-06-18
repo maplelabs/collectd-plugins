@@ -293,7 +293,7 @@ class JmxStat(object):
         dict_jmx[PLUGIN] = KAFKA_TOPIC
         dict_jmx[PLUGINTYPE] = doc
         dict_jmx[ACTUALPLUGINTYPE] = KAFKA_TOPIC
-        dict_jmx[PLUGIN_INS] = doc
+        #dict_jmx[PLUGIN_INS] = doc
         collectd.info("Plugin kafkatopic: Added common parameters successfully for %s doctype" % doc)
 
     def add_rate_dispatch_topic(self, pid, doc, dict_jmx):
