@@ -17,7 +17,7 @@ class TopStats(object):
     """Plugin object will be created only once and collects utils
        and available RAM info every interval."""
 
-    def __init__(self, interval=1, utilize_type="mem", maximum_grep=5, process_name=None):
+    def __init__(self, interval=1, utilize_type="mem", maximum_grep=5, process_name='*'):
         """Initializes interval."""
         self.interval = DEFAULT_INTERVAL
         self.utilize_type = utilize_type
@@ -42,11 +42,15 @@ class TopStats(object):
         """
         #cmnd = "top -b -o +" + self.usage_parameter +" -n 1 | head -17 | sed -n '8,20p' | awk '{print $1, $2, $9, $10, $12}'"
         head_value = 7 + int(self.maximum_grep)
-        if self.process and self.process != 'None':
+        if self.process and self.process != 'None' and self.process != '*':
             #cmnd  = "top -b -n 1 | grep '" + self.process + "' | awk '{print $1, $2, $9, $10, $12}'"
             cmnd = "top -b -o +%" + self.utilize_type.upper() + " -n 1 | grep '" + self.process + "' | head -"+ str(head_value) + " | awk '{print $1, $2, $9, $10, $12}'"
-        elif self.utilize_type.upper() == "CPU" or self.utilize_type.upper() == "MEM":
-            cmnd = "top -b -o +%" + self.utilize_type.upper() + " -n 1 | head -" + str(head_value) + " | sed -n '8,20p' | awk '{print $1, $2, $9, $10, $12}'"
+        elif self.utilize_type.upper() == "CPU" or self.utilize_type.upper() == "RAM":
+	    if self.utilize_type.upper() == "RAM":
+                resource_type = "MEM"
+	    else:
+		resource_type = self.utilize_type.upper()
+            cmnd = "top -b -o +%" + resource_type + " -n 1 | head -" + str(head_value) + " | sed -n '8,20p' | awk '{print $1, $2, $9, $10, $12}'"
         process = subprocess.Popen(cmnd, shell=True, stdout=subprocess.PIPE)
         result = []
         i = 1
@@ -61,7 +65,7 @@ class TopStats(object):
                 top_stats_res['memory'] = float(line.split(' ')[3])
                 top_stats_res['command'] = line.split(' ')[4].strip()
                 top_stats_res['process_group'] = self.process
-                top_stats_res['resource_type'] = "memory" if self.utilize_type == "mem" else self.utilize_type.upper()
+                top_stats_res['resource_type'] = self.utilize_type.upper()
                 #os.write(1, line)
                 i+= 1
                 result.append(top_stats_res)
