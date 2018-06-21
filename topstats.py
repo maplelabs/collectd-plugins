@@ -60,7 +60,7 @@ class TopStats(object):
                 top_stats_res['cpu'] = float(line.split(' ')[2])
                 top_stats_res['memory'] = float(line.split(' ')[3])
                 top_stats_res['command'] = line.split(' ')[4].strip()
-                top_stats_res['process'] = self.process
+                top_stats_res['process_group'] = self.process
                 top_stats_res['resource_type'] = "memory" if self.utilize_type == "mem" else self.utilize_type.upper()
                 #os.write(1, line)
                 i+= 1
