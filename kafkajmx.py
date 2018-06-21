@@ -8,7 +8,6 @@ import time
 import collectd
 import Queue
 import multiprocessing
-from pyjolokia import Jolokia
 # user imports
 import utils
 from constants import *
@@ -40,10 +39,8 @@ class JmxStat(object):
                 #get jolokia instance
                 self.jclient = JolokiaClient(os.path.basename(__file__)[:-3], self.process)
 
-    def get_jmx_parameters(self, port, doc, dict_jmx):
+    def get_jmx_parameters(self, jolokiaclient, doc, dict_jmx):
         """Fetch stats based on doc_type"""
-        jolokia_url = "http://127.0.0.1:%s/jolokia/" % port
-        jolokiaclient = Jolokia(jolokia_url)
         if doc == "memoryPoolStats":
             self.add_memory_pool_parameters(jolokiaclient, dict_jmx)
         elif doc == "memoryStats":
@@ -320,10 +317,11 @@ class JmxStat(object):
 
     def get_pid_jmx_stats(self, pid, port, output):
         """Call get_jmx_parameters function for each doc_type and add dict to queue"""
+        jolokiaclient = JolokiaClient.get_jolokia_inst(port)
         for doc in GENERIC_DOCS:
             try:
                 dict_jmx = {}
-                self.get_jmx_parameters(port, doc, dict_jmx)
+                self.get_jmx_parameters(jolokiaclient, doc, dict_jmx)
                 if not dict_jmx:
                     raise ValueError("No data found")
 

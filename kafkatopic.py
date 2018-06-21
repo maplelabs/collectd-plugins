@@ -43,10 +43,8 @@ class JmxStat(object):
             if children.key == PORT:
                 self.port = children.values[0]
 
-    def get_jmx_parameters(self, port, doc, dict_jmx):
+    def get_jmx_parameters(self, jolokiaclient, doc, dict_jmx):
         """Fetch stats based on doc_type"""
-        jolokia_url = "http://127.0.0.1:%s/jolokia/" % port
-        jolokiaclient = Jolokia(jolokia_url)
         if doc == "kafkaStats":
             self.add_kafka_parameters(jolokiaclient, dict_jmx)
         elif doc == "topicStats":
@@ -322,17 +320,18 @@ class JmxStat(object):
         self.dispatch_data(doc, deepcopy(dict_jmx))
 
     def dispatch_partitions(self, doc, dict_jmx):
-        parti_list = dict_jmx["partitionStats"]
-        for parti in parti_list:
-            self.add_common_params(doc, parti)
-            self.dispatch_data(doc, parti)
+        partition_list = dict_jmx["partitionStats"]
+        for partition in partition_list:
+            self.add_common_params(doc, partition)
+            self.dispatch_data(doc, partition)
 
     def get_pid_jmx_stats(self, pid, port, output):
         """Call get_jmx_parameters function for each doc_type and add dict to queue"""
+        jolokiaclient = JolokiaClient.get_jolokia_inst(port)
         for doc in KAFKA_DOCS:
             try:
                 dict_jmx = {}
-                self.get_jmx_parameters(port, doc, dict_jmx)
+                self.get_jmx_parameters(jolokiaclient, doc, dict_jmx)
                 if not dict_jmx:
                     raise ValueError("No data found")
 
@@ -398,6 +397,7 @@ class JmxStat(object):
                     pass
                     #collectd.error("Key %s deletion error in topicStats doctype for topic %s: %s" % (item, result['_topicName'], str(err)))
             collectd.info("Plugin kafkatopic: Succesfully sent topicStats: %s" % result['_topicName'])
+
         elif doc_name == "kafkaStats":
             for item in ["messagesInPerSec", "bytesInPerSec", "bytesOutPerSec", "isrExpandsPerSec", "isrShrinksPerSec", "leaderElectionPerSec",\
                              "uncleanLeaderElectionPerSec", "producerRequestsPerSec", "fetchConsumerRequestsPerSec", "fetchFollowerRequestsPerSec"]:
@@ -409,6 +409,7 @@ class JmxStat(object):
 
             collectd.info("Plugin kafkatopic: Succesfully sent %s doctype to collectd." % doc_name)
             collectd.debug("Plugin kafkatopic: Values dispatched =%s" % json.dumps(result))
+
         else:
             collectd.info("Plugin kafkatopic: Succesfully sent topic %s of partitionStats: %s." % (result['_topicName'], result['_partitionNum']))
         utils.dispatch(result)

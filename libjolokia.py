@@ -8,13 +8,14 @@ import socket
 import requests
 import threading
 import collectd
+from pyjolokia import Jolokia
 from contextlib import closing
 
 #constants
 JOLOKIA_PATH = "/opt/collectd/plugins/"
 
 def synchronized(func):
-    """Synchronise is done to prevent race condition which can occur
+    """Synchronise to prevent race condition which can occur
        when kafkajmx and kafkatopic plugin try to start jolokia with same process."""
     func.__lock__ = threading.Lock()
 
@@ -33,6 +34,7 @@ def get_cmd_output(cmd, shell_value=True, stdout_value=subprocess.PIPE,
     returncode = call.returncode
     return status, err, returncode
 
+
 class JolokiaClient(object):
 
     def __init__(self, plugin_name, process_name):
@@ -45,6 +47,13 @@ class JolokiaClient(object):
             collectd.error("Please run collectd as root. %s plugin requires root privileges" % self.plugin_name)
             return False
         return True
+
+    @staticmethod
+    def get_jolokia_inst(port):
+        """Returns instance of jolokia"""
+        jolokia_url = "http://127.0.0.1:%s/jolokia/" % port
+        jolokiaclient = Jolokia(jolokia_url)
+        return jolokiaclient
 
     @staticmethod
     def get_free_port():
@@ -95,7 +104,7 @@ class JolokiaClient(object):
             status, err, ret = self.run_jolokia_cmd("start", pid, port)
             if err or ret:
                 collectd.error("Plugin kafka_topic: Failed to start jolokia. Retrying again for pid %s" % pid)
-                # sleep for some seconds and check again [Sometimes Jolokia on first time connection throws port occupied 
+                # sleep for some seconds and check again [Sometimes Jolokia on first time connection throws port occupied
                 # error however jolokia is connected in background. Possible bug in jolokia]
                 time.sleep(1)
                 self.run_jolokia_cmd("start", pid, port)
