@@ -50,7 +50,7 @@ class TopStats(object):
                 resource_type = "MEM"
 	    else:
 		resource_type = self.utilize_type.upper()
-            cmnd = "top -b -o +%" + resource_type + " -n 1 | head -" + str(head_value) + " | sed -n '8,20p' | awk '{print $1, $2, $9, $10, $12}'"
+	    cmnd = "top -b -o +%" + resource_type + " -n 1 | head -" + str(head_value) + " | sed -n '8,20p' | awk '{print $1, $2, $9, $10, $12}'"
         process = subprocess.Popen(cmnd, shell=True, stdout=subprocess.PIPE)
         result = []
         i = 1
