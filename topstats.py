@@ -40,10 +40,12 @@ class TopStats(object):
         """
         #cmnd = "top -b -o +" + self.usage_parameter +" -n 1 | head -17 | sed -n '8,20p' | awk '{print $1, $2, $9, $10, $12}'"
         head_value = 7 + int(self.maximum_grep)
-        if self.process and self.process != 'None' and self.process != '*':
-            #cmnd  = "top -b -n 1 | grep '" + self.process + "' | awk '{print $1, $2, $9, $10, $12}'"
-            proc = '|'.join(self.process.split(','))
-            cmnd = "top -b -o +%" + self.utilize_type + " -n 1 | grep -E '" + proc + "' | head -"+ str(head_value) + " | awk '{print $1, $2, $9, $10, $12}'"
+        if self.utilize_type == 'process':
+            if self.process != 'None' or self.process != '*':
+                proc = '|'.join(self.process.split(','))
+                cmnd = "top -b -o +%CPU -n 1 | grep -E '" + proc + "' | head -"+ str(head_value) + " | awk '{print $1, $2, $9, $10, $12}'"
+            else:
+                cmnd = "top -b -o +%CPU -n 1 | head -" + str(head_value) + " | sed -n '8,20p' | awk '{print $1, $2, $9, $10, $12}'"
         elif self.utilize_type == "CPU" or self.utilize_type == "RAM":
 	        cmnd = "top -b -o +%" + self.utilize_type + " -n 1 | head -" + str(head_value) + " | sed -n '8,20p' | awk '{print $1, $2, $9, $10, $12}'"
         process = subprocess.Popen(cmnd, shell=True, stdout=subprocess.PIPE)
