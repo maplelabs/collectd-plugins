@@ -15,9 +15,9 @@ from constants import *
 
 class TopStats(object):
     """Plugin object will be created only once and collects utils
-       and available RAM info every interval."""
+       and available CPU/RAM usage info every interval."""
 
-    def __init__(self, interval=1, utilize_type="mem", maximum_grep=5, process_name='*'):
+    def __init__(self, interval=1, utilize_type="CPU", maximum_grep=5, process_name='*'):
         """Initializes interval."""
         self.interval = DEFAULT_INTERVAL
         self.utilize_type = utilize_type
@@ -31,8 +31,6 @@ class TopStats(object):
                 self.interval = children.values[0]
             if children.key == 'utilize_type':
                 self.utilize_type = children.values[0]
-            if children.key == 'maximum_grep':
-                self.maximum_grep = children.values[0]
             if children.key == "process":
                 self.process = children.values[0]
 
@@ -44,30 +42,29 @@ class TopStats(object):
         head_value = 7 + int(self.maximum_grep)
         if self.process and self.process != 'None' and self.process != '*':
             #cmnd  = "top -b -n 1 | grep '" + self.process + "' | awk '{print $1, $2, $9, $10, $12}'"
-            cmnd = "top -b -o +%" + self.utilize_type.upper() + " -n 1 | grep '" + self.process + "' | head -"+ str(head_value) + " | awk '{print $1, $2, $9, $10, $12}'"
-        elif self.utilize_type.upper() == "CPU" or self.utilize_type.upper() == "RAM":
-	    if self.utilize_type.upper() == "RAM":
-                resource_type = "MEM"
-	    else:
-		resource_type = self.utilize_type.upper()
-	    cmnd = "top -b -o +%" + resource_type + " -n 1 | head -" + str(head_value) + " | sed -n '8,20p' | awk '{print $1, $2, $9, $10, $12}'"
+            proc = self.process.split(',')
+            proc = '|'.join(self.process)
+            cmnd = "top -b -o +%" + self.utilize_type + " -n 1 | grep -E '" + proc + "' | head -"+ str(head_value) + " | awk '{print $1, $2, $9, $10, $12}'"
+        elif self.utilize_type == "CPU" or self.utilize_type == "RAM":
+	        cmnd = "top -b -o +%" + self.utilize_type + " -n 1 | head -" + str(head_value) + " | sed -n '8,20p' | awk '{print $1, $2, $9, $10, $12}'"
         process = subprocess.Popen(cmnd, shell=True, stdout=subprocess.PIPE)
         result = []
-        i = 1
+        process_order = 1
         while True:
             top_stats_res = {}
             line = process.stdout.readline()
             if line != b'':
-                top_stats_res['order'] = i
-                top_stats_res['pid'] = long(line.split(' ')[0])
-                top_stats_res['user'] = line.split(' ')[1]
-                top_stats_res['cpu'] = float(line.split(' ')[2])
-                top_stats_res['memory'] = float(line.split(' ')[3])
-                top_stats_res['command'] = line.split(' ')[4].strip()
+                response = line.split(' ')
+                top_stats_res['order'] = process_order
+                top_stats_res['pid'] = long(response[0])
+                top_stats_res['user'] = response[1]
+                top_stats_res['cpu'] = float(response[2])
+                top_stats_res['memory'] = float(response[3])
+                top_stats_res[PROCESSNAME ] = response[4].strip()
                 top_stats_res['process_group'] = self.process
-                top_stats_res['resource_type'] = self.utilize_type.upper()
+                top_stats_res['resource_type'] = self.utilize_type
                 #os.write(1, line)
-                i+= 1
+                process_order   += 1
                 result.append(top_stats_res)
             else:
                 break
