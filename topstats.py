@@ -42,8 +42,7 @@ class TopStats(object):
         head_value = 7 + int(self.maximum_grep)
         if self.process and self.process != 'None' and self.process != '*':
             #cmnd  = "top -b -n 1 | grep '" + self.process + "' | awk '{print $1, $2, $9, $10, $12}'"
-            proc = self.process.split(',')
-            proc = '|'.join(self.process)
+            proc = '|'.join(self.process.split(','))
             cmnd = "top -b -o +%" + self.utilize_type + " -n 1 | grep -E '" + proc + "' | head -"+ str(head_value) + " | awk '{print $1, $2, $9, $10, $12}'"
         elif self.utilize_type == "CPU" or self.utilize_type == "RAM":
 	        cmnd = "top -b -o +%" + self.utilize_type + " -n 1 | head -" + str(head_value) + " | sed -n '8,20p' | awk '{print $1, $2, $9, $10, $12}'"
