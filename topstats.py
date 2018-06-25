@@ -46,8 +46,9 @@ class TopStats(object):
                 cmnd = "top -b -o +%CPU -n 1 | grep -E '" + proc + "' | head -"+ str(head_value) + " | awk '{print $1, $2, $9, $10, $12}'"
             else:
                 cmnd = "top -b -o +%CPU -n 1 | head -" + str(head_value) + " | sed -n '8,20p' | awk '{print $1, $2, $9, $10, $12}'"
-        elif self.utilize_type == "CPU" or self.utilize_type == "RAM":
-	        cmnd = "top -b -o +%" + self.utilize_type + " -n 1 | head -" + str(head_value) + " | sed -n '8,20p' | awk '{print $1, $2, $9, $10, $12}'"
+        elif self.utilize_type == "CPU" or self.utilize_type == "MEM":
+            cmnd = "top -b -o +%" + self.utilize_type + " -n 1 | head -" + str(head_value) + " | sed -n '8,20p' | awk '{print $1, $2, $9, $10, $12}'"
+            self.process = "*"
         process = subprocess.Popen(cmnd, shell=True, stdout=subprocess.PIPE)
         result = []
         process_order = 1
