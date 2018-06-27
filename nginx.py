@@ -36,6 +36,7 @@ class Nginx(object):
 
     def get_version(self):
         try:
+            """
             stdout, version = get_cmd_output('nginx -v')
             tokens = re.split(' |/', str(version))
             for token in tokens:
@@ -45,14 +46,20 @@ class Nginx(object):
                     dbg = 'nginx version: {0}'.format(token)
                     collectd.debug(dbg)
                     return token
+            """
+            data_dict = {}
+            stdout, version = get_cmd_output('nginx -v')
+            version_os = [j.strip() for i in version.split("(") for j in i.split(")")]
+            data_dict["nginxVersion"] = version_os[0].split("/")[1]
+            data_dict["nginxOS"] = version_os[1]
+            return data_dict
         except Exception as ex:
             raise ex
 
     def get_server_details(self):
         server_details = {}
-        version = ''
         try:
-            version = self.get_version()
+            server_details = self.get_version()
             collectd.debug('nginx version retrieved successfully!')
         except Exception as ex:
             raise ex
@@ -70,8 +77,7 @@ class Nginx(object):
                            break
         except Exception as ex:
             raise ex
-        server_details.update({'serverVersion': version,
-                               'processRunning': running})
+        server_details.update({'processRunning': running})
         return server_details
 
     def get_server_stats(self, ip, port, location, secure):
