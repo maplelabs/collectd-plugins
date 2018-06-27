@@ -57,13 +57,14 @@ class Nginx(object):
             raise ex
 
     def get_server_details(self):
+        # Get the version of the NGINX server running
         server_details = {}
         try:
             server_details = self.get_version()
             collectd.debug('nginx version retrieved successfully!')
         except Exception as ex:
             raise ex
-
+        # Get the status of the NGINX server
         running = False
         try:
             stdout, stderr = get_cmd_output("ps -ef | grep nginx")
@@ -77,7 +78,20 @@ class Nginx(object):
                            break
         except Exception as ex:
             raise ex
-        server_details.update({'processRunning': running})
+        # Get the uptime of the NGINX server
+        try:
+            uptime_v = 0
+            t =0
+            stdout, stder = self.get_cmd_output('ps -eo comm,etime,user | grep nginx | grep root')
+            for val in stdout.split():
+                if re.match('([0-9\:].*)', val):
+                    for u in val.split(':'):
+                        t = 60 * t + int(u)
+                    #uptime_v = round(t/float((60*60)), 2)
+                    uptime_v = t
+        except Exception as err:
+            raise err
+        server_details.update({'processRunning': running, 'upTime': uptime_v})
         return server_details
 
     def get_server_stats(self, ip, port, location, secure):
@@ -176,6 +190,8 @@ class Nginx(object):
                 'handledConnections': handled_in_interval,
                 'totalRequests': requests_in_interval
                }
+        if (self.pollCounter > 1):
+            data["requestsPerSecond"] = round(requests_in_interval/ float(self.interval), 2)
         return data
 
     def poll(self, type):
