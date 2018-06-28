@@ -82,7 +82,7 @@ class Nginx(object):
         try:
             uptime_v = 0
             t =0
-            stdout, stder = self.get_cmd_output('ps -eo comm,etime,user | grep nginx | grep root')
+            stdout, stder = get_cmd_output('ps -eo comm,etime,user | grep nginx | grep root')
             for val in stdout.split():
                 if re.match('([0-9\:].*)', val):
                     for u in val.split(':'):
