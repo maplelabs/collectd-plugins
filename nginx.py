@@ -83,12 +83,13 @@ class Nginx(object):
             uptime_v = 0
             t =0
             stdout, stder = get_cmd_output('ps -eo comm,etime,user | grep nginx | grep root')
-            for val in stdout.split():
-                if re.match('([0-9\:].*)', val):
-                    for u in val.split(':'):
-                        t = 60 * t + int(u)
-                    #uptime_v = round(t/float((60*60)), 2)
-                    uptime_v = t
+            #for val in stdout.split():
+            #    print(val)
+            data = re.findall('([0-9\:][^-].[^\s]*)', stdout)
+            if data:
+                for u in data[0].split(':'):
+                    t = 60 * t + int(u)
+                uptime_v = t #uptime value in 'seconds'
         except Exception as err:
             raise err
         server_details.update({'processRunning': running, 'upTime': uptime_v})
