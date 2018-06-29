@@ -5,6 +5,7 @@ import collectd
 import re
 import time
 import requests
+import platform
 import json
 from constants import *
 from utils import *
@@ -51,7 +52,7 @@ class Nginx(object):
             stdout, version = get_cmd_output('nginx -v')
             version_os = [j.strip() for i in version.split("(") for j in i.split(")")]
             data_dict["nginxVersion"] = version_os[0].split("/")[1]
-            data_dict["nginxOS"] = version_os[1]
+            data_dict["nginxOS"] = platform.dist()[0]
             return data_dict
         except Exception as ex:
             raise ex
