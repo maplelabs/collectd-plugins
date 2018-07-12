@@ -5,3 +5,4 @@ MYSQL-python==1.2.3
 psutil==5.3.0
 pyjolokia==0.3.1
 kafka-python==1.4.2
+psycopg2-binary==2.7.5
