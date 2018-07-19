@@ -26,7 +26,7 @@ class Hx_controllerResults:
                 self.interval = children.values[0]
 	    if children.key == HX_CONNECT_IP:
 		self.hx_cluster_ip = children.values[1]
-	collectd.info(self.hx_cluster_ip)
+#	collectd.info(self.hx_cluster_ip)
 
     @staticmethod
     def add_common_params(hx_cluster_data, doc_type):
