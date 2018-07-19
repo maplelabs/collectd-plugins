@@ -498,9 +498,9 @@ class TpccResults:
                 value["status"] = line[0].strip()
                 line = line[1].split("=")
                 value["tile"] = (int(line[0].split("[")[1].replace("]", "").strip())) + 1
-                value["actual"] = float((line[1].split(",")[0]).strip())
-                value["min"] = float((line[2].split(",")[0]).strip())
-                value["max"] = float(line[3].strip())
+                value["actual"] = float(((line[1].split(", ")[0]).strip()).replace(",", ""))
+                value["min"] = float(((line[2].split(", ")[0]).strip()).replace(",", ""))
+                value["max"] = float((line[3].strip()).replace(",", ""))
                 value["phase"] = phase
                 value["group"] = group
                 value["runId"] = int(runId)
@@ -516,9 +516,9 @@ class TpccResults:
                 line = line.split(":")
                 value["status"] = line[0].strip()
                 line = line[1].split("=")
-                value["actual"] = float((line[1].split(",")[0]).strip())
-                value["min"] = float((line[2].split(",")[0]).strip())
-                value["max"] = float(line[3].strip())
+                value["actual"] = float(((line[1].split(", ")[0]).strip()).replace(",", ""))
+                value["min"] = float(((line[2].split(", ")[0]).strip()).replace(",", ""))
+                value["max"] = float((line[3].strip()).replace(",", ""))
                 value["phase"] = -1
                 value["group"] = -1
                 value["tile"] = -1
