@@ -7,6 +7,7 @@ import collectd
 import time
 import json
 import os
+import requests
 
 from constants import *
 from utils import *
@@ -17,16 +18,16 @@ class Hx_controllerResults:
     def __init__(self):
         self.interval = HX_INTERVAL
         self.pollCounter = 0
-	self.end_time = int(time.time())
+        self.end_time = int(time.time())
         self.start_time = self.end_time - self.interval
+        self.timestamp_format = '%H:%M_%Y%m%d'
 
     def read_config(self, cfg):
         for children in cfg.children:
             if children.key == INTERVAL:
                 self.interval = children.values[0]
-	    if children.key == HX_CONNECT_IP:
-		self.hx_cluster_ip = children.values[1]
-#	collectd.info(self.hx_cluster_ip)
+            if children.key == HX_CONNECT_IP:
+                self.hx_cluster_ip = children.values[0]
 
     @staticmethod
     def add_common_params(hx_cluster_data, doc_type):
@@ -35,10 +36,10 @@ class Hx_controllerResults:
 
         hx_cluster_data[HOSTNAME] = hostname
         hx_cluster_data[TIMESTAMP] = timestamp
-        hx_cluster_data[PLUGIN] = TPCC
-        hx_cluster_data[ACTUALPLUGINTYPE] = TPCC
-        hx_cluster_data[PLUGINTYPE] = doc_type
-        hx_cluster_data[PLUGIN_INS] = doc_type
+        hx_cluster_data[PLUGIN] = HXCONNECT
+        hx_cluster_data[ACTUALPLUGINTYPE] = HXCONNECT
+        hx_cluster_data[PLUGINTYPE] = HXCONNECT
+
 
     @staticmethod
     def dispatch_data(hx_cluster_data):
@@ -46,7 +47,7 @@ class Hx_controllerResults:
         dispatch(hx_cluster_data)
 
     def format_time(self):
-	cur_time = time.strftime(self.timestamp_format,time.localtime(self.end_time))
+        cur_time = time.strftime(self.timestamp_format,time.localtime(self.end_time))
         prev_time = time.strftime(self.timestamp_format,time.localtime(self.start_time))
         self.fromTime = prev_time
         self.until = cur_time
@@ -57,8 +58,7 @@ class Hx_controllerResults:
         # Collecting the hx_cluster data
         """
         try:
-            basic_url = "https://" +self.hx_cluster_ip + "/render"
-	    collectd.debug(basic_url)
+            basic_url = "https://" + self.hx_cluster_ip + "/render"
             data_dict = {}
             self.format_time()
             for each_val in PARAMS_LIST:
@@ -69,16 +69,21 @@ class Hx_controllerResults:
                 res = requests.get(basic_url, params=params, verify=False)
                 res = res.json()
                 if res:
-                    data_dict[APIVALS_DICT[each_val]["key"]] = res[0]["datapoints"][0][0]
-            self.start_time = self.start_time + self.interval
-            self.end_time = self.end_time + self.interval
+                    for each_datapoint in res[0]["datapoints"]:
+                        if each_datapoint[0]:
+                            #data_dict[APIVALS_DICT[each_val]["key"]] = res[0]["datapoints"][0][0]
+                            data_dict[APIVALS_DICT[each_val]["key"]] = each_datapoint[0]
+                        else:
+                            pass
+            self.start_time = self.start_time + int(self.interval)
+            self.end_time = self.end_time + int(self.interval)
             return data_dict
         except Exception as e:
             collectd.debug("Couldn't collect hx controller data for the host %s due to %s" % (self.hx_cluster_ip, e))
 
 
     def collect_results(self):
-    	hx_cluster_data = self.collect_hx_cluster_data()
+        hx_cluster_data = self.collect_hx_cluster_data()
         self.add_common_params(hx_cluster_data, "hx_cluster")
         self.dispatch_data(hx_cluster_data)
 
@@ -94,3 +99,4 @@ class Hx_controllerResults:
 obj = Hx_controllerResults()
 collectd.register_config(obj.read_config)
 collectd.register_read(obj.read_temp)
+

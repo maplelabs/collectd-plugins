@@ -248,6 +248,7 @@ LISTENERIP = "listener_ip"
 
 # Hx controller plugin constants
 HX_CONNECT_IP = "hx_connect_ip"
+HXCONNECT = "hxconnect"
 HX_INTERVAL = 60
 APIVALS_DICT = {
   "READ_IOPS": {
@@ -275,7 +276,7 @@ APIVALS_DICT = {
     "key": "write_throughput"
   }
 }
-PARAMS_LIST = ["READ_IOPS", "WRITE_IOPS", "READ_LATENCY", "WRITE_LATENCY", "READ_THROUGHPUT", "WRITE_THROUGHPUT", "READ_THROUGHPUT", "WRITE_THROUGHPUT"]
+PARAMS_LIST = ["READ_IOPS", "WRITE_IOPS", "READ_LATENCY", "WRITE_LATENCY", "READ_THROUGHPUT", "WRITE_THROUGHPUT"]
 
 #Cassandra constants
 CASSANDRA = "cassandra"
