@@ -31,6 +31,7 @@ class PostgresStats:
         self.heapBlksHit = 0
         self.idxBlksHit = 0
         self.idxBlksRead = 0
+        self.documentsTypes = []
         self.aggr_server_data = {'dbSize': 0, 'numDelete': 0, 'numUpdate': 0, 'numInsert': 0, 'numFetch': 0,
                                  'numTransactions': 0, 'cacheHits': 0, 'numCreatedTempFiles': 0, 'tempFileSize': 0,
                                  'indexSize': 0, 'cacheHitRatio': 0}
@@ -49,6 +50,8 @@ class PostgresStats:
                 self.password = children.values[0]
             if children.key == PORT:
                 self.port = children.values[0]
+            if children.key == DOCUMENTSTYPES:
+                self.documentsTypes = children.values[0]
 
     # Trying to connect to the postgres server
     def connect_postgres(self):
@@ -589,13 +592,17 @@ class PostgresStats:
             #collectd.info(dict_postgres)
             if dict_postgres:
                 if self.pollCounter >= 1:
-                    self.pollDiff = dict_postgres
+                    self.pollDiff = deepcopy(dict_postgres)
             else:
                 collectd.error("Plugin Postgres: Unable to fetch data for Postgres.")
                 return
 
             # dispatch data to collectd, copying by value
             if self.pollCounter > 1:
+                # Deleteing documentsTypes which were not requetsed
+                for doc in dict_postgres.keys():
+                    if dict_postgres[doc]['_documentType'] not in self.documentsTypes:
+                        del dict_postgres[doc]
                 self.dispatch_data(deepcopy(dict_postgres))
         except Exception as e:
                 #collectd.error("%s" % traceback.format_exc())

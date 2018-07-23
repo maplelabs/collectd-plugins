@@ -24,6 +24,7 @@ class MysqlStats:
         self.password = None
         self.cur = None
         self.pollCounter = 0
+        self.documentsTypes = []
         self.previousData = {"numCreatedTempFiles": 0, "numCreatedTempTables": 0, "numQueries": 0,
                              "numSelect": 0, "numInsert": 0, "numUpdate": 0, "numDelete": 0,
                              "slowQueries": 0 , "bytesReceivedMB" : 0, "bytesSentMB" : 0,
@@ -40,6 +41,8 @@ class MysqlStats:
                 self.user = children.values[0]
             if children.key == PASSWORD:
                 self.password = children.values[0]
+            if children.key == DOCUMENTSTYPES:
+                self.documentsTypes = children.values[0]
 
     def connect_mysql(self):
         try:
@@ -276,7 +279,11 @@ class MysqlStats:
             if not dict_mysql:
                 collectd.error("Plugin MySQL: Unable to fetch data for MySQL.")
                 return
-
+            else:
+                # Deleteing documentsTypes which were not requetsed
+                for doc in dict_mysql.keys():
+                    if dict_mysql[doc]['_documentType'] not in self.documentsTypes:
+                        del dict_mysql[doc]
             # dispatch data to collectd, copying by value
             self.dispatch_data(deepcopy(dict_mysql))
         except Exception as e:

@@ -31,6 +31,7 @@ class JmxStat(object):
         self.prev_topic_data = {}
         self.prev_data = {}
         self.port = None
+        self.documentsTypes = []
         self.jclient = JolokiaClient(os.path.basename(__file__)[:-3], self.process)
 
     def config(self, cfg):
@@ -42,6 +43,8 @@ class JmxStat(object):
                 self.listenerip = children.values[0]
             if children.key == PORT:
                 self.port = children.values[0]
+            if children.key == DOCUMENTSTYPES:
+                self.documentsTypes = children.values[0]
 
     def get_jmx_parameters(self, jolokiaclient, doc, dict_jmx):
         """Fetch stats based on doc_type"""
@@ -377,13 +380,14 @@ class JmxStat(object):
                 except Queue.Empty:
                     collectd.error("Failed to send one or more doctype document to collectd")
                     continue
-
-                if doc_name == "topicStats":
-                    self.add_rate_dispatch_topic(pid, doc_name, doc_result)
-                elif doc_name == "kafkaStats":
-                    self.add_rate_dispatch_kafka(pid, doc_name, doc_result)
-                else:
-                    self.dispatch_partitions(doc_name, doc_result)
+                # Dispatching documentsTypes which are requetsed alone
+                if doc_name in self.documentsTypes:
+                    if doc_name == "topicStats":
+                        self.add_rate_dispatch_topic(pid, doc_name, doc_result)
+                    elif doc_name == "kafkaStats":
+                        self.add_rate_dispatch_kafka(pid, doc_name, doc_result)
+                    else:
+                        self.dispatch_partitions(doc_name, doc_result)
         output.close()
 
     def dispatch_data(self, doc_name, result):
