@@ -25,6 +25,7 @@ LINUX_STATIC = "linux_static"
 LINUX_DYNAMIC = "linux_dynamic"
 PLUGINTYPE = "_documentType"
 ACTUALPLUGINTYPE = "_actual_collectd_plugin_type"
+DOCUMENTSTYPES = "documentsTypes"
 
 # Interface Plugin Constants
 IF_STATS = "nic_stats"
