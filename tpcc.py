@@ -548,6 +548,7 @@ class TpccResults:
 
         runIds = "/opt/VDriver/results"
         runs = os.listdir(runIds)
+        runs = sorted(runs)
 
         if "PROCESSEDID" in runs:
             pass
