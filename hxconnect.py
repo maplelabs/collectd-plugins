@@ -61,8 +61,15 @@ class Hx_controllerResults:
             basic_url = "https://" + self.hx_cluster_ip + "/render"
             data_dict = {}
             self.format_time()
+            date_time = subprocess.check_output("timedatectl", shell=True)
+            date_time = date_time.split("\n")
+            for each_line in date_time:
+                if "Time zone" in each_line:
+                    time_zone = (each_line.strip()).split(" ")
+            tz = time_zone[2]
             for each_val in PARAMS_LIST:
-                params = {"format":"json","tz":"Asia/Calcutta"}
+                params = {"format":"json"}
+                params["tz"] = tz
                 params["from"] = self.fromTime
                 params["until"] = self.until
                 params["target"] = APIVALS_DICT[each_val]["target"]

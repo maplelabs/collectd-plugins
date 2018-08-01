@@ -144,10 +144,10 @@ class TpccResults:
                                 for phase_index, each_phase in enumerate(each_group):
                                     new_dict = {}
                                     new_dict["transactionName"] = val_dict["transactionName"]
-                                    new_dict["group"] = group_index + 1
-                                    new_dict["phase"] = phase_index + 1
+                                    new_dict["_group"] = str(group_index + 1)
+                                    new_dict["_phase"] = str(phase_index + 1)
                                     new_dict["transactionCount"] = long(each_phase)
-                                    new_dict["runId"] = int(runId)
+                                    new_dict["_runId"] = runId
                                     result.append(new_dict)
 
                     if Trade_result:
@@ -176,10 +176,10 @@ class TpccResults:
                                 for phase_index, each_phase in enumerate(each_group):
                                     new_dict = {}
                                     new_dict["transactionName"] = val_dict["transactionName"]
-                                    new_dict["group"] = group_index + 1
-                                    new_dict["phase"] = phase_index + 1
+                                    new_dict["_group"] = str(group_index + 1)
+                                    new_dict["_phase"] = str(phase_index + 1)
                                     new_dict["transactionCount"] = long(each_phase)
-                                    new_dict["runId"] = int(runId)
+                                    new_dict["_runId"] = runId
                                     result.append(new_dict)
 
                     if Trade_lookup:
@@ -208,10 +208,10 @@ class TpccResults:
                                 for phase_index, each_phase in enumerate(each_group):
                                     new_dict = {}
                                     new_dict["transactionName"] = val_dict["transactionName"]
-                                    new_dict["group"] = group_index + 1
-                                    new_dict["phase"] = phase_index + 1
+                                    new_dict["_group"] = str(group_index + 1)
+                                    new_dict["_phase"] = str(phase_index + 1)
                                     new_dict["transactionCount"] = long(each_phase)
-                                    new_dict["runId"] = int(runId)
+                                    new_dict["_runId"] = runId
                                     result.append(new_dict)
 
                     if Trade_update:
@@ -240,10 +240,10 @@ class TpccResults:
                                 for phase_index, each_phase in enumerate(each_group):
                                     new_dict = {}
                                     new_dict["transactionName"] = val_dict["transactionName"]
-                                    new_dict["group"] = group_index + 1
-                                    new_dict["phase"] = phase_index + 1
+                                    new_dict["_group"] = str(group_index + 1)
+                                    new_dict["_phase"] = str(phase_index + 1)
                                     new_dict["transactionCount"] = long(each_phase)
-                                    new_dict["runId"] = int(runId)
+                                    new_dict["_runId"] = runId
                                     result.append(new_dict)
 
                     if Trade_status:
@@ -272,10 +272,10 @@ class TpccResults:
                                 for phase_index, each_phase in enumerate(each_group):
                                     new_dict = {}
                                     new_dict["transactionName"] = val_dict["transactionName"]
-                                    new_dict["group"] = group_index + 1
-                                    new_dict["phase"] = phase_index + 1
+                                    new_dict["_group"] = str(group_index + 1)
+                                    new_dict["_phase"] = str(phase_index + 1)
                                     new_dict["transactionCount"] = long(each_phase)
-                                    new_dict["runId"] = int(runId)
+                                    new_dict["_runId"] = runId
                                     result.append(new_dict)
 
                     if Customer_position:
@@ -304,10 +304,10 @@ class TpccResults:
                                 for phase_index, each_phase in enumerate(each_group):
                                     new_dict = {}
                                     new_dict["transactionName"] = val_dict["transactionName"]
-                                    new_dict["group"] = group_index + 1
-                                    new_dict["phase"] = phase_index + 1
+                                    new_dict["_group"] = str(group_index + 1)
+                                    new_dict["_phase"] = str(phase_index + 1)
                                     new_dict["transactionCount"] = long(each_phase)
-                                    new_dict["runId"] = int(runId)
+                                    new_dict["_runId"] = runId
                                     result.append(new_dict)
 
                     if Broker_volume:
@@ -336,10 +336,10 @@ class TpccResults:
                                 for phase_index, each_phase in enumerate(each_group):
                                     new_dict = {}
                                     new_dict["transactionName"] = val_dict["transactionName"]
-                                    new_dict["group"] = group_index + 1
-                                    new_dict["phase"] = phase_index + 1
+                                    new_dict["_group"] = str(group_index + 1)
+                                    new_dict["_phase"] = str(phase_index + 1)
                                     new_dict["transactionCount"] = long(each_phase)
-                                    new_dict["runId"] = int(runId)
+                                    new_dict["_runId"] = runId
                                     result.append(new_dict)
 
                     if Security_detail:
@@ -368,10 +368,10 @@ class TpccResults:
                                 for phase_index, each_phase in enumerate(each_group):
                                     new_dict = {}
                                     new_dict["transactionName"] = val_dict["transactionName"]
-                                    new_dict["group"] = group_index + 1
-                                    new_dict["phase"] = phase_index + 1
+                                    new_dict["_group"] = str(group_index + 1)
+                                    new_dict["_phase"] = str(phase_index + 1)
                                     new_dict["transactionCount"] = long(each_phase)
-                                    new_dict["runId"] = int(runId)
+                                    new_dict["_runId"] = runId
                                     result.append(new_dict)
 
                     if Market_feed:
@@ -400,10 +400,10 @@ class TpccResults:
                                 for phase_index, each_phase in enumerate(each_group):
                                     new_dict = {}
                                     new_dict["transactionName"] = val_dict["transactionName"]
-                                    new_dict["group"] = group_index + 1
-                                    new_dict["phase"] = phase_index + 1
+                                    new_dict["_group"] = str(group_index + 1)
+                                    new_dict["_phase"] = str(phase_index + 1)
                                     new_dict["transactionCount"] = long(each_phase)
-                                    new_dict["runId"] = int(runId)
+                                    new_dict["_runId"] = runId
                                     result.append(new_dict)
 
                     if Market_watch:
@@ -432,10 +432,10 @@ class TpccResults:
                                 for phase_index, each_phase in enumerate(each_group):
                                     new_dict = {}
                                     new_dict["transactionName"] = val_dict["transactionName"]
-                                    new_dict["group"] = group_index + 1
-                                    new_dict["phase"] = phase_index + 1
+                                    new_dict["_group"] = str(group_index + 1)
+                                    new_dict["_phase"] = str(phase_index + 1)
                                     new_dict["transactionCount"] = long(each_phase)
-                                    new_dict["runId"] = int(runId)
+                                    new_dict["_runId"] = runId
                                     result.append(new_dict)
 
                     if Data_maintenance:
@@ -464,15 +464,26 @@ class TpccResults:
                                 for phase_index, each_phase in enumerate(each_group):
                                     new_dict = {}
                                     new_dict["transactionName"] = val_dict["transactionName"]
-                                    new_dict["group"] = group_index + 1
-                                    new_dict["phase"] = phase_index + 1
+                                    new_dict["_group"] = str(group_index + 1)
+                                    new_dict["_phase"] = str(phase_index + 1)
                                     new_dict["transactionCount"] = long(each_phase)
-                                    new_dict["runId"] = int(runId)
+                                    new_dict["_runId"] = runId
                                     result.append(new_dict)
 
         return result
 
     def group_tps(self, runId):
+
+        vcfg_file = "/opt/VDriver/results/" + runId + "/vcfg.properties"
+        with open(vcfg_file) as file_obj:
+            file_content = file_obj.readlines()
+
+        for line in file_content:
+            if line.startswith("VM_TILES"):
+                tiles = int(line.split("=")[1].strip().replace("\"", ""))
+                break
+
+        total_entries = 4 * tiles
 
         filepath = "/opt/VDriver/results/" + runId + "/results/*/audit_check.log"
         fileName = glob.glob(filepath)
@@ -483,6 +494,7 @@ class TpccResults:
         throughput = False
         group = 1
         phase = 1
+        phase_value = 1
         result = []
         for line in lines:
             if "Measured Throughput Data" in line:
@@ -497,19 +509,23 @@ class TpccResults:
                 line = line.split(":")
                 value["status"] = line[0].strip()
                 line = line[1].split("=")
-                value["tile"] = (int(line[0].split("[")[1].replace("]", "").strip())) + 1
+                value["_tile"] = str((int(line[0].split("[")[1].replace("]", "").strip())) + 1)
                 value["actual"] = float(((line[1].split(", ")[0]).strip()).replace(",", ""))
                 value["min"] = float(((line[2].split(", ")[0]).strip()).replace(",", ""))
                 value["max"] = float((line[3].strip()).replace(",", ""))
-                value["phase"] = phase
-                value["group"] = group
-                value["runId"] = int(runId)
+                value["_phase"] = str(phase)
+                value["_group"] = str(group)
+                value["_runId"] = runId
                 result.append(value)
                 group += 1
+                phase_value += 1
 
             if group == 5:
-                phase += 1
                 group = 1
+
+            if phase_value > total_entries:
+                phase_value = 1
+                phase += 1
 
             if "combined" in line:
                 value = {}
@@ -519,10 +535,10 @@ class TpccResults:
                 value["actual"] = float(((line[1].split(", ")[0]).strip()).replace(",", ""))
                 value["min"] = float(((line[2].split(", ")[0]).strip()).replace(",", ""))
                 value["max"] = float((line[3].strip()).replace(",", ""))
-                value["phase"] = -1
-                value["group"] = -1
-                value["tile"] = -1
-                value["runId"] = int(runId)
+                value["_phase"] = "combined"
+                value["_group"] = "combined"
+                value["_tile"] = "combined"
+                value["_runId"] = runId
                 result.append(value)
 
         return result 
