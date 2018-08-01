@@ -285,3 +285,8 @@ CASSANDRA_STATS = "cassandraStats"
 JVMSTATS = "jvmStats"
 KEYSPACE_STATS = "keyspaceStats"
 
+# ESA constants
+class ESA(object):
+    HOST_CONFIG_FILE = '/opt/esa_conf.json'
+    DOWNLOAD_PATH = '/var/log/esa_logs/'
+    DUMMY_PATH = '/tmp/'
