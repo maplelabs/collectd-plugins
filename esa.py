@@ -10,7 +10,6 @@ import os
 # user imports
 from constants import *
 from utils import *
-from esa_conf import *
 
 log_name_mapping = {"authentication": "authentication",
                     "gui_logs": "gui",
@@ -35,8 +34,11 @@ class ESALogs:
             {
                 "password": "pswd",
                 "hosts": [
-                    "host_1",
-                    "1host_2"
+                    {
+                        "name": "host_name",
+                        "ip": "host_ip",
+                        "uuid": "host_uuid"
+                    }
                 ],
                 "user": "uname"
             }
@@ -91,17 +93,20 @@ class ESALogs:
             collectd.error("Error in copying the log file due to %s" %(str(err)))
             return False
 
-    def download_log(self, host_ip):
+    def download_log(self, host_detail):
         data_dict = {}
+        host_ip = host_detail.get('ip', None)
+        host_name = host_detail.get('name', host_ip)
+        host_uuid = host_detail.get('uuid', None)
         if host_ip:
-            log_path = self.download_path + host_ip + "/"
+            log_path = self.download_path + host_name + "_" + host_uuid + "/"
             try:
                 if self.checkLogDest(log_path) and self.log_name:
                     esa_url = 'ftp://{0}:{1}@{2}/{3}/{4}.current'.format(self.user, self.password, host_ip, self.log_name, log_name_mapping[self.log_name])
                     urllib.urlretrieve(esa_url, self.dummy_path+"_"+host_ip)
                     #urllib.urlretrieve('ftp://admin:ironport@10.11.100.82/'+ self.log_name +'/'+ log_name_mapping[self.log_name] +'.current', '/var/log/esa_logs/'+ self.log_name+'.txt')
                     urllib.urlcleanup()
-                    if not self.fileCompare(esa_log_file = log_path+self.log_name, dummy_file=self.dummy_path+"_"+host_ip):
+                    if not self.fileCompare(esa_log_file = log_path+self.log_name.replace('_',''), dummy_file=self.dummy_path+"_"+host_ip):
                         return
                 else:
                     collectd.info("Couldn't store the data")
