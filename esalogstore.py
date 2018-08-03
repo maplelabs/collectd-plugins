@@ -128,9 +128,9 @@ class ESALogs:
         timestamp = int(round(time.time()))
         result_dict[HOSTNAME] = host
         result_dict[TIMESTAMP] = timestamp
-        result_dict[PLUGIN] = "esa"
-        result_dict[ACTUALPLUGINTYPE] = "esa"
-        result_dict[PLUGINTYPE] = "esa"
+        result_dict[PLUGIN] = "esalogstore"
+        result_dict[ACTUALPLUGINTYPE] = "esalogstore"
+        result_dict[PLUGINTYPE] = "esalogstore"
         collectd.info("Plugin ESALogs: Added common parameters successfully")
 
     @staticmethod
