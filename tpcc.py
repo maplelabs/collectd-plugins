@@ -122,22 +122,22 @@ class TpccResults:
                         if line.startswith("Group 1"):
                             line = line.split(":")[1].strip()
                             value = line.split("]")
-                            value = [each_value.replace("[","") for each_value in value]
+                            value = [each_value.replace("[", "") for each_value in value]
                             val_dict["group"].append(value[:-1])
                         elif line.startswith("Group 2"):
                             line = line.split(":")[1].strip()
                             value = line.split("]")
-                            value = [each_value.replace("[","") for each_value in value]
+                            value = [each_value.replace("[", "") for each_value in value]
                             val_dict["group"].append(value[:-1])
                         elif line.startswith("Group 3"):
                             line = line.split(":")[1].strip()
                             value = line.split("]")
-                            value = [each_value.replace("[","") for each_value in value]
+                            value = [each_value.replace("[", "") for each_value in value]
                             val_dict["group"].append(value[:-1])
                         elif line.startswith("Group 4"):
                             line = line.split(":")[1].strip()
                             value = line.split("]")
-                            value = [each_value.replace("[","") for each_value in value]
+                            value = [each_value.replace("[", "") for each_value in value]
                             val_dict["group"].append(value[:-1])
                             Trade_order = False
                             for group_index, each_group in enumerate(val_dict["group"]):
@@ -148,28 +148,30 @@ class TpccResults:
                                     new_dict["_phase"] = str(phase_index + 1)
                                     new_dict["transactionCount"] = long(each_phase)
                                     new_dict["_runId"] = runId
+                                    new_dict["_uniqueId"] = "G" + str(group_index + 1) \
+                                                            + "P" + str(phase_index + 1)
                                     result.append(new_dict)
 
                     if Trade_result:
                         if line.startswith("Group 1"):
                             line = line.split(":")[1].strip()
                             value = line.split("]")
-                            value = [each_value.replace("[","") for each_value in value]
+                            value = [each_value.replace("[", "") for each_value in value]
                             val_dict["group"].append(value[:-1])
                         elif line.startswith("Group 2"):
                             line = line.split(":")[1].strip()
                             value = line.split("]")
-                            value = [each_value.replace("[","") for each_value in value]
+                            value = [each_value.replace("[", "") for each_value in value]
                             val_dict["group"].append(value[:-1])
                         elif line.startswith("Group 3"):
                             line = line.split(":")[1].strip()
                             value = line.split("]")
-                            value = [each_value.replace("[","") for each_value in value]
+                            value = [each_value.replace("[", "") for each_value in value]
                             val_dict["group"].append(value[:-1])
                         elif line.startswith("Group 4"):
                             line = line.split(":")[1].strip()
                             value = line.split("]")
-                            value = [each_value.replace("[","") for each_value in value]
+                            value = [each_value.replace("[", "") for each_value in value]
                             val_dict["group"].append(value[:-1])
                             Trade_result = False
                             for group_index, each_group in enumerate(val_dict["group"]):
@@ -180,28 +182,30 @@ class TpccResults:
                                     new_dict["_phase"] = str(phase_index + 1)
                                     new_dict["transactionCount"] = long(each_phase)
                                     new_dict["_runId"] = runId
+                                    new_dict["_uniqueId"] = "G" + str(group_index + 1) \
+                                                            + "P" + str(phase_index + 1)
                                     result.append(new_dict)
 
                     if Trade_lookup:
                         if line.startswith("Group 1"):
                             line = line.split(":")[1].strip()
                             value = line.split("]")
-                            value = [each_value.replace("[","") for each_value in value]
+                            value = [each_value.replace("[", "") for each_value in value]
                             val_dict["group"].append(value[:-1])
                         elif line.startswith("Group 2"):
                             line = line.split(":")[1].strip()
                             value = line.split("]")
-                            value = [each_value.replace("[","") for each_value in value]
+                            value = [each_value.replace("[", "") for each_value in value]
                             val_dict["group"].append(value[:-1])
                         elif line.startswith("Group 3"):
                             line = line.split(":")[1].strip()
                             value = line.split("]")
-                            value = [each_value.replace("[","") for each_value in value]
+                            value = [each_value.replace("[", "") for each_value in value]
                             val_dict["group"].append(value[:-1])
                         elif line.startswith("Group 4"):
                             line = line.split(":")[1].strip()
                             value = line.split("]")
-                            value = [each_value.replace("[","") for each_value in value]
+                            value = [each_value.replace("[", "") for each_value in value]
                             val_dict["group"].append(value[:-1])
                             Trade_lookup = False
                             for group_index, each_group in enumerate(val_dict["group"]):
@@ -212,28 +216,30 @@ class TpccResults:
                                     new_dict["_phase"] = str(phase_index + 1)
                                     new_dict["transactionCount"] = long(each_phase)
                                     new_dict["_runId"] = runId
+                                    new_dict["_uniqueId"] = "G" + str(group_index + 1) \
+                                                            + "P" + str(phase_index + 1)
                                     result.append(new_dict)
 
                     if Trade_update:
                         if line.startswith("Group 1"):
                             line = line.split(":")[1].strip()
                             value = line.split("]")
-                            value = [each_value.replace("[","") for each_value in value]
+                            value = [each_value.replace("[", "") for each_value in value]
                             val_dict["group"].append(value[:-1])
                         elif line.startswith("Group 2"):
                             line = line.split(":")[1].strip()
                             value = line.split("]")
-                            value = [each_value.replace("[","") for each_value in value]
+                            value = [each_value.replace("[", "") for each_value in value]
                             val_dict["group"].append(value[:-1])
                         elif line.startswith("Group 3"):
                             line = line.split(":")[1].strip()
                             value = line.split("]")
-                            value = [each_value.replace("[","") for each_value in value]
+                            value = [each_value.replace("[", "") for each_value in value]
                             val_dict["group"].append(value[:-1])
                         elif line.startswith("Group 4"):
                             line = line.split(":")[1].strip()
                             value = line.split("]")
-                            value = [each_value.replace("[","") for each_value in value]
+                            value = [each_value.replace("[", "") for each_value in value]
                             val_dict["group"].append(value[:-1])
                             Trade_update = False
                             for group_index, each_group in enumerate(val_dict["group"]):
@@ -244,28 +250,30 @@ class TpccResults:
                                     new_dict["_phase"] = str(phase_index + 1)
                                     new_dict["transactionCount"] = long(each_phase)
                                     new_dict["_runId"] = runId
+                                    new_dict["_uniqueId"] = "G" + str(group_index + 1) \
+                                                            + "P" + str(phase_index + 1)
                                     result.append(new_dict)
 
                     if Trade_status:
                         if line.startswith("Group 1"):
                             line = line.split(":")[1].strip()
                             value = line.split("]")
-                            value = [each_value.replace("[","") for each_value in value]
+                            value = [each_value.replace("[", "") for each_value in value]
                             val_dict["group"].append(value[:-1])
                         elif line.startswith("Group 2"):
                             line = line.split(":")[1].strip()
                             value = line.split("]")
-                            value = [each_value.replace("[","") for each_value in value]
+                            value = [each_value.replace("[", "") for each_value in value]
                             val_dict["group"].append(value[:-1])
                         elif line.startswith("Group 3"):
                             line = line.split(":")[1].strip()
                             value = line.split("]")
-                            value = [each_value.replace("[","") for each_value in value]
+                            value = [each_value.replace("[", "") for each_value in value]
                             val_dict["group"].append(value[:-1])
                         elif line.startswith("Group 4"):
                             line = line.split(":")[1].strip()
                             value = line.split("]")
-                            value = [each_value.replace("[","") for each_value in value]
+                            value = [each_value.replace("[", "") for each_value in value]
                             val_dict["group"].append(value[:-1])
                             Trade_status = False
                             for group_index, each_group in enumerate(val_dict["group"]):
@@ -276,28 +284,30 @@ class TpccResults:
                                     new_dict["_phase"] = str(phase_index + 1)
                                     new_dict["transactionCount"] = long(each_phase)
                                     new_dict["_runId"] = runId
+                                    new_dict["_uniqueId"] = "G" + str(group_index + 1) \
+                                                            + "P" + str(phase_index + 1)
                                     result.append(new_dict)
 
                     if Customer_position:
                         if line.startswith("Group 1"):
                             line = line.split(":")[1].strip()
                             value = line.split("]")
-                            value = [each_value.replace("[","") for each_value in value]
+                            value = [each_value.replace("[", "") for each_value in value]
                             val_dict["group"].append(value[:-1])
                         elif line.startswith("Group 2"):
                             line = line.split(":")[1].strip()
                             value = line.split("]")
-                            value = [each_value.replace("[","") for each_value in value]
+                            value = [each_value.replace("[", "") for each_value in value]
                             val_dict["group"].append(value[:-1])
                         elif line.startswith("Group 3"):
                             line = line.split(":")[1].strip()
                             value = line.split("]")
-                            value = [each_value.replace("[","") for each_value in value]
+                            value = [each_value.replace("[", "") for each_value in value]
                             val_dict["group"].append(value[:-1])
                         elif line.startswith("Group 4"):
                             line = line.split(":")[1].strip()
                             value = line.split("]")
-                            value = [each_value.replace("[","") for each_value in value]
+                            value = [each_value.replace("[", "") for each_value in value]
                             val_dict["group"].append(value[:-1])
                             Customer_position = False
                             for group_index, each_group in enumerate(val_dict["group"]):
@@ -308,28 +318,30 @@ class TpccResults:
                                     new_dict["_phase"] = str(phase_index + 1)
                                     new_dict["transactionCount"] = long(each_phase)
                                     new_dict["_runId"] = runId
+                                    new_dict["_uniqueId"] = "G" + str(group_index + 1) \
+                                                            + "P" + str(phase_index + 1)
                                     result.append(new_dict)
 
                     if Broker_volume:
                         if line.startswith("Group 1"):
                             line = line.split(":")[1].strip()
                             value = line.split("]")
-                            value = [each_value.replace("[","") for each_value in value]
+                            value = [each_value.replace("[", "") for each_value in value]
                             val_dict["group"].append(value[:-1])
                         elif line.startswith("Group 2"):
                             line = line.split(":")[1].strip()
                             value = line.split("]")
-                            value = [each_value.replace("[","") for each_value in value]
+                            value = [each_value.replace("[", "") for each_value in value]
                             val_dict["group"].append(value[:-1])
                         elif line.startswith("Group 3"):
                             line = line.split(":")[1].strip()
                             value = line.split("]")
-                            value = [each_value.replace("[","") for each_value in value]
+                            value = [each_value.replace("[", "") for each_value in value]
                             val_dict["group"].append(value[:-1])
                         elif line.startswith("Group 4"):
                             line = line.split(":")[1].strip()
                             value = line.split("]")
-                            value = [each_value.replace("[","") for each_value in value]
+                            value = [each_value.replace("[", "") for each_value in value]
                             val_dict["group"].append(value[:-1])
                             Broker_volume = False
                             for group_index, each_group in enumerate(val_dict["group"]):
@@ -340,28 +352,30 @@ class TpccResults:
                                     new_dict["_phase"] = str(phase_index + 1)
                                     new_dict["transactionCount"] = long(each_phase)
                                     new_dict["_runId"] = runId
+                                    new_dict["_uniqueId"] = "G" + str(group_index + 1) \
+                                                            + "P" + str(phase_index + 1)
                                     result.append(new_dict)
 
                     if Security_detail:
                         if line.startswith("Group 1"):
                             line = line.split(":")[1].strip()
                             value = line.split("]")
-                            value = [each_value.replace("[","") for each_value in value]
+                            value = [each_value.replace("[", "") for each_value in value]
                             val_dict["group"].append(value[:-1])
                         elif line.startswith("Group 2"):
                             line = line.split(":")[1].strip()
                             value = line.split("]")
-                            value = [each_value.replace("[","") for each_value in value]
+                            value = [each_value.replace("[", "") for each_value in value]
                             val_dict["group"].append(value[:-1])
                         elif line.startswith("Group 3"):
                             line = line.split(":")[1].strip()
                             value = line.split("]")
-                            value = [each_value.replace("[","") for each_value in value]
+                            value = [each_value.replace("[", "") for each_value in value]
                             val_dict["group"].append(value[:-1])
                         elif line.startswith("Group 4"):
                             line = line.split(":")[1].strip()
                             value = line.split("]")
-                            value = [each_value.replace("[","") for each_value in value]
+                            value = [each_value.replace("[", "") for each_value in value]
                             val_dict["group"].append(value[:-1])
                             Security_detail = False
                             for group_index, each_group in enumerate(val_dict["group"]):
@@ -372,28 +386,30 @@ class TpccResults:
                                     new_dict["_phase"] = str(phase_index + 1)
                                     new_dict["transactionCount"] = long(each_phase)
                                     new_dict["_runId"] = runId
+                                    new_dict["_uniqueId"] = "G" + str(group_index + 1) \
+                                                            + "P" + str(phase_index + 1)
                                     result.append(new_dict)
 
                     if Market_feed:
                         if line.startswith("Group 1"):
                             line = line.split(":")[1].strip()
                             value = line.split("]")
-                            value = [each_value.replace("[","") for each_value in value]
+                            value = [each_value.replace("[", "") for each_value in value]
                             val_dict["group"].append(value[:-1])
                         elif line.startswith("Group 2"):
                             line = line.split(":")[1].strip()
                             value = line.split("]")
-                            value = [each_value.replace("[","") for each_value in value]
+                            value = [each_value.replace("[", "") for each_value in value]
                             val_dict["group"].append(value[:-1])
                         elif line.startswith("Group 3"):
                             line = line.split(":")[1].strip()
                             value = line.split("]")
-                            value = [each_value.replace("[","") for each_value in value]
+                            value = [each_value.replace("[", "") for each_value in value]
                             val_dict["group"].append(value[:-1])
                         elif line.startswith("Group 4"):
                             line = line.split(":")[1].strip()
                             value = line.split("]")
-                            value = [each_value.replace("[","") for each_value in value]
+                            value = [each_value.replace("[", "") for each_value in value]
                             val_dict["group"].append(value[:-1])
                             Market_feed = False
                             for group_index, each_group in enumerate(val_dict["group"]):
@@ -404,28 +420,30 @@ class TpccResults:
                                     new_dict["_phase"] = str(phase_index + 1)
                                     new_dict["transactionCount"] = long(each_phase)
                                     new_dict["_runId"] = runId
+                                    new_dict["_uniqueId"] = "G" + str(group_index + 1) \
+                                                            + "P" + str(phase_index + 1)
                                     result.append(new_dict)
 
                     if Market_watch:
                         if line.startswith("Group 1"):
                             line = line.split(":")[1].strip()
                             value = line.split("]")
-                            value = [each_value.replace("[","") for each_value in value]
+                            value = [each_value.replace("[", "") for each_value in value]
                             val_dict["group"].append(value[:-1])
                         elif line.startswith("Group 2"):
                             line = line.split(":")[1].strip()
                             value = line.split("]")
-                            value = [each_value.replace("[","") for each_value in value]
+                            value = [each_value.replace("[", "") for each_value in value]
                             val_dict["group"].append(value[:-1])
                         elif line.startswith("Group 3"):
                             line = line.split(":")[1].strip()
                             value = line.split("]")
-                            value = [each_value.replace("[","") for each_value in value]
+                            value = [each_value.replace("[", "") for each_value in value]
                             val_dict["group"].append(value[:-1])
                         elif line.startswith("Group 4"):
                             line = line.split(":")[1].strip()
                             value = line.split("]")
-                            value = [each_value.replace("[","") for each_value in value]
+                            value = [each_value.replace("[", "") for each_value in value]
                             val_dict["group"].append(value[:-1])
                             Market_watch = False
                             for group_index, each_group in enumerate(val_dict["group"]):
@@ -436,28 +454,30 @@ class TpccResults:
                                     new_dict["_phase"] = str(phase_index + 1)
                                     new_dict["transactionCount"] = long(each_phase)
                                     new_dict["_runId"] = runId
+                                    new_dict["_uniqueId"] = "G" + str(group_index + 1) \
+                                                            + "P" + str(phase_index + 1)
                                     result.append(new_dict)
 
                     if Data_maintenance:
                         if line.startswith("Group 1"):
                             line = line.split(":")[1].strip()
                             value = line.split("]")
-                            value = [each_value.replace("[","") for each_value in value]
+                            value = [each_value.replace("[", "") for each_value in value]
                             val_dict["group"].append(value[:-1])
                         elif line.startswith("Group 2"):
                             line = line.split(":")[1].strip()
                             value = line.split("]")
-                            value = [each_value.replace("[","") for each_value in value]
+                            value = [each_value.replace("[", "") for each_value in value]
                             val_dict["group"].append(value[:-1])
                         elif line.startswith("Group 3"):
                             line = line.split(":")[1].strip()
                             value = line.split("]")
-                            value = [each_value.replace("[","") for each_value in value]
+                            value = [each_value.replace("[", "") for each_value in value]
                             val_dict["group"].append(value[:-1])
                         elif line.startswith("Group 4"):
                             line = line.split(":")[1].strip()
                             value = line.split("]")
-                            value = [each_value.replace("[","") for each_value in value]
+                            value = [each_value.replace("[", "") for each_value in value]
                             val_dict["group"].append(value[:-1])
                             Data_maintenance = False
                             for group_index, each_group in enumerate(val_dict["group"]):
@@ -468,6 +488,8 @@ class TpccResults:
                                     new_dict["_phase"] = str(phase_index + 1)
                                     new_dict["transactionCount"] = long(each_phase)
                                     new_dict["_runId"] = runId
+                                    new_dict["_uniqueId"] = "G" + str(group_index + 1) \
+                                                            + "P" + str(phase_index + 1)
                                     result.append(new_dict)
 
         return result
@@ -516,6 +538,8 @@ class TpccResults:
                 value["_phase"] = str(phase)
                 value["_group"] = str(group)
                 value["_runId"] = runId
+                value["_uniqueId"] = "T" + str((int(line[0].split("[")[1].replace("]", "").strip())) + 1) \
+                                     + "G" + str(group) + "P" + str(phase)
                 result.append(value)
                 group += 1
                 phase_value += 1
@@ -539,9 +563,10 @@ class TpccResults:
                 value["_group"] = "combined"
                 value["_tile"] = "combined"
                 value["_runId"] = runId
+                value["_uniqueId"] = runId + "_Over All"
                 result.append(value)
 
-        return result 
+        return result
 
     @staticmethod
     def add_common_params(tpcc_dict, doc_type):
@@ -595,8 +620,8 @@ class TpccResults:
 
     def read(self):
         self.pollCounter += 1
-        self.collect_results() 
-        
+        self.collect_results()
+
     def read_temp(self):
         collectd.unregister_read(self.read_temp)
         collectd.register_read(self.read, interval=int(self.interval))
