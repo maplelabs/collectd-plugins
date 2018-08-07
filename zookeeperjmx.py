@@ -210,7 +210,7 @@ class JmxStat(object):
             dict_jmx['outstandingRequests'] = zookper['value']['OutstandingRequests']
             dict_jmx['packetsReceived'] = zookper['value']['PacketsReceived']
             dict_jmx['packetsSent'] = zookper['value']['PacketsSent']
-            dict_jmx['zookeeperVersion'] = zookper['value']['Version']
+            dict_jmx['zookeeperVersion'] = ((zookper['value']['Version']).split(","))[0]
         mbean_memory = 'org.apache.ZooKeeperService:name0=StandaloneServer_port%s,name1=InMemoryDataTree' % self.port
         zookper_count = jolokiaClient.request(type='read', mbean=mbean_memory)
         if zookper_count['status'] == 200:
