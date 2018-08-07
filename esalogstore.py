@@ -6,6 +6,8 @@ import urllib
 import json
 import time
 import os
+import multiprocessing
+import ast
 
 # user imports
 from constants import *
@@ -23,7 +25,7 @@ class ESALogs:
         self.host = None
         self.user = None
         self.password = None
-        self.log_name = None
+        self.log_names = []
         self.download_path = ESA.DOWNLOAD_PATH
         self.previousLogName = []
 
@@ -55,8 +57,9 @@ class ESALogs:
             if children.key == INTERVAL:
                 self.interval = children.values[0]
             if children.key == "log_name":
-                self.log_name = children.values[0]
-                self.dummy_path = ESA.DUMMY_PATH +self.log_name
+                self.log_names = children.values[0]
+                self.log_names = ast.literal_eval(self.log_names)
+                self.dummy_path = ESA.DUMMY_PATH
         self.read_host_config()
 
     def checkLogDest(self, log_path=None):
@@ -93,40 +96,50 @@ class ESALogs:
             collectd.error("Error in copying the log file due to %s" %(str(err)))
             return False
 
-    def download_log(self, host_detail):
+    def download_log(self, host_ip, host_name, host_uuid, log_name):
         data_dict = {}
+        download_status = True
+        log_path = self.download_path + host_name + "_" + host_uuid + "/"
+        tmp_file = self.dummy_path+log_name+"_"+host_ip
+        try:
+            if self.checkLogDest(log_path) and log_name:
+                esa_url = 'ftp://{0}:{1}@{2}/{3}/{4}.current'.format(self.user, self.password, host_ip, log_name, log_name_mapping[log_name])
+                urllib.urlretrieve(esa_url, tmp_file)
+                #urllib.urlretrieve('ftp://admin:ironport@10.11.100.82/'+ self.log_name +'/'+ log_name_mapping[self.log_name] +'.current', '/var/log/esa_logs/'+ self.log_name+'.txt')
+                urllib.urlcleanup()
+                if not self.fileCompare(esa_log_file = log_path+log_name.replace('_',''), dummy_file=tmp_file):
+                    download_status = False
+                else:
+                    data_dict["status"] = "success"
+                    collectd.info("Downloaded Log files from ESA cluster %s %s" %(str(host_name), str(data_dict)))
+            else:
+                collectd.info("Couldn't store the data")
+                download_status = False
+        except Exception as e:
+            collectd.error("Error in downloading log files from the ESA cluster %s due to %s" % (str(host_name), str(e)))
+            data_dict["status"] = "Failed"
+            data_dict["message"] = e
+        if download_status:
+            self.add_common_params(data_dict, host_ip)
+            # dispatch data to collectd
+            self.dispatch_data(data_dict)
+
+    def start_download(self, host_detail):
         host_ip = host_detail.get('ip', None)
         host_name = host_detail.get('name', host_ip)
         host_uuid = host_detail.get('uuid', None)
         if host_ip:
-            log_path = self.download_path + host_name + "_" + host_uuid + "/"
-            try:
-                if self.checkLogDest(log_path) and self.log_name:
-                    esa_url = 'ftp://{0}:{1}@{2}/{3}/{4}.current'.format(self.user, self.password, host_ip, self.log_name, log_name_mapping[self.log_name])
-                    urllib.urlretrieve(esa_url, self.dummy_path+"_"+host_ip)
-                    #urllib.urlretrieve('ftp://admin:ironport@10.11.100.82/'+ self.log_name +'/'+ log_name_mapping[self.log_name] +'.current', '/var/log/esa_logs/'+ self.log_name+'.txt')
-                    urllib.urlcleanup()
-                    if not self.fileCompare(esa_log_file = log_path+self.log_name.replace('_',''), dummy_file=self.dummy_path+"_"+host_ip):
-                        return
-                else:
-                    collectd.info("Couldn't store the data")
-                    return
-            except Exception as e:
-                collectd.error("Error in downloading log files due to %s" % (str(e)))
-                data_dict["status"] = "Failed"
-                data_dict["message"] = e
-                return data_dict
-            data_dict["status"] = "success"
-            collectd.info("Downloaded Log files from ESA cluster %s " %(str(data_dict)))
-            return data_dict
+            for log_name in self.log_names:
+                download_process = multiprocessing.Process(target=self.download_log, args=(host_ip, host_name, host_uuid, log_name))
+                download_process.start()
         else:
-            collectd.error("ESA Host details are absent...!!!")
-            return
+            collected.error("Host Ip is absent...!!!")
+            collectd.error("Plugin ESA Logs download: Unable to fetch information of ESA Logs for the host %s" %(str(host)))
 
     @staticmethod
-    def add_common_params(result_dict, host):
+    def add_common_params(result_dict, esa_host):
         timestamp = int(round(time.time()))
-        result_dict[HOSTNAME] = host
+        result_dict[HOSTNAME] = esa_host
         result_dict[TIMESTAMP] = timestamp
         result_dict[PLUGIN] = "esalogstore"
         result_dict[ACTUALPLUGINTYPE] = "esalogstore"
@@ -142,14 +155,8 @@ class ESALogs:
         #self.previousLogName.append(self.log_name)
         # collect data
         for host in self.hosts:
-            result_dict = self.download_log(host)
-            if not result_dict:
-                collectd.error("Plugin ESA Logs download: Unable to fetch information of ESA Logs for the host %s" %(str(host)))
-                return
-
-            self.add_common_params(result_dict, host)
-            # dispatch data to collectd
-            self.dispatch_data(result_dict)
+            process = multiprocessing.Process(target=self.start_download, args=(host,))
+            process.start()
 
     def read_temp(self):
         collectd.unregister_read(self.read_temp)
