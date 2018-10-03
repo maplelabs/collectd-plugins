@@ -9,6 +9,7 @@ import collectd
 import Queue
 import multiprocessing
 from copy import deepcopy
+import subprocess
 # user imports
 import utils
 from constants import *
@@ -199,8 +200,49 @@ class JmxStat(object):
                 if mp_values['status'] == 200:
                     dict_jmx[pool_name_no_spaces+'UsageUsed'] = round(mp_values['value']['used'] / 1024.0/ 1024.0, 2)
 
+    def get_zookeeper_info(self):
+        "Getting info about zookeeper type whether it is a standalone or cluster"
+        try:
+            p1 = subprocess.Popen("echo srvr | nc localhost 2181", shell=True, stdout=subprocess.PIPE)
+            output = p1.communicate()[0]
+            if output:
+                output_list = output.splitlines()
+            for line in output_list:
+                if "Mode" in line:
+                    zootype_list = line.split(":")
+                    zootype = zootype_list[1].strip()
+            return zootype
+        except Exception as e:
+            collectd.error("Error in getting zookeeper info due to %s" % str(e))
+            return None
+
+    def get_zookeeper_id(self):
+        "If zookeeper type is a cluster, get its own id and set its appropriate"
+        try:
+            p2 = subprocess.Popen("cat /opt/kafka/data/zookeeper/myid", shell=True, stdout=subprocess.PIPE)
+            output = p2.communicate()[0]
+            if output:
+                return output
+        except Exception as e:
+            collectd.error("Error in getting zookeeper info due to %s" % str(e))
+            return None
+
     def add_zookeeper_parameters(self, jolokiaClient, dict_jmx):
-        zookper = jolokiaClient.request(type='read', mbean='org.apache.ZooKeeperService:name0=StandaloneServer_port'+self.port)
+        "Getting info about zookeeper type whether it is a standalone or cluster"
+        zookpertype = self.get_zookeeper_info()
+        if zookpertype == "standalone":
+            zookper = jolokiaClient.request(type='read',
+                                            mbean='org.apache.ZooKeeperService:name0=StandaloneServer_port' + self.port)
+            mbean_memory = 'org.apache.ZooKeeperService:name0=StandaloneServer_port%s,name1=InMemoryDataTree' % self.port
+        else:
+            zookpertype = zookpertype[0].upper() + zookpertype[1:]
+            # If zookeeper type is a cluster, get its own id and set its appropriate
+            zookperId = self.get_zookeeper_id()
+            bean = 'org.apache.ZooKeeperService:name0=ReplicatedServer_id' + zookperId + ',name1=replica.' + zookperId + ',name2=' + zookpertype
+            zookper = jolokiaClient.request(type='read', mbean=bean)
+            mbean_memory = 'org.apache.ZooKeeperService:name0=ReplicatedServer_id' + zookperId + ',name1=replica.' + zookperId + \
+                           ',name2=' + zookpertype + ',name3=InMemoryDataTree'
+
         if zookper['status'] == 200:
             dict_jmx['avgRequestLatency'] = round(zookper['value']['AvgRequestLatency'] * 0.001, 2)
             dict_jmx['maxSessionTimeout'] = round(zookper['value']['MaxSessionTimeout'] * 0.001, 2)
@@ -211,7 +253,6 @@ class JmxStat(object):
             dict_jmx['packetsReceived'] = zookper['value']['PacketsReceived']
             dict_jmx['packetsSent'] = zookper['value']['PacketsSent']
             dict_jmx['zookeeperVersion'] = ((zookper['value']['Version']).split(","))[0]
-        mbean_memory = 'org.apache.ZooKeeperService:name0=StandaloneServer_port%s,name1=InMemoryDataTree' % self.port
         zookper_count = jolokiaClient.request(type='read', mbean=mbean_memory)
         if zookper_count['status'] == 200:
             dict_jmx['nodeCount'] = zookper_count['value']['NodeCount']

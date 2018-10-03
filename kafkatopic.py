@@ -10,6 +10,8 @@ import Queue
 import multiprocessing
 import kafka
 from copy import deepcopy
+import psutil
+import socket
 from pyjolokia import Jolokia
 # user imports
 import utils
@@ -39,12 +41,33 @@ class JmxStat(object):
         for children in cfg.children:
             if children.key == INTERVAL:
                 self.interval = children.values[0]
-            if children.key == LISTENERIP:
-                self.listenerip = children.values[0]
             if children.key == PORT:
                 self.port = children.values[0]
             if children.key == DOCUMENTSTYPES:
                 self.documentsTypes = children.values[0]
+        self.listenerip = self.add_kafka_listenerip(self.port)
+
+    @staticmethod
+    def add_kafka_listenerip(port):
+        """
+        Return listener IP of kafka broker
+        """
+        list_addr = []
+        for if_name, if_info in psutil.net_if_addrs().items():
+            for family in if_info:
+                if family.family == socket.AF_INET:
+                    list_addr.append(family.address)
+
+        # Get the first matched listener IP
+        for addr in list_addr:
+            try:
+                ip = '%s:%s' % (addr, port)
+                consumer = kafka.KafkaConsumer(bootstrap_servers=ip)
+                collectd.info("found ip %s" %addr)
+                return addr
+            except Exception:
+                pass
+        return ''
 
     def get_jmx_parameters(self, jolokiaclient, doc, dict_jmx):
         """Fetch stats based on doc_type"""
