@@ -32,13 +32,18 @@ class RamUtil(object):
         Returns dictionary with values of available and ram utilization information.
         """
         mem = psutil.virtual_memory()
+        swp = psutil.swap_memory()
         dict_ram_util = {'available': round(
             float(mem.available) / (FACTOR * FACTOR * FACTOR), FLOATING_FACTOR), 'RAMUtil': mem.percent,
             'totalRAM': round(float(mem.total) / (FACTOR * FACTOR * FACTOR), FLOATING_FACTOR), 
             'free': round(float(mem.free) / (FACTOR * FACTOR * FACTOR), FLOATING_FACTOR),
             'cached':round(float(mem.cached) / (FACTOR * FACTOR * FACTOR), FLOATING_FACTOR),
             'buffered':round(float(mem.buffers) / (FACTOR * FACTOR * FACTOR), FLOATING_FACTOR),
-            'used': round(float(mem.used) / (FACTOR * FACTOR * FACTOR), FLOATING_FACTOR)
+            'used': round(float(mem.used) / (FACTOR * FACTOR * FACTOR), FLOATING_FACTOR),
+            'swap_totalRAM': round(float(swp.total) / (FACTOR * FACTOR * FACTOR), FLOATING_FACTOR),
+            'swap_used': round(float(swp.used) / (FACTOR * FACTOR * FACTOR), FLOATING_FACTOR),
+            'swap_free': round(float(mem.free) / (FACTOR * FACTOR * FACTOR), FLOATING_FACTOR),
+            'swap_RAMUtil': swp.percent
         }
         return dict_ram_util
 
