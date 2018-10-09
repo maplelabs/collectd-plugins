@@ -3,8 +3,8 @@
 # Declare variables to be passed into your templates.
 replicaCount: 1
 image:
-  repository: draft
-  tag: dev
+  repository: 54.218.7.117:5000/maplelabs/jx
+  tag: 1.0.1
   pullPolicy: IfNotPresent
 service:
   name: jx
