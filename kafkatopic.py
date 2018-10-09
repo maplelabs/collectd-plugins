@@ -12,13 +12,14 @@ import kafka
 from copy import deepcopy
 import psutil
 import socket
+import subprocess
 from pyjolokia import Jolokia
 # user imports
 import utils
 from constants import *
 from libjolokia import JolokiaClient
 
-KAFKA_DOCS = ["kafkaStats", "topicStats", "partitionStats"]
+KAFKA_DOCS = ["kafkaStats", "topicStats", "partitionStats", "consumerStats"]
 BROKER_STATES = {0: "NotRunning", 1: "Starting", 2: "RecoveringFromUncleanShutdown", 3: "RunningAsBroker", \
                  6: "PendingControlledShutdown", 7: "BrokerShuttingDown"}
 
@@ -77,6 +78,8 @@ class JmxStat(object):
             self.add_topic_parameters(jolokiaclient, dict_jmx, "topic")
         elif doc == "partitionStats":
             self.add_topic_parameters(jolokiaclient, dict_jmx, "partition")
+        elif doc == "consumerStats":
+            self.add_consumer_parameters(dict_jmx)
 
     def add_default_rate_value(self, dict_jmx, doctype):
         """Add default value to rate key based on type"""
@@ -310,6 +313,48 @@ class JmxStat(object):
         if flag == "partition":
             dict_jmx["partitionStats"] = parti_list
 
+    def add_consumer_parameters(self, dict_jmx):
+        """
+        Collect console consumer group stats
+        :param jolokiaclient:
+        :param dict_jmx:
+        :return:
+        """
+        grp_list = []
+        with open(os.devnull, 'w') as devnull:
+            p1 = subprocess.Popen(
+                ["sudo", "/opt/kafka/kafka_2.12-1.0.0/bin/kafka-consumer-groups.sh", "--list", "--bootstrap-server",
+                 self.listenerip+':'+self.port], stdout=subprocess.PIPE, stderr=devnull)
+        p1.wait()
+        consumerGrp = p1.communicate()[0]
+        if consumerGrp:
+            consumerGrp_list = consumerGrp.splitlines()
+            for consGrp in consumerGrp_list:
+                with open(os.devnull, 'w') as devnull:
+                    p2 = subprocess.Popen(
+                        ["sudo", "/opt/kafka/kafka_2.12-1.0.0/bin/kafka-consumer-groups.sh", "--describe", "--group",
+                         consGrp, "--bootstrap-server", self.listenerip+':'+self.port], stdout=subprocess.PIPE, stderr=devnull)
+                    p2.wait()
+                    dict_grp = {}
+                    grp_detail = p2.communicate()[0]
+                    if grp_detail:
+                        grp_detail_list = grp_detail.splitlines()
+                        for group in grp_detail_list[2:]:
+                            cons_details = group.split()
+                            if cons_details[6] == '-':
+                                #consumer without client id is considered as inactive consumer
+                                continue
+                            dict_grp["_groupName"] = consGrp
+                            dict_grp["_topicName"] = cons_details[0]
+                            dict_grp["partition"] = int(cons_details[1])
+                            dict_grp["currentOffset"] = long(cons_details[2])
+                            dict_grp["logEndOffset"] = long(cons_details[3])
+                            dict_grp["lag"] = long(cons_details[4])
+                            dict_grp["custId"] = cons_details[5]
+                            dict_grp["clientId"] = cons_details[6]
+                            grp_list.append(dict_grp)
+            dict_jmx["consumerStats"] = grp_list
+
     def add_common_params(self, doc, dict_jmx):
         """Adds TIMESTAMP, PLUGIN, PLUGITYPE to dictionary."""
         timestamp = int(round(time.time()))
@@ -345,11 +390,14 @@ class JmxStat(object):
         self.prev_data[pid] = dict_jmx
         self.dispatch_data(doc, deepcopy(dict_jmx))
 
-    def dispatch_partitions(self, doc, dict_jmx):
-        partition_list = dict_jmx["partitionStats"]
-        for partition in partition_list:
-            self.add_common_params(doc, partition)
-            self.dispatch_data(doc, partition)
+    def dispatch_stats(self, doc, dict_jmx):
+        if doc == "partitionStats":
+            stats_list = dict_jmx["partitionStats"]
+        else:
+            stats_list = dict_jmx["consumerStats"]
+        for stats in stats_list:
+            self.add_common_params(doc, stats)
+            self.dispatch_data(doc, stats)
 
     def get_pid_jmx_stats(self, pid, port, output):
         """Call get_jmx_parameters function for each doc_type and add dict to queue"""
@@ -362,7 +410,7 @@ class JmxStat(object):
                     raise ValueError("No data found")
 
                 collectd.info("Plugin kafkatopic: Added %s doctype information successfully for pid %s" % (doc, pid))
-                if doc in ["topicStats", "partitionStats"]:
+                if doc in ["topicStats", "partitionStats", "consumerStats"]:
                     output.put((pid, doc, dict_jmx))
                     continue
 
@@ -410,7 +458,7 @@ class JmxStat(object):
                     elif doc_name == "kafkaStats":
                         self.add_rate_dispatch_kafka(pid, doc_name, doc_result)
                     else:
-                        self.dispatch_partitions(doc_name, doc_result)
+                        self.dispatch_stats(doc_name, doc_result)
         output.close()
 
     def dispatch_data(self, doc_name, result):
@@ -436,6 +484,9 @@ class JmxStat(object):
 
             collectd.info("Plugin kafkatopic: Succesfully sent %s doctype to collectd." % doc_name)
             collectd.debug("Plugin kafkatopic: Values dispatched =%s" % json.dumps(result))
+
+        elif doc_name == "consumerStats":
+            collectd.info("Plugin kafkatopic: Succesfully sent consumerStats of consumer group %s of topic %s" % (result['_groupName'], result['_topicName']))
 
         else:
             collectd.info("Plugin kafkatopic: Succesfully sent topic %s of partitionStats: %s." % (result['_topicName'], result['_partitionNum']))
