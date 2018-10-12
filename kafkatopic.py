@@ -352,7 +352,7 @@ class JmxStat(object):
                             dict_grp["lag"] = long(cons_details[4])
                             dict_grp["custId"] = cons_details[5]
                             dict_grp["clientId"] = cons_details[6]
-                            grp_list.append(dict_grp)
+                            grp_list.append(dict_grp.copy())
             dict_jmx["consumerStats"] = grp_list
 
     def add_common_params(self, doc, dict_jmx):
