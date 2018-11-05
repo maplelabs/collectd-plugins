@@ -285,6 +285,21 @@ CASSANDRA_STATS = "cassandraStats"
 JVMSTATS = "jvmStats"
 KEYSPACE_STATS = "keyspaceStats"
 
+
+# oozie plugin constants
+OOZIEHOST = 'ooziehost'
+OOZIEPORT = 'oozieport'
+JOB_HISTORY_SERVER = 'job_history_server'
+JOB_HISTORY_PORT = 'job_history_port'
+RESOURCE_MANAGER = 'resource_manager'
+RESOURCE_MANAGER_PORT = 'resource_manager_port'
+TIMELINE_SERVER = 'timeline_server'
+TIMELINE_PORT = 'timeline_port'
+
+# namenode plugin constants
+NAMENODE = "namenode_host"
+NAMENODE_PORT = "namenode_port"
+
 # ESA constants
 class ESA(object):
     HOST_CONFIG_FILE = '/opt/esa_conf.json'
