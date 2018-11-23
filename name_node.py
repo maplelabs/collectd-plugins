@@ -1,10 +1,9 @@
-import collectd
-from http_request import *
-import json
-from constants import *
 import time
-from utils import *
 from copy import deepcopy
+import collectd
+from utils import * # pylint: disable=W
+from constants import * # pylint: disable=W
+from http_request import * # pylint: disable=W
 
 class Namenode:
     def __init__(self):
@@ -28,7 +27,7 @@ class Namenode:
 
 
     def get_name_node_stats(self):
-
+        """Function to get name node stats"""
         location = self.namenode
         port = self.port
         path = "/jmx?qry=Hadoop:service=NameNode,name={}".format('JvmMetrics')
@@ -40,15 +39,15 @@ class Namenode:
             return None
         hostname = json_name_node[0]['tag.Hostname']
 
-        for a in ['FSNamesystemState', 'FSNamesystem', 'RpcActivityForPort8020']:
-            path = "/jmx?qry=Hadoop:service=NameNode,name={}".format(a)
+        for name in ['FSNamesystemState', 'FSNamesystem', 'RpcActivityForPort8020']:
+            path = "/jmx?qry=Hadoop:service=NameNode,name={}".format(name)
             json_doc = http_request(location, port, path, scheme='http')
             try:
                 if json_doc['beans'] == []:
                     continue
                 doc = json_doc['beans'][0]
-            except KeyError as e:
-                collectd.error("Plugin Name_node: Error ", e)
+            except KeyError as error:
+                collectd.error("Plugin Name_node: Error ", error)
                 return None
             if 'TopUserOpCounts' in doc:
                 doc.pop('TopUserOpCounts')
@@ -57,11 +56,14 @@ class Namenode:
             else:
                 doc['_tag_Hostname'] = doc.pop('tag.Hostname')
             doc['time'] = int(time.time())
-            doc['_documentType'] = "nameNodeStats" + a
+            if 'RpcActivity' in name:
+                doc['_documentType'] = "nameNodeStats" + "RpcActivity"
+            else:
+                doc['_documentType'] = "nameNodeStats" + name
 
-            for f in doc.keys():
-                if '.' in f:
-                    self.remove_dot(doc, f)
+            for field in doc.keys():
+                if '.' in field:
+                    self.remove_dot(doc, field)
             json_name_node.append(doc)
         return json_name_node
 

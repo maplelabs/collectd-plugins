@@ -285,7 +285,6 @@ CASSANDRA_STATS = "cassandraStats"
 JVMSTATS = "jvmStats"
 KEYSPACE_STATS = "keyspaceStats"
 
-
 # oozie plugin constants
 OOZIEHOST = 'ooziehost'
 OOZIEPORT = 'oozieport'
@@ -299,6 +298,9 @@ TIMELINE_PORT = 'timeline_port'
 # namenode plugin constants
 NAMENODE = "namenode_host"
 NAMENODE_PORT = "namenode_port"
+ # yarn_stat plugin constants
+YARN_NODE = "yarn_node"
+CLUSTER = "cluster"
 
 # ESA constants
 class ESA(object):
