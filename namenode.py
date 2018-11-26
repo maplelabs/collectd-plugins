@@ -54,7 +54,7 @@ class Namenode:
             if 'tag.Hostname' not in doc:
                 doc['tag.Hostname'] = hostname
             else:
-                doc['_tag_Hostname'] = doc.pop('tag.Hostname')
+                doc['_tag_hostname'] = doc.pop('tag.Hostname')
             doc['time'] = int(time.time())
             if 'RpcActivity' in name:
                 doc['_documentType'] = "nameNodeStats" + "RpcActivity"
@@ -75,8 +75,8 @@ class Namenode:
 
         namenode_dic[HOSTNAME] = hostname
         namenode_dic[TIMESTAMP] = timestamp
-        namenode_dic[PLUGIN] = 'name_node'
-        namenode_dic[ACTUALPLUGINTYPE] = 'name_node'
+        namenode_dic[PLUGIN] = 'namenode'
+        namenode_dic[ACTUALPLUGINTYPE] = 'namenode'
         namenode_dic[PLUGINTYPE] = doc_type
 
     @staticmethod
