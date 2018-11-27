@@ -43,11 +43,11 @@ class TopStats(object):
         if self.utilize_type == 'process':
             if self.process != 'None' or self.process != '*':
                 proc = '|'.join(self.process.split(','))
-                cmnd = "top -b -o +%CPU -n 1 | grep -E '" + proc + "' | head -"+ str(head_value) + " | awk '{print $1, $2, $9, $10, $12}'"
+                cmnd = "top -b -o +%CPU -n 1 | grep -E '" + proc + "' | head -"+ str(head_value) + " | awk '{print $1, $2, $5, $6, $7, $9, $10, $12}'"
             else:
-                cmnd = "top -b -o +%CPU -n 1 | head -" + str(head_value) + " | sed -n '8,20p' | awk '{print $1, $2, $9, $10, $12}'"
+                cmnd = "top -b -o +%CPU -n 1 | head -" + str(head_value) + " | sed -n '8,20p' | awk '{print $1, $2, $5, $6, $7, $9, $10, $12}'"
         elif self.utilize_type == "CPU" or self.utilize_type == "MEM":
-            cmnd = "top -b -o +%" + self.utilize_type + " -n 1 | head -" + str(head_value) + " | sed -n '8,20p' | awk '{print $1, $2, $9, $10, $12}'"
+            cmnd = "top -b -o +%" + self.utilize_type + " -n 1 | head -" + str(head_value) + " | sed -n '8,20p' | awk '{print $1, $2, $5, $6, $7, $9, $10, $12}'"
             self.process = "*"
         process = subprocess.Popen(cmnd, shell=True, stdout=subprocess.PIPE)
         result = []
@@ -57,14 +57,19 @@ class TopStats(object):
             line = process.stdout.readline()
             if line != b'':
                 response = line.split(' ')
+                
                 top_stats_res['order'] = process_order
                 top_stats_res['pid'] = long(response[0])
                 top_stats_res['user'] = response[1]
-                top_stats_res['cpu'] = float(response[2])
-                top_stats_res['memory'] = float(response[3])
-                top_stats_res[PROCESSNAME ] = response[4].strip()
+                top_stats_res['virtual_memory'] = long(response[2])
+                top_stats_res['resident_memory'] = long(response[3])
+                top_stats_res['shared_memory'] = long(response[4])
+                top_stats_res['cpu'] = float(response[5])
+                top_stats_res['memory'] = float(response[6])
+                top_stats_res[PROCESSNAME ] = response[7].strip()
                 top_stats_res['process_group'] = self.process
                 top_stats_res['resource_type'] = self.utilize_type
+                
                 #os.write(1, line)
                 process_order   += 1
                 result.append(top_stats_res)
