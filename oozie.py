@@ -4,20 +4,22 @@
 import operator
 import signal # pylint: disable=unused-import
 import time
-from datetime import datetime
+from datetime import datetime # pylint: disable=W
 import json
 from copy import deepcopy
 from multiprocessing.dummy import Pool as ThreadPool
 import requests
 import collectd
-from metrics import *
-from rest_api import *
-from utils import *
-from buildData import *
-from constants import *
-from utilities import *
+import redis
+from metrics import * # pylint: disable=W
+from rest_api import * # pylint: disable=W
+from utils import * # pylint: disable=W
+from buildData import * # pylint: disable=W
+from constants import * # pylint: disable=W
+from utilities import * # pylint: disable=W
 
 class Oozie:
+    """Plugin object will be created only once and collects oozie statistics info every interval."""
     def __init__(self):
         """Initializes interval, oozie server, Job history and Timeline server details"""
         self.ooziehost = None
@@ -29,7 +31,7 @@ class Oozie:
         self.resource_manager = None
         self.resource_manager_port = None
         self.interval = None
-        self.with_threading = False
+        self.with_threading = True
         self.workflows_processed = 0
         self.wfs_processed = 0
         self.pool = None
@@ -59,6 +61,37 @@ class Oozie:
                 self.timeline_server = children.values[0]
             elif children.key == TIMELINE_PORT:
                 self.timeline_port = children.values[0]
+
+    def get_redis_conn(self):
+        """Function to connect redis database"""
+        try:
+            redis_obj = redis.Redis(host='localhost', port=6379, password=None)
+            return redis_obj
+        except:
+            collectd.error("Plugin Oozie: Unable to connect redis") # pylint: disable=no-member
+            return None
+
+    def read_from_redis(self):
+        """Function to read data from redis database"""
+        redis_obj = self.get_redis_conn()
+        if not redis_obj:
+            return None
+        if not redis_obj.get("workflows"):
+            redis_obj.set("workflows", json.dumps({"workflows": []}))
+        return json.loads(redis_obj.get("workflows"))
+
+    def write_to_redis(self, workflow, index=-1):
+        """Function to write data into redis"""
+        workflows_data = self.read_from_redis()
+        if not workflows_data:
+            return
+        if index == -1:
+            workflows_data["workflows"].append(workflow)
+        else:
+            workflows_data["workflows"][index] = workflow
+        redis_obj = self.get_redis_conn()
+        redis_obj.set("workflows", json.dumps(workflows_data))
+
 
     def prepare_workflow(self, workflow):
         """Function to convert workflow details """
@@ -120,6 +153,7 @@ class Oozie:
         metrics = metrics_update
         return metrics
 
+
     def is_latest_oozie_job(self, lastjobdetails, latestjobdetails):
         """Function to check the Jobi details is already in flatMap file"""
         for workflow in lastjobdetails['workflows']:
@@ -127,39 +161,21 @@ class Oozie:
                 return False
         return True
 
-    def read_json(self):
-        """Function to read workflow details from json file"""
-        with open("/opt/collectd/plugins/oozieworkflows.json", "r") as workflow_file:
-            data = json.loads(workflow_file.read())
-        if 'workflows' not in data:
-            data['workflows'] = []
-        workflow_file.close()
-        return data
-
-    def write_json(self, workflow):
-        """Function to workflow details to json file"""
-        data = self.read_json()
-        with open("/opt/collectd/plugins/oozieworkflows.json", "w") as workflow_file:
-            data['workflows'].append(workflow)
-            json.dump(data, workflow_file)
-        workflow_file.close()
-
     def change_workflow_status(self, workflow):
         """Function to change status of workflow in json file"""
-        workflows = self.read_json()
+        workflows = self.read_from_redis()
+        if not workflows:
+            return
         index = -1
         for i in range(0, len(workflows['workflows'])):
             if workflows['workflows'][i]['wfId'] == workflow['wfId']:
                 index = i
                 break
         if index != -1:
-            workflows['workflows'][i] = workflow
-            with open("/opt/collectd/plugins/oozieworkflows.json", "w") as workflow_file:
-                json.dump(workflows, workflow_file)
-            workflow_file.close()
+            self.write_to_redis(workflow, index)
 
 
-    def processYarnJob(self, yarnjobid, oozieworkflowid, oozieworkflowname, \
+    def processyarnjob(self, yarnjobid, oozieworkflowid, oozieworkflowname, \
                        oozieworkflowactionid, oozieworkflowactionname):
         """Function to get Job details fro yarnjobid"""
         collectd.debug("Plugin Oozie: Processing yarnjobid %s of workflow %s workflowId: %s ActionId:%s ActionName:%s" \
@@ -255,19 +271,20 @@ class Oozie:
                                                  workflow['wfName'])
                             actiondata['action'] = workflowActionData
                             childindex = childindex + 1
-                        yarnJobInfo = self.processYarnJob(externalChildID, workflow['wfId'], \
-                                      workflow['wfName'], action['id'], action['name'])
-                        if yarnJobInfo:
+                        if res_data['status'] == "SUCCEEDED":
+                            yarnJobInfo = self.processyarnjob(externalChildID, workflow['wfId'], \
+                                          workflow['wfName'], action['id'], action['name'])
+                            if yarnJobInfo:
                      #       self.results.extend(yarnJobInfo)
-                            actiondata['yarnJobs'].append(yarnJobInfo)
-                        else:
-                            collectd.error("Don't have all info for wfaId %s" % action['id']) # pylint: disable=E1101
+                                actiondata['yarnJobs'].append(yarnJobInfo)
+                            else:
+                                collectd.error("Don't have all info for wfaId %s" % action['id']) # pylint: disable=E1101
                 else:
                     workflowActionData = self.prepare_workflow_action_data(action, \
                                          action['externalId'], workflow['wfId'], workflow['wfName'])
                     actiondata['action'] = workflowActionData
-                    if action['externalId'] and action['externalId'] != '-':
-                        yarnJobInfo = self.processYarnJob(action['externalId'], workflow['wfId'], \
+                    if action['externalId'] and action['externalId'] != '-' and res_data['status'] == "SUCCEEDED":
+                        yarnJobInfo = self.processyarnjob(action['externalId'], workflow['wfId'], \
                                       workflow['wfName'], action['id'], action['name'])
                         if yarnJobInfo:
                             actiondata['yarnJobs'].append(yarnJobInfo)
@@ -293,7 +310,7 @@ class Oozie:
             self.results.append(res_data)
 
     def read_workflows(self):
-        """Function to process read unprocessed workflows"""
+        """Function to process unprocessed workflows"""
         res_json = requests.get(self.url+'/jobs')
         if not res_json.ok:
             collectd.error("Unable to get oozie jobs from %s server and status is %s" \
@@ -301,15 +318,19 @@ class Oozie:
             return
         else:
             res_json = res_json.json()
-        if len(res_json['workflows']) == 0:
+        if not res_json['workflows']:
             return
-        data = self.read_json()
+        data = self.read_from_redis()
+        if not data:
+            return
         for workflow in res_json['workflows']:
             worklow_data = self.prepare_workflow(workflow)
             if not self.is_latest_oozie_job(data, worklow_data):
                 continue
-            self.write_json(worklow_data)
-        res_data = self.read_json()
+            self.write_to_redis(worklow_data)
+        res_data = self.read_from_redis()
+        if not res_data:
+            return
         res_data = [workflow for workflow in res_data['workflows'] \
                     if workflow['workflowMonitorStatus'] != 'processed']
         if not res_data:
