@@ -176,16 +176,19 @@ def get_container_info(host, port, job_id):
     return containers_flat
 
 
-def get_taskattempt_container_info(host, port, job_id, task_ids, wfName, wfId, wfaId, wfaName):
+#def get_taskattempt_container_info(host, port, job_id, task_ids, wfName, wfId, wfaId, wfaName):
+def get_taskattempt_container_info(dic_host, job_id, task_ids, wfName, wfId, wfaId, wfaName):
 
     try:
         if task_ids is None:
             return None
-        location = host
-        port = port
+        host = dic_host['timeline_server']
+        timeline_port = dic_host['timeline_port']
+        location = dic_host['job_history']
+        port = dic_host['job_port']
 
-        #containers_list = get_container_info(job_id)
-        containers_list = []
+        containers_list = get_container_info(host, timeline_port, job_id)
+        #containers_list = []
         task_attempt_document_job = []
         for task in task_ids:
             path = '/ws/v1/history/mapreduce/jobs/{0}/tasks/{1}/attempts'.format(job_id, task)
@@ -249,7 +252,7 @@ def get_taskattempt_container_info(host, port, job_id, task_ids, wfName, wfId, w
 
         return task_attempt_document_job
     except Exception as e:
-        logger.debug('Unable to get task details => ' + traceback.format_exc().splitlines()[-1])
+        collectd.info('Plugin Oozie: Unable to get task details => ' + traceback.format_exc().splitlines()[-1])
         return None
 
 

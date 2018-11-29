@@ -1,15 +1,15 @@
-from bisect import *
-from utilities import *
+from bisect import * # pylint: disable=unused-import
+from utilities import * # pylint: disable=unused-import
+import collectd
 #from buildData import prepare_task_stats_by_timepoint
 
-logger = logging.getLogger(__name__)
 
 reduce_start = 70.0
 
 tasks_by_time = {
     "numOfDataPoints": 25,
     "minimumInterval": 5  # seconds
-}
+} # pylint: disable=unused-import
 
 def prepare_task_stats_by_timepoint(tp_start, tp_end, map_count, reduce_count, job_id, wfaId, wfId, wfName, wfaName):
     return {
@@ -23,9 +23,9 @@ def prepare_task_stats_by_timepoint(tp_start, tp_end, map_count, reduce_count, j
         "mapTaskCount": map_count,
         "reduceTaskCount": reduce_count,
         'duration': tp_end - tp_start,
-        "_plugin": "hadoop",
+        "_plugin": "oozie",
         "_documentType": "taskCounts",
-        "_tag_appName": "hadoop"
+        "_tag_appName": "oozie"
     }
 
 def get_wait_time(job_json, tasks_reduce, tasks_map):
@@ -77,6 +77,8 @@ def find_outliers(nums):
 
 
 def find_stragglers_runtime(tasks_list):
+    if not tasks_list:
+        return
     tasks_sorted_elapsed_time = sorted(tasks_list, key=lambda k: k['elapsedTime'])
     elapsed_time_list = []
     for e in tasks_sorted_elapsed_time:
@@ -91,8 +93,6 @@ def find_stragglers_runtime(tasks_list):
 
 
 def calculate_scheduling_delays(workflow, wfa_list):
-    #logger.debug("workflow {0}".format(workflow))
-    #logger.debug("wfa_list {0}".format((wfa_list)))
     wf_runtime = get_unix_timestamp(workflow['endTime']) - get_unix_timestamp(workflow['startTime'])
     sigma_wfa_runtime = 0
     sigma_job_runtime = 0
@@ -126,7 +126,7 @@ def calculate_scheduling_delays(workflow, wfa_list):
             workflow['jobSchedulingDelay'] = wf_runtime - sigma_job_runtime
 
 
-def find_mapper_spill(tasks_list):
+def find_mapper_spill(tasks_list): # pylint: disable=unused-import
 
     spilled_records_from_tasks = 0
     output_records_from_tasks = 0
@@ -220,6 +220,6 @@ def calculate_taskcount_by_time_points(job_info, task_list, wfaId, wfId, wfName,
         stat = prepare_task_stats_by_timepoint(time_interval_start, time_interval_end, map_count, reduce_count,
                                                   job_info['jobId'], wfaId, wfId, wfName, wfaName)
         tpTaskStats.append(stat)
-        logger.debug("tpStats {0}".format(tpTaskStats))
+        collectd.debug("tpStats {0}".format(tpTaskStats))
 
     return tpTaskStats if tpTaskStats else None
