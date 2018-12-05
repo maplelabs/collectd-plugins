@@ -27,6 +27,23 @@ class YarnStats:
         new_field = '_' + field.split('.')[0] + '_' + field.split('.')[1].lower()
         doc[new_field] = doc.pop(field)
 
+    def get_containers_node(self):
+        """Function to get collection of resources, each of which represents a node"""
+        location = self.yarn_node
+        port = self.resource_manager
+        path = '/ws/v1/cluster/nodes'
+        nodes_json = http_request(location, port, path, scheme="http")
+        if nodes_json is None:
+            return None
+
+        if not nodes_json["nodes"]:
+            return None
+        nodes_list = nodes_json["nodes"]["node"]
+        for node in nodes_list:
+            node['time'] = int(round(time.time()))
+            node['_documentType'] = "containerStats"
+
+        return nodes_list
 
     def get_yarn_stats(self):
         """Function to get yarn statistics"""
@@ -93,9 +110,13 @@ class YarnStats:
     def collect_data(self):
         """Collects all data."""
         namenode_dics = self.get_yarn_stats()
+        container_docs = self.get_containers_node()
+        if container_docs:
+            namenode_dics.extend(container_docs)
         for doc in namenode_dics:
             self.add_common_params(doc, doc['_documentType'])
             self.dispatch_data(deepcopy(doc))
+
 
     def read(self):
         self.collect_data()
