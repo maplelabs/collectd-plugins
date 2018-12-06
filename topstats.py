@@ -7,6 +7,7 @@ import json
 import time
 import collectd
 import subprocess
+import re
 
 # user imports
 import utils
@@ -34,6 +35,25 @@ class TopStats(object):
             if children.key == "process":
                 self.process = children.values[0]
 
+    def bytesConv(self, data):
+        """
+        Convert the memory to kb based on its unit
+            1 mb = 1024 kilobytes
+            1 gb = 1024 * 1024 kilobytes = 1048576 kb
+            1 tb = 1024 * 1024 * 1024 kilobytes = 1073741824 kb
+        """
+        data = str(data)
+        convVal = {'k' : 1, 'm' : 1024, 'g' : 1048576 , 't' : 1073741824}
+
+        splitVal = re.search('(\d*\.?\d*)',data).group()
+        splitUnit = re.search('([a-z])',data)
+
+        splitUnit = 'k' if not splitUnit else splitUnit.group()
+
+        if splitUnit in convVal:
+            data = float(splitVal) * convVal[splitUnit]
+        return data
+
     def top_command(self):
         """
         Returns dictionary with values of available and top SPU and memory usage summary of teh process.
@@ -58,12 +78,17 @@ class TopStats(object):
             if line != b'':
                 response = line.split(' ')
                 
+                # Memory usage Conversion
+                virt_mem = self.bytesConv(response[2])
+                resi_mem = self.bytesConv(response[3])
+                shrd_mem = self.bytesConv(response[4])
+
                 top_stats_res['order'] = process_order
                 top_stats_res['pid'] = long(response[0])
                 top_stats_res['user'] = response[1]
-                top_stats_res['virtual_memory'] = long(response[2])
-                top_stats_res['resident_memory'] = long(response[3])
-                top_stats_res['shared_memory'] = long(response[4])
+                top_stats_res['virtual_memory'] = virt_mem
+                top_stats_res['resident_memory'] = resi_mem
+                top_stats_res['shared_memory'] = shrd_mem
                 top_stats_res['cpu'] = float(response[5])
                 top_stats_res['memory'] = float(response[6])
                 top_stats_res[PROCESSNAME ] = response[7].strip()
