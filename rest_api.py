@@ -1,7 +1,7 @@
 from http_request import *
-import time
 from utilities import *
 import traceback
+import collectd
 
 
 def get_job_info(host, port, job_id, wfName, wfId, wfaId, wfaName):
@@ -22,15 +22,19 @@ def get_job_info(host, port, job_id, wfName, wfId, wfaId, wfaName):
     job_info['_documentType'] = "jobStats"
     job_info['_tag_appName'] = "oozie"
     job_info['time'] = int(time.time())
-    job_info['startTime'] = int(job_info['startTime'] / 1000)
-    job_info['finishTime'] = int(job_info['finishTime'] / 1000)
+    job_info['startTime'] = int(job_info['startTime'] / 1000) if job_info['startTime'] else -1
+    job_info['finishTime'] = int(job_info['finishTime'] / 1000) if job_info['finishTime'] else -1
+    job_info['endTime'] = job_info['finishTime']
     job_info['submitTime'] = int(job_info['submitTime'] / 1000)
     job_info['avgMapTime'] = int(job_info['avgMapTime'] / 1000)
     job_info['avgReduceTime'] = int(job_info['avgReduceTime'] / 1000)
     job_info['avgShuffleTime'] = int(job_info['avgShuffleTime'] / 1000)
     job_info['avgMergeTime'] = int(job_info['avgMergeTime'] / 1000)
+    job_info['avgReduceTimeMs'] = (job_info['avgReduceTime'])
+    job_info['avgShuffleTimeMs'] = (job_info['avgShuffleTime'])
+    job_info['avgMergeTimeMs'] = (job_info['avgMergeTime'])
 
-    job_info['jobId'] = job_info.pop('id')
+    job_info['jobId'] = job_info['id']
 
     path_counters = "/ws/v1/history/mapreduce/jobs/{0}/counters".format(job_id)
 
@@ -46,6 +50,7 @@ def get_job_info(host, port, job_id, wfName, wfId, wfaId, wfaName):
                 job_info[convert_camelcase(counter["name"], "_") + "Total"] = counter["totalCounterValue"]
                 job_info[convert_camelcase(counter["name"], "_") + "Reduce"] = counter["reduceCounterValue"]
                 job_info[convert_camelcase(counter["name"], "_") + "Map"] = counter["mapCounterValue"]
+
     return job_info
 
 
@@ -98,10 +103,12 @@ def get_task_info(host, port, job_id, wfName, wfId, wfaId, wfaName):
         task['jobId'] = job_id
         task['name'] = json_resp_ts['job']['name']
         task['_tag_appName'] = "oozie"
-        task['taskId'] = task.pop('id')
+        task['taskId'] = task['id']
         task['time'] = int(time.time())
+        task['submitTime'] = int(task['startTime'] / 1000)
         task['startTime'] = int(task['startTime'] / 1000)
         task['finishTime'] = int(task['finishTime'] / 1000)
+        task['endTime'] = int(task['finishTime'] / 1000)
         task['elapsedTime'] = int(task['elapsedTime'] / 1000)
         task_document_list.append(task)
 
@@ -150,7 +157,6 @@ def get_task_ids_by_job(host, port, job_id):
 
 
 def get_container_info(host, port, job_id):
-
     app_id = job_id.replace("job", "application")
     location = host
     port = port
@@ -176,9 +182,8 @@ def get_container_info(host, port, job_id):
     return containers_flat
 
 
-#def get_taskattempt_container_info(host, port, job_id, task_ids, wfName, wfId, wfaId, wfaName):
+#def get_taskattempt_container_info(job_id, task_ids, wfName, wfId, wfaId, wfaName):
 def get_taskattempt_container_info(dic_host, job_id, task_ids, wfName, wfId, wfaId, wfaName):
-
     try:
         if task_ids is None:
             return None
@@ -209,10 +214,12 @@ def get_taskattempt_container_info(dic_host, job_id, task_ids, wfName, wfId, wfa
                 task_attempt['taskId'] = task
 
                 task_attempt['time'] = int(time.time())
-                task_attempt['startTime'] = int(task_attempt['startTime'] / 1000)
-                task_attempt['finishTime'] = int(task_attempt['finishTime'] / 1000)
-                task_attempt['elapsedTime'] = int(task_attempt['elapsedTime'] / 1000)
-                task_attempt['taskAttemptId'] = task_attempt.pop('id')
+                task_attempt['submitTime'] = int(task_attempt['startTime'] / 1000) if task_attempt['startTime'] else -1
+                task_attempt['startTime'] = int(task_attempt['startTime'] / 1000) if task_attempt['startTime'] else -1
+                task_attempt['finishTime'] = int(task_attempt['finishTime'] / 1000) if task_attempt['finishTime'] else -1
+                task_attempt['endTime'] = task_attempt['finishTime']
+                task_attempt['elapsedTime'] = int(task_attempt['elapsedTime'] / 1000) if task_attempt['elapsedTime'] else -1
+                task_attempt['taskAttemptId'] = task_attempt['id']
                 task_attempt['containerId'] = task_attempt.pop('assignedContainerId')
                 if 'shuffleFinishTime' in task_attempt:
                     task_attempt['shuffleFinishTime'] = int(task_attempt['shuffleFinishTime'] / 1000)
@@ -226,6 +233,8 @@ def get_taskattempt_container_info(dic_host, job_id, task_ids, wfName, wfId, wfa
                     task_attempt['elapsedReduceTime'] = int(task_attempt['elapsedReduceTime'] / 1000)
 
                 # Find the container from container app list and merge
+                task_attempt['allocatedMB'] = 0
+                task_attempt['allocatedVCores'] = 0
                 for container in containers_list:
                     if container['containerId'] == task_attempt['containerId']:
                         task_attempt['allocatedMB'] = container['allocatedMB']
@@ -245,6 +254,9 @@ def get_taskattempt_container_info(dic_host, job_id, task_ids, wfName, wfId, wfa
                         task_attempt_counter[convert_camelcase(counter["name"], "_")] = counter["value"]
 
                 task_attempt.update(task_attempt_counter)
+                #collectd.info("<============== Taskattempt data is %s =======>" %task_attempt['nodeHttpAddress'])
+                if task_attempt['nodeHttpAddress']:
+                    task_attempt['nodeHttpAddress'] = task_attempt['nodeHttpAddress'].split(":")[0] #slice(0,task_attempt['nodeHttpAddress'].find(":"))
 
                 task_attempt_document.append(task_attempt)
 
@@ -308,3 +320,287 @@ def group_tasks_by_start_time(job_id, task_list):
                 tasks_by_start_time[task["startTime"]]["reduces"] += 1
 
     return tasks_by_start_time
+
+
+# SPARK APIs
+
+def get_app_details(app_details):
+
+    #location = spark2_history_server['host']
+    #port = spark2_history_server['port']
+    #scheme = spark2_history_server['scheme']
+
+    #path = '/api/v1/applications/{}'.format(app)
+    #app_details = http_request(location, port, path, scheme=scheme)
+    #if app_details is None:
+    #    return None
+
+    app_doc = []
+    for attempt in app_details['attempts']:
+        attempt['appId'] = app_details['id']
+        attempt['appName'] = app_details['name']
+        if 'attemptId' not in attempt:
+            attempt['appAttemptId'] = 0
+        else:
+            attempt['appAttemptId'] = attempt.pop('attemptId')
+        attempt['startTime'] = int(attempt['startTimeEpoch'])/1000
+        attempt['endTime'] = int(attempt['endTimeEpoch'])/ 1000
+        attempt['lastUpdated'] = int(attempt['lastUpdatedEpoch']) / 1000
+        attempt.pop('startTimeEpoch')
+        attempt.pop('lastUpdatedEpoch')
+        attempt['duration'] = attempt['duration']
+        attempt['_documentType'] = 'sparkApp'
+        attempt['_tag_appName'] = tag_app_name['spark']
+        attempt['_plugin'] = plugin_name['spark']
+        attempt['time'] = int(time.time())
+        app_doc.append(attempt)
+
+    return app_doc
+
+
+def get_executors(app, name, attempt_id):
+    location = spark2_history_server['host']
+    port = spark2_history_server['port']
+    scheme = spark2_history_server['scheme']
+
+    if attempt_id == 0:
+        path = '/api/v1/applications/{}/allexecutors'.format(app)
+    else:
+        path = '/api/v1/applications/{}/{}/allexecutors'.format(app, attempt_id)
+
+    executors = http_request(location, port, path, scheme=scheme)
+
+    if executors is None:
+        return None
+
+    def update(e):
+        #logger.debug("The value of e: {0}".format(e))
+        if 'memoryMetrics' in e:
+            for m in e['memoryMetrics']:
+                e[m] = e['memoryMetrics'][m]
+            e.pop('memoryMetrics')
+        for m in e['executorLogs']:
+            new_key = 'executorLogs' + m.capitalize()
+            e[new_key] = e['executorLogs'][m]
+        e.pop('executorLogs')
+        e['appId'] = app
+        e['appAttemptId'] = attempt_id
+        e['executorId'] = e.pop('id')
+        e['_documentType'] = 'sparkExecutors'
+        e['_tag_appName'] = tag_app_name['spark']
+        e['_plugin'] = plugin_name['spark']
+        if 'addTime' in e:
+            e['addTime'] = convert_to_epoch(e['addTime'])
+        e['time'] = int(time.time())
+        e['appName'] = name
+        e['totalDuration'] = e['totalDuration']
+        e['totalGCTime'] = e['totalGCTime']
+
+    [update(e) for e in executors]
+    return executors
+
+
+def get_stages(app, name, attempt_id):
+
+    location = spark2_history_server['host']
+    port = spark2_history_server['port']
+    scheme = spark2_history_server['scheme']
+    if attempt_id == 0:
+        path = '/api/v1/applications/{}/stages'.format(app)
+    else:
+        path = '/api/v1/applications/{}/{}/stages'.format(app, attempt_id)
+
+    all_stages_json = http_request(location, port, path, scheme=scheme)
+    if all_stages_json is None:
+        return None
+    #logger.debug("All stages: {0}".format(all_stages_json))
+
+    def updates(d):
+        d['appId'] = app
+        d['appName'] = name
+        d['appAttemptId'] = attempt_id
+        d['stageAttemptId'] = d.pop('attemptId')
+        d['_documentType'] = 'sparkStages'
+        d['_tag_appName'] = tag_app_name['spark']
+        d['_plugin'] = plugin_name['spark']
+        d['time'] = int(time.time())
+        metrics = d['accumulatorUpdates']
+        for m in metrics:
+            old_name = m['name']
+            #logger.debug(metrics)
+            if '.' in old_name:
+                new_name = old_name.split(".")[2] + "".join(x[0].capitalize()+x[1::] for x in old_name.split(".")[3::])
+                if isInt(m['value']):
+                    d[new_name] = int(m['value'])
+                elif isFloat(m['value']):
+                    d[new_name] = float(m['value'])
+                else:
+                    d[new_name] = m['value']
+            else: #TODO The metrics name does not contain . and is repeated multiple times 
+                continue
+        d.pop('accumulatorUpdates', None)
+        if d['status'] == "COMPLETE" or d['status'] == "FAILED":
+            d['submissionTime'] = convert_to_epoch(d['submissionTime'])
+            d['firstTaskLaunchedTime'] = convert_to_epoch(d['firstTaskLaunchedTime'])
+            d['completionTime'] = convert_to_epoch(d['completionTime'])
+            d['executorRunTime'] = int(d['executorRunTime'])
+        d['stageName'] = d.pop('name')
+
+
+    [updates(d) for d in all_stages_json]
+
+    return all_stages_json
+
+
+def get_stage_attempt_ids(app, app_attempt):
+
+    location = spark2_history_server['host']
+    port = spark2_history_server['port']
+    scheme = spark2_history_server['scheme']
+    if app_attempt == 0:
+        path = '/api/v1/applications/{}/stages'.format(app)
+    else:
+        path = '/api/v1/applications/{}/{}/stages'.format(app, app_attempt)
+
+    all_stages_json = http_request(location, port, path, scheme=scheme)
+    if all_stages_json is None:
+        return None
+
+    stage_ids = [{'stageId': s['stageId'], 'stageAttemptId': s['attemptId'], 'numTasks' : s['numTasks']} for s in all_stages_json]
+    return stage_ids
+
+
+def get_tasks_per_stage(app, name, attempt_id):
+
+    location = spark2_history_server['host']
+    port = spark2_history_server['port']
+    scheme = spark2_history_server['scheme']
+
+    result = []
+
+    stage = get_stage_attempt_ids(app, attempt_id)
+    if stage is None:
+        return None
+    for s in stage:
+        if s['numTasks'] > 0:
+            if attempt_id == 0:
+                path = '/api/v1/applications/{}/stages/{}/{}/taskList?offset=0&length={}'.format(app, s['stageId'], s['stageAttemptId'], s['numTasks'])
+            else:
+                path = '/api/v1/applications/{}/{}/stages/{}/{}/taskList?offset=0&length={}'.format(app, attempt_id, s['stageId'], s['stageAttemptId'], s['numTasks'])
+        else:
+            continue
+
+        tasks_json = http_request(location, port, path, scheme=scheme)
+        if tasks_json is None:
+            return None
+
+        def updates(task):
+            task['appId'] = app
+            task['appAttemptId'] = attempt_id
+            task['appName'] = name
+            task['stageAttemptId'] = s['stageAttemptId']
+            task['stageId'] = s['stageId']
+            task['taskId'] = str(task['taskId'])
+            if 'taskMetrics' in task:
+                metrics = task['taskMetrics']
+                for m in metrics:
+                    if isinstance(metrics[m], dict):
+                        #flatten metrics
+                        for k in metrics[m]:
+                            new_key = m.replace("Metrics", "") + k[0].capitalize()+k[1::]
+                            task[new_key] = metrics[m][k]
+                    else:
+                        task[m] = metrics[m]
+                task.pop('taskMetrics')
+            task.pop('accumulatorUpdates')
+            task['_documentType'] = 'sparkTasks'
+            task['_tag_appName'] = tag_app_name['spark']
+            task['_plugin'] = plugin_name['spark']
+            task['launchTime'] = convert_to_epoch(task['launchTime'])
+
+            if 'duration' in task:
+                task['endTime'] = task['launchTime'] + int(task['duration']/1000)
+            if 'executorRunTime' in task:
+                task['executorRunTime'] = task['executorRunTime']
+            else:
+                task['executorRunTime'] = 0
+            task['time'] = int(time.time())
+
+        [updates(t) for t in tasks_json]
+        result += tasks_json
+    return result
+
+# YARN, Name Node apis
+
+
+def find_diff(doc_current, fields_for_diff, file):
+
+    def set_value_to_zero(doc, doc_type):
+        for dt in doc_type:
+            if fields_for_diff.get(dt) != None:
+                for field in fields_for_diff[dt]:
+                    doc[field] = 0
+
+    def set_diff_values(doc_c, doc_p, doc_type):
+        if fields_for_diff.get(doc_type) != None:
+                for field in fields_for_diff.get(doc_type):
+                    doc_c[field] = doc_c[field] - doc_p[field]
+
+    def find_doc_of_type(doc, doc_type):
+        for d in doc:
+            if d['_documentType'] == doc_type:
+                return d
+
+    if os.path.isfile(file):
+        with open(file) as afd:
+            doc_previous_file = afd.readlines()
+    else:
+        with open(file, "w") as pfd:
+           for doc in doc_current:
+              pfd.write(json.dumps(doc))
+              pfd.write("\n")
+        for doc_c in doc_current:
+            set_value_to_zero(doc_c, fields_for_diff.keys())
+        return
+
+    doc_previous = []
+    for doc in doc_previous_file:
+         doc_previous.append(json.loads(doc))
+
+    with open(file, "w") as pfd:
+        for doc in doc_current:
+           pfd.write(json.dumps(doc))
+           pfd.write("\n")
+
+    for doc_c in doc_current:
+        doc_type = doc_c['_documentType']
+        doc_p = find_doc_of_type(doc_previous, doc_type)
+        if doc_p == None:
+           return None
+        time_diff = doc_c['time'] - doc_p['time']
+        if time_diff > (yarn_stats_time_interval * 3):
+            set_value_to_zero(doc_c, fields_for_diff.keys())
+        else:
+            set_diff_values(doc_c, doc_p, doc_type)
+
+
+def get_active_nn(name_node_list):
+
+    for nn in name_node_list:
+        location = nn
+        port = name_node['port']
+        path = "/jmx?qry=Hadoop:service=NameNode,name={}".format('NameNodeStatus')
+        json_doc = http_request(location, port, path, scheme=name_node['scheme'])
+
+        try:
+           if json_doc == None:
+               continue
+           if json_doc.get('beans') == []:
+               continue
+        except KeyError as e:
+           continue
+
+        if json_doc['beans'][0]['State'] == 'active':
+            return nn
+
+    return None

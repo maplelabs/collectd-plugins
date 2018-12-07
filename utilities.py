@@ -1,4 +1,5 @@
 from pytz import timezone
+from pytz import utc
 import _strptime
 from datetime import datetime
 import json
@@ -24,3 +25,8 @@ def convert_camelcase(str_to_convert, separator):
     c = c[0].lower() + c[1::]
     return c
 
+def get_localized_datetime(utc_timestamp, totzStr):
+    utcdt = datetime.utcfromtimestamp(utc_timestamp).replace(tzinfo = utc)
+    toTimeZone = timezone(totzStr)
+    toTimeZonedt = utcdt.astimezone(toTimeZone)
+    return toTimeZonedt
