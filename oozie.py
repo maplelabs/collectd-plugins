@@ -244,34 +244,8 @@ class Oozie:
                                 tasks_map.append(task_attempt)
                             elif task_attempt['type'] == 'REDUCE':
                                 tasks_reduce.append(task_attempt)
-                    #job_info["waitTime"] = get_wait_time(job_info, tasks_reduce, tasks_map)
-                    #find_stragglers_runtime(tasks_map)
-                    #find_stragglers_runtime(tasks_reduce)
-                    #hueristics = {}
-                    #hueristics["tasks_by_start_time"] = group_tasks_by_start_time(job, \
-                    #                                    tasks_map + tasks_reduce)
-                    #hueristics["time"] = int(time.time())
-                    #hueristics["jobId"] = job
-                    #hueristics_info = {"hueristics_" + job : hueristics}
-                    #tpTaskStats = calculate_taskcount_by_time_points(job_info, tasks_map + tasks_reduce, \
-                    #                                             wfId=oozieworkflowid, \
-                    #                                             wfaId=oozieworkflowactionid, \
-                    #                                             wfName=oozieworkflowname, \
-                    #                                             wfaName=oozieworkflowactionname)
-                #tpTaskStats = self.compute_job_stats(job_info, app_info, task_info, tasks_map, tasks_reduce, oozieworkflowid,
                 yarnJobInfo = self.compute_job_stats(job_info, app_info, task_info, tasks_map, tasks_reduce, oozieworkflowid,
                                                 oozieworkflowactionid, oozieworkflowname, oozieworkflowactionname)
-#                yarnJobInfo = []
-#                if job_info is not None:
-#                    yarnJobInfo.append(job_info)
-#                if app_info is not None:
-#                    yarnJobInfo.append(app_info)
-#                if task_info is not None:
-#                    yarnJobInfo.extend(task_info)
-#                if taskattempt_container_info is not None:
-#                    yarnJobInfo.extend(reduce(operator.concat, taskattempt_container_info))
-#                if tpTaskStats is not None:
-#                    yarnJobInfo.extend(tpTaskStats)
                 return yarnJobInfo
             else:
                 jhist_file = copy_to_local(job_id=job, job_finish_time=job_info['finishTime'])
@@ -285,8 +259,6 @@ class Oozie:
         else:
             return [app_info]
 
-#        yarnJobInfo = []
-        #tpTaskStats = self.compute_job_stats(job_info, app_info, task_info, tasks_map, tasks_reduce, oozieworkflowid,
         yarnJobInfo = self.compute_job_stats(job_info, app_info, task_info, tasks_map, tasks_reduce, oozieworkflowid,
                                         oozieworkflowactionid, oozieworkflowname, oozieworkflowactionname)
 

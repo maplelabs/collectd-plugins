@@ -511,7 +511,6 @@ def process_jhist(fl, job_id, wfId, wfName, wfaId, wfaName):
                   }
     add_additional_fields(tasks_json, add_to_task)
     add_additional_fields(job_json, add_to_job)
-    collectd.info("<============= Job details %s ================>" %len(job_json[job_id].keys()))
     add_additional_fields(map_attempt_json, add_to_task_attempt)
     add_additional_fields(reduce_attempt_json, add_to_task_attempt)
 

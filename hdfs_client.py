@@ -52,7 +52,7 @@ def copy_to_local(job_id, job_finish_time):
         job_finish_datetime = get_localized_datetime(job_finish_time, "US/Eastern")
         dir_to_search = "{0}/{1}/{2:02d}/{3:02d}/".format(hdfs_jobhistory_directory, job_finish_datetime.year,
                                                           job_finish_datetime.month, job_finish_datetime.day)
-        initialize_hdfs_client("http://172.31.13.172:50070")
+        initialize_hdfs_client("http://namenode:namenode_port")
         subdirs_of_the_day = [status[1] for status in client.list(dir_to_search, status=True) ]
         for subdirstatus in subdirs_of_the_day:
             subdirstatus['modificationTime'] = int(subdirstatus['modificationTime'] / 1000)  # convert to epoch seconds

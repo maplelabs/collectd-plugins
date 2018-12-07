@@ -31,7 +31,7 @@ def prepare_task_stats_by_timepoint(tp_start, tp_end, map_count, reduce_count, j
 
 
 def get_wait_time(job_json, param_tasks_reduce, param_tasks_map):
-#    logger.debug("get_wait_time for job {0} with submitTime: {1}".format(job_json['jobId'], job_json["submitTime"]))
+#    collectd.debug("get_wait_time for job {0} with submitTime: {1}".format(job_json['jobId'], job_json["submitTime"]))
     wait_time_total = 0
     wait_time_map = 0
     wait_time_reduce = 0
@@ -239,10 +239,9 @@ def calculate_taskcount_by_time_points(job_info, task_list, wfaId, wfId, wfName,
 
     return tpTaskStats if tpTaskStats else None
 
-
 def calculate_wf_metrics(workflow, wfa_list):
-#    logger.debug("calculate_wf_metrics wfId: {0} startTime: {1}, endTime:{2}".format(workflow['id'], workflow['startTime'], workflow['endTime']))
-    #logger.debug("wfa_list {0}".format((wfa_list)))
+    #collectd.debug("calculate_wf_metrics wfId: {0} startTime: {1}, endTime:{2}".format(workflow['id'], workflow['startTime'], workflow['endTime']))
+    #collectd.debug("wfa_list {0}".format((wfa_list)))
     sigma_wfa_runtime = 0
     sigma_hdfs_read_bytes = 0
     sigma_hdfs_read_bytes_node_local = 0
@@ -258,18 +257,15 @@ def calculate_wf_metrics(workflow, wfa_list):
     wSumReduceTime = 0
     wSumShuffleTime = 0
     wSumMergeTime = 0
-    collectd.info("<=============== IN metrics function %s %s =============>" %(workflow['startTime'], workflow['endTime']))
     if not workflow['startTime'] or not workflow['endTime']:
-#        logger.error("calculate_wf_metrics cannot calculate WF runtime with these details, skipping WF metrics calculation")
+        collectd.error("calculate_wf_metrics cannot calculate WF runtime with these details, skipping WF metrics calculation")
         return
-    #wf_runtime = get_unix_timestamp(workflow['endTime']) - get_unix_timestamp(workflow['startTime'])
-    collectd.info("<=============== IN metrics function start inter =============>")
+#    wf_runtime = get_unix_timestamp(workflow['endTime']) - get_unix_timestamp(workflow['startTime'])
+    wf_runtime = workflow['endTime'] - workflow['startTime']
     if wfa_list:
-        collectd.info("<=============== IN metrics function condtion 1 =============>")
         for wfadict in wfa_list:
-            wfa = wfadict
-#            collectd.info("<=============== IN metrics function condtion iteration %s =============>" %wfa)
-#            logger.debug("calculate_wf_metrics WFAId: {0} , startTime: {1} , endTime: {2}".format(wfa['wfaId'], wfa['startTime'], wfa['endTime']))
+            wfa = wfadict['action']
+#            collectd.debug("calculate_wf_metrics WFAId: {0} , startTime: {1} , endTime: {2}".format(wfa['wfaId'], wfa['startTime'], wfa['endTime']))
             if wfa['startTime'] > 0:
                 sigma_job_runtime_wfa_level = 0
                 sigma_hdfs_read_bytes_wfa_level = 0
@@ -291,95 +287,83 @@ def calculate_wf_metrics(workflow, wfa_list):
                 sigma_wfa_runtime += wfa['endTime'] - wfa['startTime']
                 first_job = None
                 index = 0
-                job_info = wfadict
-                #for job_info in wfadict:
-#                    logger.debug(job_info)
-#                    logger.debug("calculate_wf_metrics WFAId: {0} JobId: {1}, startTime: {2} , finishTime: {3}".format(job_info['job']['wfaId'], job_info['job']['jobId'], job_info['job']['startTime'], job_info['job']['finishTime']))
-                collectd.info("<=============== IN metrics function condtion 2 =============>")
-                if 'taskAttemptStat' in job_info:
-#                        for task in job_info['taskAttemptsCounters']:
-                    if 'locality' in task and 'hdfsBytesRead' in task:
-                        if task['locality'] == "OFF_SWITCH":
-                            sigma_hdfs_read_bytes_off_switch += task['hdfsBytesRead']
-                            sigma_hdfs_read_bytes_off_switch_wfa_level += task['hdfsBytesRead']
-                        elif task['locality'] == "NODE_LOCAL":
-                            sigma_hdfs_read_bytes_node_local += task['hdfsBytesRead']
-                            sigma_hdfs_read_bytes_node_local_wfa_level += task['hdfsBytesRead']
-                        elif task['locality'] == "RACK_LOCAL":
-                            sigma_hdfs_read_bytes_rack_local += task['hdfsBytesRead']
-                            sigma_hdfs_read_bytes_rack_local_wfa_level += task['hdfsBytesRead']
-                collectd.info("<=============== IN metrics function condtion 3 =============>")
-                if job_info['_documentType'] == "jobStats" and job_info['finishTime'] > 0 and job_info['startTime'] > 0:
-                    collectd.info("<=============== IN metrics function condtion 4 =============>")
-                    if 'hdfsBytesReadTotal' in job_info:
-                        sigma_hdfs_read_bytes_wfa_level += job_info['hdfsBytesReadTotal']
-                        sigma_hdfs_read_bytes += job_info['hdfsBytesReadTotal']
-                    if job_info['waitTime']:
-                        sigma_wait_time += job_info['waitTime']
-                        sigma_wait_time_wfa_level += job_info['waitTime']
-                    if 'cpuMillisecondsTotal' in job_info:
-                        sigma_cpu_ms += job_info['cpuMillisecondsTotal']
-                        sigma_cpu_ms_wfa_level += job_info['cpuMillisecondsTotal']
-                    if 'mapsTotal' in  job_info:
-                        sigma_maps_total += job_info['mapsTotal']
-                        sigma_maps_total_wfa_level += job_info['mapsTotal']
-                        if job_info['avgMapTime']:
-                            wSumMapTime += job_info['avgMapTime'] * job_info['mapsTotal']
-                            wSumMapTime_wfa_level += job_info['avgMapTime'] * job_info['mapsTotal']
-                    if job_info['reducesTotal']:
-                        sigma_reduces_total += job_info['reducesTotal']
-                        sigma_reduces_total_wfa_level += job_info['reducesTotal']
-                        if job_info['job']['avgReduceTimeMs']:
-                            wSumReduceTime_wfa_level += int((job_info['avgReduceTimeMs'] * job_info['reducesTotal']) / 1000)
-                            wSumMergeTime_wfa_level += int((job_info['avgMergeTimeMs'] * job_info['reducesTotal']) / 1000)
-                            wSumShuffleTime_wfa_level += int(job_info['avgShuffleTimeMs'] * job_info['reducesTotal'] / 1000)
-                            wSumReduceTime += int((job_info['avgReduceTimeMs'] * job_info['reducesTotal']) / 1000)
-                            wSumMergeTime += int((job_info['avgMergeTimeMs'] * job_info['reducesTotal']) / 1000)
-                            wSumShuffleTime += int(job_info['avgShuffleTimeMs'] * job_info['reducesTotal'] / 1000)
-#                               del job_info['job']['avgReduceTimeMs']
-#                                del job_info['job']['avgMergeTimeMs']
-#                                del job_info['job']['avgShuffleTimeMs']
-                    collectd.info("<=============== IN metrics function condtion 5 =============>")
-                    if job_info['killedReduceAttempts']:
-                        sigma_killed_reduce_attempts += job_info['killedReduceAttempts']
-                        sigma_killed_reduce_attempts_wfa_level += job_info['killedReduceAttempts']
-                    if job_info['killedMapAttempts']:
-                        sigma_killed_map_attempts += job_info['killedMapAttempts']
-                        sigma_killed_map_attempts_wfa_level += job_info['killedMapAttempts']
-                    collectd.info("<=============== IN metrics function condtion 6 =============>")
-                    if index == 0 and wfa['_documentType'] == "oozieWorkflowActions" and wfa['externalChildID'] and wfa['externalChildID'] != '-':  # Launcher job duration encapsulates its children
-                        pass
-                    elif job_info['_documentType'] == 'jobStats':
-                        collectd.info("<=============== IN metrics function condtion 7 =============>")
-                        sigma_job_runtime_wfa_level += job_info['finishTime'] - job_info['startTime']
+                for job_info in wfadict['yarnJobs']:
+                    collectd.debug("calculate_wf_metrics WFAId: {0} JobId: {1}, startTime: {2} , finishTime: {3}".format(job_info['job']['wfaId'], job_info['job']['jobId'], job_info['job']['startTime'], job_info['job']['finishTime']))
+                    if 'taskAttemptsCounters' in job_info:
+                        for task in job_info['taskAttemptsCounters']:
+                            if 'locality' in task and 'hdfsBytesRead' in task:
+                                if task['locality'] == "OFF_SWITCH":
+                                    sigma_hdfs_read_bytes_off_switch += task['hdfsBytesRead']
+                                    sigma_hdfs_read_bytes_off_switch_wfa_level += task['hdfsBytesRead']
+                                elif task['locality'] == "NODE_LOCAL":
+                                    sigma_hdfs_read_bytes_node_local += task['hdfsBytesRead']
+                                    sigma_hdfs_read_bytes_node_local_wfa_level += task['hdfsBytesRead']
+                                elif task['locality'] == "RACK_LOCAL":
+                                    sigma_hdfs_read_bytes_rack_local += task['hdfsBytesRead']
+                                    sigma_hdfs_read_bytes_rack_local_wfa_level += task['hdfsBytesRead']
+                    if job_info['job']['finishTime'] > 0 and job_info['job']['startTime'] > 0:
+                        if 'hdfsBytesReadTotal' in job_info['job']:
+                            sigma_hdfs_read_bytes_wfa_level += job_info['job']['hdfsBytesReadTotal']
+                            sigma_hdfs_read_bytes += job_info['job']['hdfsBytesReadTotal']
+                        if job_info['job']['waitTime']:
+                            sigma_wait_time += job_info['job']['waitTime']
+                            sigma_wait_time_wfa_level += job_info['job']['waitTime']
+                        if 'cpuMillisecondsTotal' in job_info['job']:
+                            sigma_cpu_ms += job_info['job']['cpuMillisecondsTotal']
+                            sigma_cpu_ms_wfa_level += job_info['job']['cpuMillisecondsTotal']
+                        if 'mapsTotal' in  job_info['job']:
+                            sigma_maps_total += job_info['job']['mapsTotal']
+                            sigma_maps_total_wfa_level += job_info['job']['mapsTotal']
+                            if job_info['job']['avgMapTime']:
+                                wSumMapTime += job_info['job']['avgMapTime'] * job_info['job']['mapsTotal']
+                                wSumMapTime_wfa_level += job_info['job']['avgMapTime'] * job_info['job']['mapsTotal']
+                        if job_info['job']['reducesTotal']:
+                            sigma_reduces_total += job_info['job']['reducesTotal']
+                            sigma_reduces_total_wfa_level += job_info['job']['reducesTotal']
+                            if job_info['job']['avgReduceTimeMs']:
+                                wSumReduceTime_wfa_level += int((job_info['job']['avgReduceTimeMs'] * job_info['job']['reducesTotal']) / 1000)
+                                wSumMergeTime_wfa_level += int((job_info['job']['avgMergeTimeMs'] * job_info['job']['reducesTotal']) / 1000)
+                                wSumShuffleTime_wfa_level += int(job_info['job']['avgShuffleTimeMs'] * job_info['job']['reducesTotal'] / 1000)
+                                wSumReduceTime += int((job_info['job']['avgReduceTimeMs'] * job_info['job']['reducesTotal']) / 1000)
+                                wSumMergeTime += int((job_info['job']['avgMergeTimeMs'] * job_info['job']['reducesTotal']) / 1000)
+                                wSumShuffleTime += int(job_info['job']['avgShuffleTimeMs'] * job_info['job']['reducesTotal'] / 1000)
+                                del job_info['job']['avgReduceTimeMs']
+                                del job_info['job']['avgMergeTimeMs']
+                                del job_info['job']['avgShuffleTimeMs']
+                        if job_info['job']['killedReduceAttempts']:
+                            sigma_killed_reduce_attempts += job_info['job']['killedReduceAttempts']
+                            sigma_killed_reduce_attempts_wfa_level += job_info['job']['killedReduceAttempts']
+                        if job_info['job']['killedMapAttempts']:
+                            sigma_killed_map_attempts += job_info['job']['killedMapAttempts']
+                            sigma_killed_map_attempts_wfa_level += job_info['job']['killedMapAttempts']
+                        if index == 0 and wfa['externalChildID'] and wfa['externalChildID'] != '-':  # Launcher job duration encapsulates its children
+                            index += 1
+                            continue
+                        sigma_job_runtime_wfa_level += job_info['job']['finishTime'] - job_info['job']['startTime']
                         if not first_job:
                             first_job = job_info
-                    collectd.info("<=============== IN metrics function condtion 8 =============>")
                     index += 1
-            collectd.info("<=============== IN metrics function condtion 10 =============>")
-            if first_job and wfa['_documentType'] == "oozieWorkflowActions":
-                collectd.info("<=============== IN metrics function condtion import =============>")
-                wfa['submitDelay'] = first_job['submitTime'] - wfa['startTime']
-                if wfa['endTime'] > 0:
-                    wfa['jobDelay'] = (wfa['endTime'] - wfa['startTime']) - sigma_job_runtime_wfa_level
-                wfa['hdfsBytesReadTotal'] = sigma_hdfs_read_bytes_wfa_level
-                wfa['waitTimeTotal'] = sigma_wait_time_wfa_level
-                wfa['cpuMillisecondsTotal'] = sigma_cpu_ms_wfa_level
-                wfa['mapsTotal'] = sigma_maps_total_wfa_level
-                wfa['reducesTotal'] = sigma_reduces_total_wfa_level
-                wfa['killedReduceAttempts'] = sigma_killed_reduce_attempts_wfa_level
-                wfa['killedMapAttempts'] = sigma_killed_map_attempts_wfa_level
-                wfa['offSwitchHdfsBytesReadTotal'] = sigma_hdfs_read_bytes_off_switch_wfa_level
-                wfa['rackLocalHdfsBytesReadTotal'] = sigma_hdfs_read_bytes_rack_local_wfa_level
-                wfa['nodeLocalHdfsBytesReadTotal'] = sigma_hdfs_read_bytes_node_local_wfa_level
-                if sigma_maps_total_wfa_level > 0:
-                    wfa['weightedAvgMapTime'] = int(wSumMapTime_wfa_level / sigma_maps_total_wfa_level)
-                if sigma_reduces_total_wfa_level > 0:
-                    wfa['weightedAvgReduceTime'] = int(wSumReduceTime_wfa_level / sigma_reduces_total_wfa_level)
-                    wfa['weightedAvgShuffleTime'] = int(wSumShuffleTime_wfa_level / sigma_reduces_total_wfa_level)
-                    wfa['weightedAvgMergeTime'] = int(wSumMergeTime_wfa_level / sigma_reduces_total_wfa_level)
-            #        logger.debug("calculate_wf_metrics wfId:{0} wfaId:{1} submitDelay:{2} jobDelay:{3}".format(wfa['wfId'], wfa['wfaId'],  wfa['submitDelay'],  wfa['jobDelay']))
-        collectd.info("<=============== IN metrics function condtion 9 =============>")
+                if first_job:
+                    wfa['submitDelay'] = first_job['job']['submitTime'] - wfa['startTime']
+                    if wfa['endTime'] > 0:
+                        wfa['jobDelay'] = (wfa['endTime'] - wfa['startTime']) - sigma_job_runtime_wfa_level
+                    wfa['hdfsBytesReadTotal'] = sigma_hdfs_read_bytes_wfa_level
+                    wfa['waitTimeTotal'] = sigma_wait_time_wfa_level
+                    wfa['cpuMillisecondsTotal'] = sigma_cpu_ms_wfa_level
+                    wfa['mapsTotal'] = sigma_maps_total_wfa_level
+                    wfa['reducesTotal'] = sigma_reduces_total_wfa_level
+                    wfa['killedReduceAttempts'] = sigma_killed_reduce_attempts_wfa_level
+                    wfa['killedMapAttempts'] = sigma_killed_map_attempts_wfa_level
+                    wfa['offSwitchHdfsBytesReadTotal'] = sigma_hdfs_read_bytes_off_switch_wfa_level
+                    wfa['rackLocalHdfsBytesReadTotal'] = sigma_hdfs_read_bytes_rack_local_wfa_level
+                    wfa['nodeLocalHdfsBytesReadTotal'] = sigma_hdfs_read_bytes_node_local_wfa_level
+                    if sigma_maps_total_wfa_level > 0:
+                        wfa['weightedAvgMapTime'] = int(wSumMapTime_wfa_level / sigma_maps_total_wfa_level)
+                    if sigma_reduces_total_wfa_level > 0:
+                        wfa['weightedAvgReduceTime'] = int(wSumReduceTime_wfa_level / sigma_reduces_total_wfa_level)
+                        wfa['weightedAvgShuffleTime'] = int(wSumShuffleTime_wfa_level / sigma_reduces_total_wfa_level)
+                        wfa['weightedAvgMergeTime'] = int(wSumMergeTime_wfa_level / sigma_reduces_total_wfa_level)
+                    collectd.debug("calculate_wf_metrics wfId:{0} wfaId:{1} submitDelay:{2} jobDelay:{3}".format(wfa['wfId'], wfa['wfaId'],  wfa['submitDelay'],  wfa['jobDelay']))
         workflow['hdfsBytesReadTotal'] = sigma_hdfs_read_bytes
         workflow['waitTimeTotal'] = sigma_wait_time
         workflow['cpuMillisecondsTotal'] = sigma_cpu_ms
@@ -396,4 +380,49 @@ def calculate_wf_metrics(workflow, wfa_list):
             workflow['weightedAvgReduceTime'] = int(wSumReduceTime / sigma_reduces_total)
             workflow['weightedAvgShuffleTime'] = int(wSumShuffleTime /sigma_reduces_total)
             workflow['weightedAvgMergeTime'] = int(wSumMergeTime / sigma_reduces_total)
-        collectd.info("<=============== End of metrics fun =============>")
+
+
+
+def calculate_scheduling_delays_from_critical_path(workflow, wfa_list):
+    collectd.debug("calculate_scheduling_delays_from_critical_path wfId: {0} startTime: {1}, endTime:{2}".format(workflow['id'],
+                                                                                            workflow['startTime'],
+                                                                                            workflow['endTime']))
+    # collectd.debug("wfa_list {0}".format((wfa_list)))
+    if not workflow['startTime'] or not workflow['endTime']:
+        collectd.error("calculate_scheduling_delays_from_critical_path cannot calculate WF Scheduling delays with None. Skipping it")
+        return
+    wf_runtime = get_unix_timestamp(workflow['endTime']) - get_unix_timestamp(workflow['startTime'])
+    sigma_wfa_runtime = 0
+    sigma_job_runtime = 0
+    workflow['wfSchedulingDelay'] = 0
+    workflow['jobSchedulingDelay'] = 0
+    jobs_list = []
+    wfa_data_list = []
+    for wfa in wfa_list:
+        if wfa['action']:
+            wfa_data_list.append(wfa['action'])
+        if wfa['yarnJobs']:
+            index = 0
+            if len(wfa['yarnJobs']) > 1:
+                index = 1
+            jobs_list.extend(wfa['yarnJobs'][index:])
+
+    jobs_info_list = [job['job'] for job in jobs_list]
+
+    collectd.debug("wfa_data_list: {0}".format(wfa_data_list))
+    collectd.debug("jobs_info_list: {0}".format(jobs_info_list))
+
+    wfa_cp = get_critical_path(wfa_data_list,'startTime','endTime')
+    for wfa in wfa_cp:
+        sigma_wfa_runtime += wfa['endTime'] - wfa['startTime']
+    if sigma_wfa_runtime:
+        workflow['wfSchedulingDelay'] = wf_runtime - sigma_wfa_runtime
+        collectd.debug("Workflow Id: {0} wfSchedulingDelay: {1}".format(workflow['id'], wf_runtime - sigma_wfa_runtime))
+
+    jobs_cp = get_critical_path(jobs_info_list, 'startTime', 'finishTime')
+    if jobs_cp:
+        for job in jobs_cp:
+            sigma_job_runtime += job['finishTime'] - job['startTime']
+    if sigma_job_runtime:
+        workflow['jobSchedulingDelay'] = wf_runtime - sigma_job_runtime
+        collectd.debug("Workflow Id: {0} wfSchedulingDelay: {1}".format(workflow['id'], wf_runtime - sigma_job_runtime))
