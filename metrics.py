@@ -260,7 +260,6 @@ def calculate_wf_metrics(workflow, wfa_list):
     if not workflow['startTime'] or not workflow['endTime']:
         collectd.error("calculate_wf_metrics cannot calculate WF runtime with these details, skipping WF metrics calculation")
         return
-#    wf_runtime = get_unix_timestamp(workflow['endTime']) - get_unix_timestamp(workflow['startTime'])
     wf_runtime = workflow['endTime'] - workflow['startTime']
     if wfa_list:
         for wfadict in wfa_list:
