@@ -165,10 +165,10 @@ class RedisStats:
                 else:
                     collectd.error("No Key details found")
                     stats_dict["totalKeys"] = 0
-                outlis = subprocess.check_output(["redis-cli", "--latency"]).split( )
-                if len(outlis) >= 3:
+                outlis = subprocess.check_output(["redis-cli", "--intrinsic-latency", "1"]).split( )
+                if len(outlis) > 0:
                     try:
-                        stats_dict["latency"] = float(outlis[2])
+                        stats_dict["latency"] = float(outlis[-16])
                     except ValueError:
                         collectd.error("No latency details found")
                         stats_dict["latency"] = 0
