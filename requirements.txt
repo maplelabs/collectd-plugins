@@ -8,3 +8,5 @@ kafka-python==1.4.2
 psycopg2-binary==2.7.5
 pytz
 redis
+hdfs==2.1.0
+PyHDFS==0.2.1
