@@ -107,8 +107,8 @@ class Nginx(object):
             if resp and resp.status_code == 200:
                 content = json.loads(resp.content)
                 data_dict['handshakes'] = content['handshakes']
-                data_dict['handshakes_failed'] = content['handshakes_failed']
-                data_dict["session_reuses"] = content['session_reuses']
+                data_dict['handshakesFailed'] = content['handshakes_failed']
+                data_dict["sessionReuses"] = content['session_reuses']
             con_url='processes'
             resp = requests.get(url+con_url, verify=False)
             if resp and resp.status_code == 200:
