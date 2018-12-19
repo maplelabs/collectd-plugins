@@ -113,7 +113,7 @@ class Nginx(object):
             resp = requests.get(url+con_url, verify=False)
             if resp and resp.status_code == 200:
                 content = json.loads(resp.content)
-                data_dict['processPespawned'] = content['respawned']
+                data_dict['processRespawned'] = content['respawned']
             return data_dict
         except Exception as ex:
             raise ex
