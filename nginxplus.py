@@ -25,6 +25,7 @@ class Nginx(object):
         self.secure = False
         self.pollCounter = 0
         self.previousData = {'previousTotal':0}
+        self.api = self.get_api_version()
 
     def read_config(self, cfg):
         for children in cfg.children:
@@ -37,17 +38,26 @@ class Nginx(object):
             if children.key == SECURE:
                 self.secure = children.values[0]
 
+    def get_api_version(self):
+        try:
+            url='http://'+self.host+'/api/'
+            resp = requests.get(url, verify=False)
+            if resp and resp.status_code == 200:
+                content = json.loads(resp.content)
+                return str(max(content))
+        except Exception as ex:
+            raise ex
+            
     def get_server_details(self):
         # Get the version of the NGINX server running
         server_details = {}
         try:
-            url='http://'+self.host+'/api/3/nginx'
+            url='http://'+self.host+'/api/'+self.api+'/nginx'
             resp = requests.get(url, verify=False)
             if resp and resp.status_code == 200:
                 content = json.loads(resp.content)
                 server_details['nginxVersion'] = content['version']
                 server_details['nginxBuild'] = content['build']
-            return server_details
         except Exception as ex:
             raise ex
         # Get the status of the NGINX server
@@ -64,7 +74,7 @@ class Nginx(object):
                            break
         except Exception as ex:
             raise ex
-        # Get the uptime of the NGINX server
+        # Get the uptime of the NGINX Plus server
         try:
             uptime_v = 0
             t =0
@@ -78,14 +88,14 @@ class Nginx(object):
                 uptime_v = t #uptime value in 'seconds'
         except Exception as err:
             raise err
-        server_details.update({'processRunning': running, 'upTime': uptime_v})
+        server_details.update({'processRunning': running, 'upTime': uptime_v, 'nginxOS' : platform.dist()[0]})
         return server_details
 
 
     def get_server_stats(self):
         data_dict={}
         try:
-            url='http://'+self.host+'/api/3/'
+            url='http://'+self.host+'/api/'+self.api+'/'
             con_url='connections'
             resp = requests.get(url+con_url, verify=False)
             if resp and resp.status_code == 200:
