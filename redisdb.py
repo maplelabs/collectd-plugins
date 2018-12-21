@@ -49,22 +49,24 @@ class RedisStats:
         try:
             retry_flag = True
             retry_count = 0
+            password_flag = False
             while retry_flag and retry_count < 3:
                 try:
-                    if self.password:
-                        self.redis_client = red.StrictRedis(host=self.host, port=self.port, password = self.password, db=0)
+                    if password_flag:
+                        self.redis_client = red.StrictRedis(host=self.host, port=self.port, password=self.password, db=0)
                     else:
-                        self.redis_client = red.StrictRedis(host=self.host, port
-=self.port, db=0)
+                        self.redis_client = red.StrictRedis(host=self.host, port = self.port, db=0)
+                    server_details = self.redis_client.info(section="server")
                     retry_flag = False
                     collectd.info("Connection to Redis successfull in attempt %s" % (retry_count))
                 except Exception as e:
-                    collectd.error(traceback.format_exc())
                     collectd.error("Retry after 5 sec as connection to Redis failed in attempt %s" % (retry_count))
                     retry_count += 1
+                    if (not password_flag) and retry_count == 3:
+                        retry_count = 0
+                        password_flag = True
                     time.sleep(5)
         except Exception as e:
-            collectd.error(traceback.format_exc())
             collectd.error("Exception in the connect_redis due to %s" % e)
             return
 
