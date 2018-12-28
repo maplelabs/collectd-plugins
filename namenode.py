@@ -3,13 +3,78 @@ from copy import deepcopy
 import collectd
 from utils import * # pylint: disable=W
 from constants import * # pylint: disable=W
-from http_request import * # pylint: disable=W
+import sys
+from os import path
+import os
+from utils import * # pylint: disable=W
+import write_json
+sys.path.append(path.dirname(path.abspath("/opt/collectd/plugins/sf-plugins-hadoop/Collectors/configuration.py")))
+sys.path.append(path.dirname(path.abspath("/opt/collectd/plugins/sf-plugins-hadoop/Collectors/hadoopClusterCollector/name_node.py")))
+
+from configuration import *
+from name_node import run_application, initialize_app
 
 class Namenode:
     def __init__(self):
-        self.namenode = None
-        self.port = None
-        self.interval = 0
+        pass
+
+    def check_fields(self, line, dic_fields):
+        for field in dic_fields:
+            if (field+"=" in line or field+" =" in line):
+                return field
+        return None
+
+    def update_config_file(self, previous_json_nn):
+        file_name = "/opt/collectd/plugins/sf-plugins-hadoop/Collectors/configuration.py"
+        lines = []
+        flag = 0
+        previous_json_nn = previous_json_nn.strip(".")
+        dic_fields = { "name_node": name_node,"elastic": elastic, "indices": indices, "tag_app_name": tag_app_name, "previous_json_nn": previous_json_nn}
+        with open(file_name, "r") as read_config_file:
+            for line in read_config_file.readlines():
+                field = self.check_fields(line, dic_fields)
+                if field and ("{" in line and "}" in line):
+                    lines.append("%s = %s\n" %(field, dic_fields[field]))
+                elif field or flag:
+                    if field:
+                        if field == "previous_json_nn":
+                            lines.append('%s = "%s"\n' %(field, dic_fields[field]))
+                        else:
+                            lines.append("%s = %s\n" %(field, dic_fields[field]))
+                    if field and "{" in line:
+                        flag = 1
+                    if "}" in line:
+                        flag = 0
+                else:
+                    lines.append(line)
+        read_config_file.close()
+        with open(file_name, "w") as write_config:
+            for line in lines:
+                write_config.write(line)
+        write_config.close()
+
+    def get_app_name(self):
+        try:
+            with open("/opt/collectd/conf/filters.conf", "r") as file_obj:
+                for line in file_obj.readlines():
+                    if 'MetaData "_tag_appName"' not in line:
+                        continue
+                    return line.split(" ")[2].strip('"')
+        except IOError:
+            collectd.error("Could not read file: /opt/collectd/conf/filters.conf")
+
+    def get_elastic_search_details(self):
+        try:
+            with open("/opt/collectd/conf/elasticsearch.conf", "r") as file_obj:
+                for line in file_obj.readlines():
+                    if "URL" not in line:
+                        continue
+                    elastic_search = line.split("URL")[1].split("//")[1].split("/")
+                    index = elastic_search[1].strip("/").strip("_doc")
+                    elastic_search = elastic_search[0].split(":")
+                    return elastic_search[0], elastic_search[1], index
+        except IOError:
+            collectd.error("Could not read file: /opt/collectd/conf/elasticsearch.conf")
 
     def read_config(self, cfg):
         """Initializes variables from conf files."""
@@ -17,55 +82,17 @@ class Namenode:
             if children.key == INTERVAL:
                 self.interval = children.values[0]
             elif children.key == NAMENODE:
-                self.namenode = children.values[0]
+                name_node["hosts"] = children.values[0].split(",")
             elif children.key == NAMENODE_PORT:
-                self.port = children.values[0]
-
-    def remove_dot(self, doc, field):
-        new_field = '_' + field.split('.')[0] + '_' + field.split('.')[1].lower()
-        doc[new_field] = doc.pop(field)
-
-
-    def get_name_node_stats(self):
-        """Function to get name node stats"""
-        location = self.namenode
-        port = self.port
-        path = "/jmx?qry=Hadoop:service=NameNode,name={}".format('JvmMetrics')
-        json_name_node = http_request(location, port, path, scheme='http')
-        if json_name_node is not None:
-            json_name_node = json_name_node['beans']
-            json_name_node[0]['_documentType'] = "nameNodeStats" + 'JvmMetrics'
-        else:
-            return None
-        hostname = json_name_node[0]['tag.Hostname']
-
-        for name in ['FSNamesystemState', 'FSNamesystem', 'RpcActivityForPort8020']:
-            path = "/jmx?qry=Hadoop:service=NameNode,name={}".format(name)
-            json_doc = http_request(location, port, path, scheme='http')
-            try:
-                if json_doc['beans'] == []:
-                    continue
-                doc = json_doc['beans'][0]
-            except KeyError as error:
-                collectd.error("Plugin Name_node: Error ", error)
-                return None
-            if 'TopUserOpCounts' in doc:
-                doc.pop('TopUserOpCounts')
-            if 'tag.Hostname' not in doc:
-                doc['tag.Hostname'] = hostname
-            else:
-                doc['_tag_hostname'] = doc.pop('tag.Hostname')
-            doc['time'] = int(time.time())
-            if 'RpcActivity' in name:
-                doc['_documentType'] = "nameNodeStats" + "RpcActivity"
-            else:
-                doc['_documentType'] = "nameNodeStats" + name
-
-            for field in doc.keys():
-                if '.' in field:
-                    self.remove_dot(doc, field)
-            json_name_node.append(doc)
-        return json_name_node
+                name_node["port"] = children.values[0]
+        host, port, index = self.get_elastic_search_details()
+        elastic["host"] = host
+        elastic["port"] = port
+        indices["namenode"] = index
+        appname = self.get_app_name()
+        tag_app_name['namenode'] = appname
+        self.update_config_file(previous_json_nn)
+        initialize_app()
 
     @staticmethod
     def add_common_params(namenode_dic, doc_type):
@@ -79,19 +106,13 @@ class Namenode:
         namenode_dic[ACTUALPLUGINTYPE] = 'namenode'
         namenode_dic[PLUGINTYPE] = doc_type
 
-    @staticmethod
-    def dispatch_data(doc):
-        """Dispatches dictionary to collectd."""
-        collectd.info("Plugin Name_node: Values: %s" %(doc)) # pylint: disable=E1101
-        dispatch(doc)
-
-
     def collect_data(self):
         """Collects all data."""
-        namenode_dics = self.get_name_node_stats()
-        for doc in namenode_dics:
+        data = run_application(index=0)
+        docs = [{"nameNodeStatsRpcActivity": "_tag_hostname: manager-1", "_tag_context": "rpc", "RpcQueueTimeAvgTime": 0.066667, "RpcProcessingTimeAvgTime": 0.244444, "SentBytes": 0, "RpcAuthenticationSuccesses": 0, "_tag_numopenconnectionsperuser": 0, "modelerType": "RpcActivityForPort8020", "RpcClientBackoff": 0, "RpcAuthenticationFailures": 0, "_tag_port": 8020, "_documentType": "nameNodeStatsRpcActivity", "_plugin": "namenode", "RpcSlowCalls": 0, "ReceivedBytes": 0, "RpcAuthorizationFailures": 0, "NumOpenConnections": 0, "RpcAuthorizationSuccesses": 0, "name": "Hadoop:service=NameNode,name=RpcActivityForPort8020", "RpcProcessingTimeNumOps": 0, "RpcQueueTimeNumOps": 0, "time": 0, "CallQueueLength": 0}]
+        for doc in docs:
             self.add_common_params(doc, doc['_documentType'])
-            self.dispatch_data(deepcopy(doc))
+            write_json.write(doc)
 
     def read(self):
         self.collect_data()
