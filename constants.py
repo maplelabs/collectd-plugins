@@ -240,6 +240,9 @@ class Postgres(object):
 # TPCC Plugin constants
 TPCC = "tpcc"
 
+# TOMCAT Plugin constants
+TOMCAT = "tomcat"
+
 # Kafka_jmx plugin constants
 KAFKA_JMX = "kafkajmx"
 ZOOK_JMX = "zookeeperjmx"
