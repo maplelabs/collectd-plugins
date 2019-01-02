@@ -58,7 +58,7 @@ class JmxStat(object):
 
     def add_default_diff_value(self, dict_jmx, doctype):
         """Add default value to rate key based on type"""
-        if doctype == "tomcatstats":
+        if doctype == "tomcatStats":
             keylist = ["hitCount", "lookupCount"]
             for key in keylist:
                 dict_jmx[key] = 0
@@ -255,16 +255,20 @@ class JmxStat(object):
         #    self.add_common_params(doc, topic_info)
         if doc == "tomcatStats":
             if pid in self.prev_data:
-                self.add_diff(pid, dict_jmx, doc)
+                temp_tomcatStats = deepcopy(dict_jmx)
+                self.add_diff(pid, doc, dict_jmx)
+                self.prev_data[pid] = temp_tomcatStats
             else:
+                self.prev_data[pid] = deepcopy(dict_jmx)
                 self.add_default_diff_value(dict_jmx, doc)
-            self.prev_data[pid] = dict_jmx
         elif doc == "requestProcessorStats":
             if pid in self.prev_req_data:
-                self.add_diff(pid, dict_jmx, doc)
+                temp_reqStats = deepcopy(dict_jmx)
+                self.add_diff(pid, doc, dict_jmx)
+                self.prev_req_data[pid] = temp_reqStats
             else:
+                self.prev_req_data[pid] = deepcopy(dict_jmx)
                 self.add_default_diff_value(dict_jmx, doc)
-            self.prev_req_data[pid] = dict_jmx
         self.dispatch_data(doc, deepcopy(dict_jmx))
 
     def get_pid_jmx_stats(self, pid, port, output):
