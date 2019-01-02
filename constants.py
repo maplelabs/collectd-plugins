@@ -297,6 +297,9 @@ RESOURCE_MANAGER = 'resource_manager'
 RESOURCE_MANAGER_PORT = 'resource_manager_port'
 TIMELINE_SERVER = 'timeline_server'
 TIMELINE_PORT = 'timeline_port'
+USE_REST_API = "use_rest_api"
+HDFS_PORT = "hdfs_port"
+HDFS_HOSTS = "hdfs_host"
 
 # namenode plugin constants
 NAMENODE = "namenode_host"

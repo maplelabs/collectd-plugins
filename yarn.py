@@ -1,16 +1,79 @@
 import time
 from copy import deepcopy
 import collectd
-from constants import * # pylint: disable=W
+import sys
+from os import path
+import os
+import write_json
 from utils import * # pylint: disable=W
-from http_request import * # pylint: disable=W
+sys.path.append(path.dirname(path.abspath("/opt/collectd/plugins/sf-plugins-hadoop/Collectors/configuration.py")))
+sys.path.append(path.dirname(path.abspath("/opt/collectd/plugins/sf-plugins-hadoop/Collectors/hadoopClusterCollector/yarn_stats.py")))
+
+from configuration import *
+from yarn_stats import run_application, initialize_app
 
 class YarnStats:
     def __init__(self):
         """Plugin object will be created only once and \
            collects yarn statistics info every interval."""
-        self.resource_manager = None
-        self.yarn_node = None
+        pass
+    def check_fields(self, line, dic_fields):
+        for field in dic_fields:
+            if (field+"=" in line or field+" =" in line):
+                return field
+        return None
+
+    def update_config_file(self, previous_json_yarn):
+        file_name = "/opt/collectd/plugins/sf-plugins-hadoop/Collectors/configuration.py"
+        lines = []
+        flag = 0
+        previous_json_yarn = previous_json_yarn.strip(".")
+        dic_fields = {"resource_manager": resource_manager,"elastic": elastic, "indices": indices, "previous_json_yarn": previous_json_yarn, "tag_app_name": tag_app_name}
+        with open(file_name, "r") as read_config_file:
+            for line in read_config_file.readlines():
+                field = self.check_fields(line, dic_fields)
+                if field and ("{" in line and "}" in line):
+                    lines.append("%s = %s\n" %(field, dic_fields[field]))
+                elif field or flag:
+                    if field:
+                        if field == "previous_json_yarn":
+                            lines.append('%s = "%s"\n' %(field, dic_fields[field]))
+                        else:
+                            lines.append("%s = %s\n" %(field, dic_fields[field]))
+                    if field and "{" in line:
+                        flag = 1
+                    if "}" in line:
+                        flag = 0
+                else:
+                    lines.append(line)
+        read_config_file.close()
+        with open(file_name, "w") as write_config:
+            for line in lines:
+                write_config.write(line)
+        write_config.close()
+
+    def get_elastic_search_details(self):
+        try:
+            with open("/opt/collectd/conf/elasticsearch.conf", "r") as file_obj:
+                for line in file_obj.readlines():
+                    if "URL" not in line:
+                        continue
+                    elastic_search = line.split("URL")[1].split("//")[1].split("/")
+                    index = elastic_search[1].strip("/").strip("_doc")
+                    elastic_search = elastic_search[0].split(":")
+                    return elastic_search[0], elastic_search[1], index
+        except IOError:
+            collectd.error("Could not read file: /opt/collectd/conf/elasticsearch.conf")
+
+    def get_app_name(self):
+        try:
+            with open("/opt/collectd/conf/filters.conf", "r") as file_obj:
+                for line in file_obj.readlines():
+                    if 'MetaData "_tag_appName"' not in line:
+                        continue
+                    return line.split(" ")[2].strip('"')
+        except IOError:
+            collectd.error("Could not read file: /opt/collectd/conf/filters.conf")
 
     def read_config(self, cfg):
         """Initializes variables from conf files."""
@@ -18,75 +81,18 @@ class YarnStats:
             if children.key == INTERVAL:
                 self.interval = children.values[0]
             elif children.key == YARN_NODE:
-                self.yarn_node = children.values[0]
+                resource_manager["hosts"]  = children.values[0].split(",")
             elif children.key == RESOURCE_MANAGER_PORT:
-                self.resource_manager = children.values[0]
+                resource_manager["port"]  = children.values[0]
+        host, port, index = self.get_elastic_search_details()
+        elastic["host"] = host
+        elastic["port"] = port
+        indices["yarn"] = index
+        appname = self.get_app_name()
+        tag_app_name['yarn'] = appname
+        self.update_config_file(previous_json_yarn)
+        initialize_app()
 
-    def remove_dot(self, doc, field):
-        """Function to remove dots in the field"""
-        new_field = '_' + field.split('.')[0] + '_' + field.split('.')[1].lower()
-        doc[new_field] = doc.pop(field)
-
-    def get_containers_node(self):
-        """Function to get collection of resources, each of which represents a node"""
-        location = self.yarn_node
-        port = self.resource_manager
-        path = '/ws/v1/cluster/nodes'
-        nodes_json = http_request(location, port, path, scheme="http")
-        if nodes_json is None:
-            return None
-
-        if not nodes_json["nodes"]:
-            return None
-        nodes_list = nodes_json["nodes"]["node"]
-        for node in nodes_list:
-            node['time'] = int(round(time.time()))
-            node['_documentType'] = "containerStats"
-
-        return nodes_list
-
-    def get_yarn_stats(self):
-        """Function to get yarn statistics"""
-        location = self.yarn_node
-        port = self.resource_manager
-        path = "/jmx?qry=Hadoop:service=ResourceManager,name={}".format('JvmMetrics')
-        json_yarn_node = http_request(location, port, path, scheme='http')
-        if json_yarn_node is not None:
-            json_yarn_node = json_yarn_node['beans']
-            json_yarn_node[0]['time'] = int(time.time())
-            json_yarn_node[0]['_documentType'] = "yarnStats" + 'JvmMetrics'
-        else:
-            return []
-        hostname = json_yarn_node[0]['tag.Hostname']
-
-        for name in ['RpcActivityForPort8031', 'RpcActivityForPort8032', \
-                     'RpcActivityForPort8033', 'RpcActivityForPort8025', \
-                     'RpcDetailedActivityForPort8050', 'QueueMetrics,q0=root', 'ClusterMetrics']:
-            path = "/jmx?qry=Hadoop:service=ResourceManager,name={}".format(name)
-            json_doc = http_request(location, port, path, scheme='http')
-            if json_doc is None:
-                continue
-            try:
-                if json_doc['beans'] == []:
-                    continue
-                doc = json_doc['beans'][0]
-            except KeyError as error:
-                collectd.error("Plugin yarn_stats: Error ", error)
-                return None
-            if 'tag.Hostname' not in doc:
-                doc['tag.Hostname'] = hostname
-            doc['_tag_hostname'] = doc.pop('tag.Hostname')
-            doc['time'] = int(time.time())
-            if 'Rpc' in name:
-                doc['_documentType'] = "yarnStats" + 'RpcActivity'
-            else:
-                doc['_documentType'] = "yarnStats" + name.split(',')[0]
-            for field in doc.keys():
-                if '.' in field:
-                    self.remove_dot(doc, field)
-
-            json_yarn_node.append(doc)
-        return json_yarn_node
 
     @staticmethod
     def add_common_params(namenode_dic, doc_type):
@@ -100,23 +106,13 @@ class YarnStats:
         namenode_dic[ACTUALPLUGINTYPE] = 'yarn'
         namenode_dic[PLUGINTYPE] = doc_type
 
-    @staticmethod
-    def dispatch_data(doc):
-        """Dispatches dictionary to collectd."""
-        collectd.info("Plugin Yarn_Stats: Values: %s" %(doc)) # pylint: disable=E1101
-        dispatch(doc)
-
-
     def collect_data(self):
         """Collects all data."""
-        namenode_dics = self.get_yarn_stats()
-        container_docs = self.get_containers_node()
-        if container_docs:
-            namenode_dics.extend(container_docs)
-        for doc in namenode_dics:
+        data = run_application(0)
+        docs = [{"NumRebootedNMs": 0, "_documentType": "yarnStatsClusterMetrics", "NumDecommissionedNMs": 0, "name": "Hadoop:service=ResourceManager,name=ClusterMetrics", "AMLaunchDelayNumOps": 0, "_tag_context": "yarn", "AMRegisterDelayNumOps": 0, "_tag_clustermetrics": "ResourceManager", "modelerType": "ClusterMetrics", "NumLostNMs": 0, "time": 1543301379, "_tag_appName": "hadoopapp1", "NumUnhealthyNMs": 0, "AMRegisterDelayAvgTime": 0, "NumActiveNMs": 0, "AMLaunchDelayAvgTime": 0}]
+        for doc in docs:
             self.add_common_params(doc, doc['_documentType'])
-            self.dispatch_data(deepcopy(doc))
-
+            write_json.write(doc)
 
     def read(self):
         self.collect_data()

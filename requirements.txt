@@ -1,4 +1,4 @@
-requests==2.10.0
+requests==2.19.1
 apache-log-parser==1.7.0
 collectd==1.0
 MYSQL-python==1.2.3
@@ -6,7 +6,20 @@ psutil==5.3.0
 pyjolokia==0.3.1
 kafka-python==1.4.2
 psycopg2-binary==2.7.5
-pytz
+pytz==2018.5
 redis
 hdfs==2.1.0
 PyHDFS==0.2.1
+hdfs==2.1.0
+idna==2.7
+ipaddress==1.0.22
+pconf==1.4.0
+pycparser==2.19
+PyYAML==3.13
+requests-kerberos==0.12.0
+simplejson==3.16.0
+six==1.11.0
+urllib3==1.23
+virtualenv==16.0.0
+pykerberos==1.2.1
+
