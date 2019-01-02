@@ -1,7 +1,8 @@
 """Python plugin for collectd to fetch tomcatstats for tomcat process"""
 
-#!/usr/bin/python
+# !/usr/bin/python
 import os
+import re
 import signal
 import json
 import time
@@ -19,6 +20,8 @@ from constants import *
 from libtomcatjolokia import JolokiaClient
 
 TOMCAT_DOCS = ["tomcatStats", "requestProcessorStats", "jvmStats"]
+DEFAULT_GC = ['PS MarkSweep', 'MarkSweepCompact']
+
 
 class JmxStat(object):
     """Plugin object will be created only once and collects JMX statistics info every interval."""
@@ -28,7 +31,7 @@ class JmxStat(object):
         self.interval = DEFAULT_INTERVAL
         self.process = 'catalina'
         self.listenerip = 'localhost'
-        self.prev_topic_data = {}
+        self.prev_req_data = {}
         self.prev_data = {}
         self.port = None
         self.documentsTypes = []
@@ -44,7 +47,6 @@ class JmxStat(object):
             if children.key == DOCUMENTSTYPES:
                 self.documentsTypes = children.values[0]
 
-
     def get_jmx_parameters(self, jolokiaclient, doc, dict_jmx):
         """Fetch stats based on doc_type"""
         if doc == "tomcatStats":
@@ -54,32 +56,32 @@ class JmxStat(object):
         elif doc == "jvmStats":
             self.add_jvm_parameters(jolokiaclient, dict_jmx)
 
-    def add_default_rate_value(self, dict_jmx, doctype):
+    def add_default_diff_value(self, dict_jmx, doctype):
         """Add default value to rate key based on type"""
         if doctype == "tomcatstats":
-            keylist = ["messagesIn", "bytesIn", "bytesOut", "isrExpands", "isrShrinks", "leaderElection", \
-                       "uncleanLeaderElections", "producerRequests", "fetchConsumerRequests", "fetchFollowerRequests"]
-        else:
-            keylist = ["messagesInRate", "bytesOutRate", "bytesInRate", "totalFetchRequestsRate", "totalProduceRequestsRate", \
-                       "produceMessageConversionsRate", "failedProduceRequestsRate", "fetchMessageConversionsRate", "failedFetchRequestsRate",\
-                       "bytesRejectedRate"]
-        for key in keylist:
-            dict_jmx[key] = 0
+            keylist = ["hitCount", "lookupCount"]
+            for key in keylist:
+                dict_jmx[key] = 0
+        elif doctype == "requestProcessorStats":
+            keylist = ["bytesReceived", "bytesSent"]
+            for key in keylist:
+                dict_jmx[key] = 0.0
 
-    def get_rate(self, key, curr_data, prev_data):
+
+    def get_diff(self, key, curr_data, prev_data):
         """Calculate and returns rate. Rate=(current_value-prev_value)/time."""
-        #TODO The code is similar to the one in utils.py.
-        rate = NAN
+        # TODO The code is similar to the one in utils.py.
+        diff = NAN
         if not prev_data:
-            return rate
+            return diff
 
         if key not in prev_data:
             collectd.error("%s key not in previous data. Shouldn't happen." % key)
-            return rate
+            return diff
 
         if TIMESTAMP not in curr_data or TIMESTAMP not in prev_data:
             collectd.error("%s key not in previous data. Shouldn't happen." % key)
-            return rate
+            return diff
 
         curr_time = curr_data[TIMESTAMP]
         prev_time = prev_data[TIMESTAMP]
@@ -87,93 +89,50 @@ class JmxStat(object):
         if curr_time <= prev_time:
             collectd.error("Current data time: %s is less than previous data time: %s. "
                            "Shouldn't happen." % (curr_time, prev_time))
-            return rate
+            return diff
 
-        rate = (curr_data[key] - prev_data[key]) / float(self.interval)
+        diff = curr_data[key] - prev_data[key]
         # rate can get negative if the topic(s) are deleted and created again with the same name
         # intializing rate to 0 if rates are negative value.
-        if rate < 0:
-            rate = 0.0
-        return rate
+        # if diff < 0:
+        #    rate = 0.0
+        return diff
 
-    def add_rate(self, pid, dict_jmx):
-        """Rate only for kafka jmx metrics"""
-        rate = self.get_rate("messagesInPerSec", dict_jmx, self.prev_data[pid])
-        if rate != NAN:
-            dict_jmx["messagesIn"] = round(rate, FLOATING_FACTOR)
-        rate = self.get_rate("bytesInPerSec", dict_jmx, self.prev_data[pid])
-        if rate != NAN:
-            dict_jmx["bytesIn"] = round(rate, FLOATING_FACTOR)
-        rate = self.get_rate("bytesOutPerSec", dict_jmx, self.prev_data[pid])
-        if rate != NAN:
-            dict_jmx["bytesOut"] = round(rate, FLOATING_FACTOR)
-        rate = self.get_rate("isrExpandsPerSec", dict_jmx, self.prev_data[pid])
-        if rate != NAN:
-            dict_jmx["isrExpands"] = round(rate, FLOATING_FACTOR)
-        rate = self.get_rate("isrShrinksPerSec", dict_jmx, self.prev_data[pid])
-        if rate != NAN:
-            dict_jmx["isrShrinks"] = round(rate, FLOATING_FACTOR)
-        rate = self.get_rate("leaderElectionPerSec", dict_jmx, self.prev_data[pid])
-        if rate != NAN:
-            dict_jmx["leaderElection"] = round(rate, FLOATING_FACTOR)
-        rate = self.get_rate("uncleanLeaderElectionPerSec", dict_jmx, self.prev_data[pid])
-        if rate != NAN:
-            dict_jmx["uncleanLeaderElections"] = round(rate, FLOATING_FACTOR)
-        rate = self.get_rate("producerRequestsPerSec", dict_jmx, self.prev_data[pid])
-        if rate != NAN:
-            dict_jmx["producerRequests"] = round(rate, FLOATING_FACTOR)
-        rate = self.get_rate("fetchConsumerRequestsPerSec", dict_jmx, self.prev_data[pid])
-        if rate != NAN:
-            dict_jmx["fetchConsumerRequests"] = round(rate, FLOATING_FACTOR)
-        rate = self.get_rate("fetchFollowerRequestsPerSec", dict_jmx, self.prev_data[pid])
-        if rate != NAN:
-            dict_jmx["fetchFollowerRequests"] = round(rate, FLOATING_FACTOR)
-
-    def add_topic_rate(self, pid, topic_name, topic_info):
-        """Rate only for kafka topic metrics"""
-        rate = self.get_rate('messagesIn', topic_info, self.prev_topic_data[pid][topic_name])
-        if rate != NAN:
-            topic_info['messagesInRate'] = round(rate, FLOATING_FACTOR)
-        rate = self.get_rate('bytesOut', topic_info, self.prev_topic_data[pid][topic_name])
-        if rate != NAN:
-            topic_info['bytesOutRate'] = round(rate, FLOATING_FACTOR)
-        rate = self.get_rate('bytesIn', topic_info, self.prev_topic_data[pid][topic_name])
-        if rate != NAN:
-            topic_info['bytesInRate'] = round(rate, FLOATING_FACTOR)
-        rate = self.get_rate('totalFetchRequests', topic_info, self.prev_topic_data[pid][topic_name])
-        if rate != NAN:
-            topic_info['totalFetchRequestsRate'] = round(rate, FLOATING_FACTOR)
-        rate = self.get_rate('totalProduceRequests', topic_info, self.prev_topic_data[pid][topic_name])
-        if rate != NAN:
-            topic_info['totalProduceRequestsRate'] = round(rate, FLOATING_FACTOR)
-        rate = self.get_rate('produceMessageConversions', topic_info, self.prev_topic_data[pid][topic_name])
-        if rate != NAN:
-            topic_info['produceMessageConversionsRate'] = round(rate, FLOATING_FACTOR)
-        rate = self.get_rate('failedProduceRequests', topic_info, self.prev_topic_data[pid][topic_name])
-        if rate != NAN:
-            topic_info['failedProduceRequestsRate'] = round(rate, FLOATING_FACTOR)
-        rate = self.get_rate('fetchMessageConversions', topic_info, self.prev_topic_data[pid][topic_name])
-        if rate != NAN:
-            topic_info['fetchMessageConversionsRate'] = round(rate, FLOATING_FACTOR)
-        rate = self.get_rate('failedFetchRequests', topic_info, self.prev_topic_data[pid][topic_name])
-        if rate != NAN:
-            topic_info['failedFetchRequestsRate'] = round(rate, FLOATING_FACTOR)
-        rate = self.get_rate('bytesRejected', topic_info, self.prev_topic_data[pid][topic_name])
-        if rate != NAN:
-            topic_info['bytesRejectedRate'] = round(rate, FLOATING_FACTOR)
+    def add_diff(self, pid, doc, dict_info):
+        """diff tomcatStats and requestProcessorStats"""
+        if doc == "tomcatStats":
+            diff = self.get_diff('hitCount', dict_info, self.prev_data[pid])
+            if diff != NAN:
+                dict_info['hitCount'] = diff
+            diff = self.get_diff('lookupCount', dict_info, self.prev_data[pid])
+            if diff != NAN:
+                dict_info['lookupCount'] = diff
+        elif doc == "requestProcessorStats":
+            diff = self.get_diff('bytesReceived', dict_info, self.prev_req_data[pid])
+            if diff != NAN:
+                dict_info['bytesReceived'] = round(diff, FLOATING_FACTOR)
+            diff = self.get_diff('bytesSent', dict_info, self.prev_req_data[pid])
+            if diff != NAN:
+                dict_info['bytesSent'] = round(diff, FLOATING_FACTOR)
 
     def add_request_proc_parameters(self, jolokiaclient, dict_jmx):
         """Add jmx stats specific to tomcat metrics"""
-        jolokiaclient.add_request(type='read', mbean='Catalina:name=http-nio-80,type=GlobalRequestProcessor', attribute='bytesSent')
-        jolokiaclient.add_request(type='read', mbean='Catalina:name=http-nio-80,type=GlobalRequestProcessor', attribute='bytesReceived')
-        jolokiaclient.add_request(type='read', mbean='Catalina:name=http-nio-80,type=GlobalRequestProcessor', attribute='requestCount')
-        jolokiaclient.add_request(type='read', mbean='Catalina:name=http-nio-80,type=GlobalRequestProcessor', attribute='errorCount')
-        jolokiaclient.add_request(type='read', mbean='Catalina:name=http-nio-80,type=GlobalRequestProcessor', attribute='maxTime')
-        jolokiaclient.add_request(type='read', mbean='Catalina:name=http-nio-80,type=GlobalRequestProcessor', attribute='processingTime')
+        jolokiaclient.add_request(type='read', mbean='Catalina:name=http-nio-80,type=GlobalRequestProcessor',
+                                  attribute='bytesSent')
+        jolokiaclient.add_request(type='read', mbean='Catalina:name=http-nio-80,type=GlobalRequestProcessor',
+                                  attribute='bytesReceived')
+        jolokiaclient.add_request(type='read', mbean='Catalina:name=http-nio-80,type=GlobalRequestProcessor',
+                                  attribute='requestCount')
+        jolokiaclient.add_request(type='read', mbean='Catalina:name=http-nio-80,type=GlobalRequestProcessor',
+                                  attribute='errorCount')
+        jolokiaclient.add_request(type='read', mbean='Catalina:name=http-nio-80,type=GlobalRequestProcessor',
+                                  attribute='maxTime')
+        jolokiaclient.add_request(type='read', mbean='Catalina:name=http-nio-80,type=GlobalRequestProcessor',
+                                  attribute='processingTime')
 
         bulkdata = jolokiaclient.getRequests()
-        dict_jmx['bytesSent'] = bulkdata[0].get('value', 0)
-        dict_jmx['bytesReceived'] = bulkdata[1].get('value', 0)
+        dict_jmx['bytesSent'] = bulkdata[0].get('value', 0) / (1024.0 * 1024.0)
+        dict_jmx['bytesReceived'] = bulkdata[1].get('value', 0) / (1024.0 * 1024.0)
         dict_jmx['requestCount'] = bulkdata[2].get('value', 0)
         dict_jmx['errorCount'] = bulkdata[3].get('value', 0)
         dict_jmx['maxTime'] = bulkdata[4].get('value', 0)
@@ -182,12 +141,19 @@ class JmxStat(object):
     def add_tomcat_parameters(self, jolokiaclient, dict_jmx):
         """Add jmx stats specific to tomcat metrics"""
 
-        jolokiaclient.add_request(type='read', mbean='Catalina:name=http-nio-80,type=ThreadPool', attribute='currentThreadsBusy')
-        jolokiaclient.add_request(type='read', mbean='Catalina:name=http-nio-80,type=ThreadPool', attribute='currentThreadCount')
-        jolokiaclient.add_request(type='read', mbean='Catalina:name=http-nio-80,type=ThreadPool', attribute='maxThreads')
-        jolokiaclient.add_request(type='read', mbean='Catalina:context=/ispring,host=localhost,name=Cache,type=WebResourceRoot',attribute='hitCount')
-        jolokiaclient.add_request(type='read', mbean='Catalina:context=/ispring,host=localhost,name=Cache,type=WebResourceRoot',attribute='lookupCount')
-        jolokiaclient.add_request(type='read', mbean='Catalina:type=Server',attribute='serverInfo')
+        jolokiaclient.add_request(type='read', mbean='Catalina:name=http-nio-80,type=ThreadPool',
+                                  attribute='currentThreadsBusy')
+        jolokiaclient.add_request(type='read', mbean='Catalina:name=http-nio-80,type=ThreadPool',
+                                  attribute='currentThreadCount')
+        jolokiaclient.add_request(type='read', mbean='Catalina:name=http-nio-80,type=ThreadPool',
+                                  attribute='maxThreads')
+        jolokiaclient.add_request(type='read',
+                                  mbean='Catalina:context=/ispring,host=localhost,name=Cache,type=WebResourceRoot',
+                                  attribute='hitCount')
+        jolokiaclient.add_request(type='read',
+                                  mbean='Catalina:context=/ispring,host=localhost,name=Cache,type=WebResourceRoot',
+                                  attribute='lookupCount')
+        jolokiaclient.add_request(type='read', mbean='Catalina:type=Server', attribute='serverInfo')
 
         bulkdata = jolokiaclient.getRequests()
         dict_jmx['currentThreadsBusy'] = bulkdata[0].get('value', 0)
@@ -203,13 +169,75 @@ class JmxStat(object):
         jolokiaclient.add_request(type='read', mbean='java.lang:type=ClassLoading', attribute='UnLoadedClassCount')
         jolokiaclient.add_request(type='read', mbean='java.lang:type=Memory', attribute='HeapMemoryUsage')
         jolokiaclient.add_request(type='read', mbean='java.lang:type=Memory', attribute='NonHeapMemoryUsage')
-        #jolokiaclient.add_request(type='read', mbean='java.lang:name=*,type=GarbageCollector', attribute='LastGcInfo')
+        jolokiaclient.add_request(type='read', mbean='java.lang:type=Runtime', attribute='Uptime')
+
         bulkdata = jolokiaclient.getRequests()
         dict_jmx['LoadedClassCount'] = bulkdata[0].get('value', 0)
         dict_jmx['UnLoadedClassCount'] = bulkdata[1].get('value', 0)
         dict_jmx['HeapMemoryUsage'] = bulkdata[2].get('value', 0)
         dict_jmx['NonHeapMemoryUsage'] = bulkdata[3].get('value', 0)
+        dict_jmx['Uptime'] = bulkdata[4].get('value', 0)
+        self.add_gc_parameters(jolokiaclient, dict_jmx)
 
+    def add_gc_parameters(self, jolokiaclient, dict_jmx):
+        """Add garbage collector related jmx stats"""
+
+        def memory_gc_usage(self, mempool_gc, key, gc_name, dict_jmx):
+            for name, values in mempool_gc.items():
+                # if name in ['G1 Eden Space', 'G1 Old Gen']:
+                mem = ''.join(name.split())
+
+                if re.search("Tenured", mem):
+                    mp_name = "TenuredGen"
+                elif re.search("Old", mem):
+                    mp_name = "OldGen"
+                elif re.search("Compressed Class", mem):
+                    mp_name = "CompClass"
+                elif re.search("Metaspace", mem):
+                    mp_name = "Metaspace"
+                elif re.search("Survivor", mem):
+                    mp_name = "Survivor"
+                elif re.search("Code Cache", mem):
+                    mp_name = "CodeCache"
+                elif re.search("Eden", mem):
+                    mp_name = "Eden"
+                else:
+                    mp_name = mem
+
+                # self.handle_neg_bytes(values['init'], gc_name+key+mp_name+'Init', dict_jmx)
+                # self.handle_neg_bytes(values['max'], gc_name+key+mp_name+'Max', dict_jmx)
+                dict_jmx[key + mp_name + 'Used'] = round(values['used'] / 1024.0 / 1024.0, 2)
+                dict_jmx[key + mp_name + 'Committed'] = round(values['committed'] / 1024.0 / 1024.0, 2)
+
+        gc_names = self.get_gc_names(jolokiaclient)
+        for gc_name in gc_names:
+            str_mbean = 'java.lang:type=GarbageCollector,name=' + gc_name
+            if_valid = jolokiaclient.request(type='read', mbean=str_mbean, attribute='Valid')
+
+            if if_valid['status'] == 200 and if_valid['value'] == True:
+                str_attribute = 'LastGcInfo'
+                gc_values = jolokiaclient.request(type='read', mbean=str_mbean, attribute=str_attribute)
+                gc_name_no_spaces = ''.join(gc_name.split())
+                if gc_values['status'] == 200:
+                    # dict_jmx[gc_name_no_spaces+'StartTime'] = gc_values['value']['startTime']
+                    # dict_jmx[gc_name_no_spaces+'EndTime'] = gc_values['value']['endTime']
+                    dict_jmx['GcDuration'] = gc_values['value']['duration']
+                    dict_jmx[gc_name_no_spaces + 'GcThreadCount'] = gc_values['value']['GcThreadCount']
+                    mem_aftergc = gc_values['value']['memoryUsageAfterGc']
+                    memory_gc_usage(self, mem_aftergc, 'AfGc', gc_name_no_spaces, dict_jmx)
+                    mem_beforegc = gc_values['value']['memoryUsageBeforeGc']
+                    memory_gc_usage(self, mem_beforegc, 'BfGc', gc_name_no_spaces, dict_jmx)
+
+    def get_gc_names(self, jolokiaclient):
+        gc_json = jolokiaclient.request(type='read', mbean='java.lang:type=GarbageCollector,*', attribute='Name')
+        gc_names = []
+        if gc_json['status'] == 200:
+            for _, value in gc_json['value'].items():
+                if value['Name'] in DEFAULT_GC:
+                    gc_names.append(value['Name'])
+                else:
+                    collectd.error("Plugin tomcat: not supported for GC %s" % value['Name'])
+        return gc_names
 
     def add_common_params(self, doc, dict_jmx):
         """Adds TIMESTAMP, PLUGIN, PLUGITYPE to dictionary."""
@@ -218,42 +246,26 @@ class JmxStat(object):
         dict_jmx[PLUGIN] = TOMCAT
         dict_jmx[PLUGINTYPE] = doc
         dict_jmx[ACTUALPLUGINTYPE] = TOMCAT
-        #dict_jmx[PLUGIN_INS] = doc
+        # dict_jmx[PLUGIN_INS] = doc
         collectd.info("Plugin tomcat: Added common parameters successfully for %s doctype" % doc)
 
-    def add_rate_dispatch_topic(self, pid, doc, dict_jmx):
+    def add_dispatch_tomcat(self, pid, doc, dict_jmx):
         """Rate calculation for topic metrics"""
-        for topic, topic_info in dict_jmx.items():
-            self.add_common_params(doc, topic_info)
-            if pid in self.prev_topic_data:
-                if topic in self.prev_topic_data[pid]:
-                    self.add_topic_rate(pid, topic, topic_info)
-                else:
-                    self.add_default_rate_value(topic_info, "topic")
+        # for topic, topic_info in dict_jmx.items():
+        #    self.add_common_params(doc, topic_info)
+        if doc == "tomcatStats":
+            if pid in self.prev_data:
+                self.add_diff(pid, dict_jmx, doc)
             else:
-                self.prev_topic_data[pid] = {}
-                self.add_default_rate_value(topic_info, "topic")
-
-            self.prev_topic_data[pid][topic] = topic_info
-            self.dispatch_data(doc, deepcopy(topic_info))
-
-    def add_rate_dispatch_kafka(self, pid, doc, dict_jmx):
-        if pid in self.prev_data:
-            self.add_rate(pid, dict_jmx)
-        else:
-            self.add_default_rate_value(dict_jmx, "kafka")
-
-        self.prev_data[pid] = dict_jmx
+                self.add_default_diff_value(dict_jmx, doc)
+            self.prev_data[pid] = dict_jmx
+        elif doc == "requestProcessorStats":
+            if pid in self.prev_req_data:
+                self.add_diff(pid, dict_jmx, doc)
+            else:
+                self.add_default_diff_value(dict_jmx, doc)
+            self.prev_req_data[pid] = dict_jmx
         self.dispatch_data(doc, deepcopy(dict_jmx))
-
-    def dispatch_stats(self, doc, dict_jmx):
-        if doc == "partitionStats":
-            stats_list = dict_jmx["partitionStats"]
-        else:
-            stats_list = dict_jmx["consumerStats"]
-        for stats in stats_list:
-            self.add_common_params(doc, stats)
-            self.dispatch_data(doc, stats)
 
     def get_pid_jmx_stats(self, pid, port, output):
         """Call get_jmx_parameters function for each doc_type and add dict to queue"""
@@ -266,9 +278,9 @@ class JmxStat(object):
                     raise ValueError("No data found")
 
                 collectd.info("Plugin tomcat: Added %s doctype information successfully for pid %s" % (doc, pid))
-                if doc in ["tomcatStats", "jvmStats", "requestProcessorStats"]:
-                    output.put((pid, doc, dict_jmx))
-                    continue
+                # if doc in ["tomcatStats", "jvmStats", "requestProcessorStats"]:
+                #    output.put((pid, doc, dict_jmx))
+                #    continue
 
                 self.add_common_params(doc, dict_jmx)
                 output.put((pid, doc, dict_jmx))
@@ -288,8 +300,8 @@ class JmxStat(object):
 
         for proc in procs:
             proc.join()
-#       for p in procs:
-#          collectd.debug("%s, %s" % (p, p.is_alive()))
+        # for p in procs:
+        #          collectd.debug("%s, %s" % (p, p.is_alive()))
         return procs, output
 
     def collect_jmx_data(self):
@@ -309,19 +321,20 @@ class JmxStat(object):
                     continue
                 # Dispatching documentsTypes which are requetsed alone
                 if doc_name in self.documentsTypes:
-                    self.add_common_params(doc_name, doc_result)
-                    self.dispatch_data(doc_name, doc_result)
+                    # self.add_common_params(doc_name, doc_result)
+                    # self.dispatch_data(doc_name, doc_result)
 
-                    #if doc_name == "topicStats":
-                    #    self.add_rate_dispatch_topic(pid, doc_name, doc_result)
-                    #elif doc_name == "kafkaStats":
-                    #    self.add_rate_dispatch_kafka(pid, doc_name, doc_result)
-                    #else:
-                    #    self.dispatch_stats(doc_name, doc_result)
+                    if doc_name in ["tomcatStats", "requestProcessorStats"]:
+                        self.add_dispatch_tomcat(pid, doc_name, doc_result)
+                    else:
+                        self.dispatch_data(doc_name, doc_result)
         output.close()
 
     def dispatch_data(self, doc_name, result):
         """Dispatch data to collectd."""
+        collectd.info("Plugin tomcat: Succesfully sent %s doctype to collectd." % doc_name)
+        collectd.debug("Plugin tomcat: Values dispatched =%s" % json.dumps(result))
+
         utils.dispatch(result)
 
     def read_temp(self):
@@ -331,9 +344,11 @@ class JmxStat(object):
         collectd.unregister_read(self.read_temp)
         collectd.register_read(self.collect_jmx_data, interval=int(self.interval))
 
+
 def init():
     """When new process is formed, action to SIGCHLD is reset to default behavior."""
     signal.signal(signal.SIGCHLD, signal.SIG_DFL)
+
 
 OBJ = JmxStat()
 collectd.register_init(init)
