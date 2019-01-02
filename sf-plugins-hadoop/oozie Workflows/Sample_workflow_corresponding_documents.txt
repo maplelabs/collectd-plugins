@@ -1,0 +1,190 @@
+Sample Workflow:
+{
+	'appName': 'map-reduce-wf',
+	'externalId': None,
+	'conf': '<configuration>\r\n  <property>\r\n    <name>outputDir</name>\r\n    <value>map-reduce</value>\r\n  </property>\r\n  <property>\r\n    <name>numOfReducers</name>\r\n    <value>15</value>\r\n  </property>\r\n  <property>\r\n    <name>examplesRoot</name>\r\n    <value>examples</value>\r\n  </property>\r\n  <property>\r\n    <name>oozie.wf.application.path</name>\r\n    <value>hdfs://10.25.14.83:8020/user/pnda/examples/apps/map-reduce/workflow.xml</value>\r\n  </property>\r\n  <property>\r\n    <name>oozie.use.system.libpath</name>\r\n    <value>true</value>\r\n  </property>\r\n  <property>\r\n    <name>queueName</name>\r\n    <value>default</value>\r\n  </property>\r\n  <property>\r\n    <name>user.name</name>\r\n    <value>pnda</value>\r\n  </property>\r\n  <property>\r\n    <name>jobTracker</name>\r\n    <value>10.25.14.83:8088</value>\r\n  </property>\r\n  <property>\r\n    <name>inputDir</name>\r\n    <value>map-reduce</value>\r\n  </property>\r\n  <property>\r\n    <name>mapreduce.job.user.name</name>\r\n    <value>pnda</value>\r\n  </property>\r\n  <property>\r\n    <name>nameNode</name>\r\n    <value>hdfs://10.25.14.83:8020</value>\r\n  </property>\r\n</configuration>',
+	'run': 0,
+	'acl': None,
+	'appPath': 'hdfs://10.25.14.83:8020/user/pnda/examples/apps/map-reduce/workflow.xml',
+	'parentId': None,
+	'lastModTime': 'Fri, 10 Aug 2018 16:10:23 GMT',
+	'consoleUrl': 'http://pndademocloud-hadoop-mgr-4:11000/oozie?job=0000039-180809041031612-oozie-oozi-W',
+	'createdTime': 'Fri, 10 Aug 2018 16:05:43 GMT',
+	'startTime': 'Fri, 10 Aug 2018 16:05:43 GMT',
+	'toString': 'Workflow id[0000039-180809041031612-oozie-oozi-W] status[SUCCEEDED]',
+	'id': '0000039-180809041031612-oozie-oozi-W',
+	'endTime': 'Fri, 10 Aug 2018 16:10:23 GMT',
+	'user': 'pnda',
+	'actions': [{
+			'cred': None,
+			'userRetryMax': 0,
+			'trackerUri': '-',
+			'data': None,
+			'errorMessage': None,
+			'userRetryCount': 0,
+			'externalChildIDs': None,
+			'externalId': '-',
+			'errorCode': None,
+			'conf': '',
+			'type': ':START:',
+			'transition': 'hive-node',
+			'retries': 0,
+			'consoleUrl': '-',
+			'stats': None,
+			'userRetryInterval': 10,
+			'name': ':start:',
+			'startTime': 'Fri, 10 Aug 2018 16:05:43 GMT',
+			'toString': 'Action name[:start:] status[OK]',
+			'id': '0000039-180809041031612-oozie-oozi-W@:start:',
+			'endTime': 'Fri, 10 Aug 2018 16:05:43 GMT',
+			'externalStatus': 'OK',
+			'status': 'OK'
+		}, {
+			'cred': None,
+			'userRetryMax': 0,
+			'trackerUri': '10.25.14.83:8088',
+			'data': None,
+			'errorMessage': None,
+			'userRetryCount': 0,
+			'externalChildIDs': 'job_1533773070125_0267,job_1533773070125_0268',
+			'externalId': 'job_1533773070125_0266',
+			'errorCode': None,
+			'conf': '<hive xmlns="uri:oozie:hive-action:0.2">\r\n  <job-tracker>10.25.14.83:8088</job-tracker>\r\n  <name-node>hdfs://10.25.14.83:8020</name-node>\r\n  <prepare />\r\n  <configuration>\r\n    <property xmlns="">\r\n      <name>mapreduce.job.queuename</name>\r\n      <value>default</value>\r\n      <source>programatically</source>\r\n    </property>\r\n    <property xmlns="">\r\n      <name>mapred.job.queue.name</name>\r\n      <value>default</value>\r\n      <source>programatically</source>\r\n    </property>\r\n  </configuration>\r\n  <script>tpch_query1.sql</script>\r\n</hive>',
+			'type': 'hive',
+			'transition': 'mr-node',
+			'retries': 0,
+			'consoleUrl': 'http://pndademocloud-hadoop-mgr-1:8088/proxy/application_1533773070125_0266/',
+			'stats': None,
+			'userRetryInterval': 10,
+			'name': 'hive-node',
+			'startTime': 'Fri, 10 Aug 2018 16:05:44 GMT',
+			'toString': 'Action name[hive-node] status[OK]',
+			'id': '0000039-180809041031612-oozie-oozi-W@hive-node',
+			'endTime': 'Fri, 10 Aug 2018 16:06:51 GMT',
+			'externalStatus': 'SUCCEEDED',
+			'status': 'OK'
+		}, {
+			'cred': None,
+			'userRetryMax': 0,
+			'trackerUri': '10.25.14.83:8088',
+			'data': None,
+			'errorMessage': None,
+			'userRetryCount': 0,
+			'externalChildIDs': '',
+			'externalId': 'job_1533773070125_0270',
+			'errorCode': None,
+			'conf': '<map-reduce xmlns="uri:oozie:workflow:0.2">\r\n  <job-tracker>10.25.14.83:8088</job-tracker>\r\n  <name-node>hdfs://10.25.14.83:8020</name-node>\r\n  <prepare>\r\n    <delete path="hdfs://10.25.14.83:8020/user/pnda/examples/output-data/map-reduce" />\r\n  </prepare>\r\n  <configuration>\r\n    <property xmlns="">\r\n      <name>mapred.input.dir</name>\r\n      <value>/user/pnda/examples/input-data/text</value>\r\n      <source>programatically</source>\r\n    </property>\r\n    <property xmlns="">\r\n      <name>mapreduce.input.fileinputformat.inputdir</name>\r\n      <value>/user/pnda/examples/input-data/text</value>\r\n      <source>programatically</source>\r\n    </property>\r\n    <property xmlns="">\r\n      <name>mapred.mapper.class</name>\r\n      <value>org.apache.oozie.example.SampleMapper</value>\r\n      <source>programatically</source>\r\n    </property>\r\n    <property xmlns="">\r\n      <name>mapred.reduce.tasks</name>\r\n      <value>15</value>\r\n      <source>programatically</source>\r\n    </property>\r\n    <property xmlns="">\r\n      <name>mapred.reducer.class</name>\r\n      <value>org.apache.oozie.example.SampleReducer</value>\r\n      <source>programatically</source>\r\n    </property>\r\n    <property xmlns="">\r\n      <name>mapreduce.job.queuename</name>\r\n      <value>default</value>\r\n      <source>programatically</source>\r\n    </property>\r\n    <property xmlns="">\r\n      <name>mapred.job.queue.name</name>\r\n      <value>default</value>\r\n      <source>programatically</source>\r\n    </property>\r\n    <property xmlns="">\r\n      <name>mapred.map.tasks</name>\r\n      <value>1</value>\r\n    </property>\r\n    <property xmlns="">\r\n      <name>mapred.output.dir</name>\r\n      <value>/user/pnda/examples/output-data/map-reduce</value>\r\n      <source>programatically</source>\r\n    </property>\r\n    <property xmlns="">\r\n      <name>mapreduce.job.maps</name>\r\n      <value>1</value>\r\n      <source>because mapred.map.tasks is deprecated</source>\r\n    </property>\r\n    <property xmlns="">\r\n      <name>mapreduce.output.fileoutputformat.outputdir</name>\r\n      <value>/user/pnda/examples/output-data/map-reduce</value>\r\n      <source>programatically</source>\r\n    </property>\r\n    <property xmlns="">\r\n      <name>mapreduce.job.reduces</name>\r\n      <value>15</value>\r\n      <source>programatically</source>\r\n    </property>\r\n  </configuration>\r\n</map-reduce>',
+			'type': 'map-reduce',
+			'transition': 'end',
+			'retries': 0,
+			'consoleUrl': 'http://pndademocloud-hadoop-mgr-1:8088/proxy/job_1533773070125_0270',
+			'stats': None,
+			'userRetryInterval': 10,
+			'name': 'mr-node',
+			'startTime': 'Fri, 10 Aug 2018 16:06:51 GMT',
+			'toString': 'Action name[mr-node] status[OK]',
+			'id': '0000039-180809041031612-oozie-oozi-W@mr-node',
+			'endTime': 'Fri, 10 Aug 2018 16:10:23 GMT',
+			'externalStatus': 'SUCCEEDED',
+			'status': 'OK'
+		}, {
+			'cred': None,
+			'userRetryMax': 0,
+			'trackerUri': '-',
+			'data': None,
+			'errorMessage': None,
+			'userRetryCount': 0,
+			'externalChildIDs': None,
+			'externalId': '-',
+			'errorCode': None,
+			'conf': '',
+			'type': ':END:',
+			'transition': None,
+			'retries': 0,
+			'consoleUrl': '-',
+			'stats': None,
+			'userRetryInterval': 10,
+			'name': 'end',
+			'startTime': 'Fri, 10 Aug 2018 16:10:23 GMT',
+			'toString': 'Action name[end] status[OK]',
+			'id': '0000039-180809041031612-oozie-oozi-W@end',
+			'endTime': 'Fri, 10 Aug 2018 16:10:23 GMT',
+			'externalStatus': 'OK',
+			'status': 'OK'
+		}
+	],
+	'status': 'SUCCEEDED',
+	'group': None
+}
+
+The following 4 documents are posted to elastic search based on the above workflow details from oozie
+
+oozieWorkflows document below is posted to elastic search
+
+{
+	'appName': 'map-reduce-wf',
+	'id': '0000039-180809041031612-oozie-oozi-W',
+	'lastModTime': 'Fri, 10 Aug 2018 16:10:23 GMT',
+	'createdTime': 'Fri, 10 Aug 2018 16:05:43 GMT',
+	'startTime': 'Fri, 10 Aug 2018 16:05:43 GMT',
+	'endTime': 'Fri, 10 Aug 2018 16:10:23 GMT',
+	'status': 'SUCCEEDED',
+	'_plugin': 'hadoop',
+	'_documentType': 'oozieWorkflows',
+	'_tag_appName': 'kodiak_cluster'
+}
+
+oozie hive action - Yarn Job id job_1533773070125_0267, job_1533773070125_0268 - 2 oozieWorkflowActions documents posted to elastic search for this action
+You can see that all the fields are same except the externalChildID
+{
+	'id': '0000039-180809041031612-oozie-oozi-W@hive-node',
+	'startTime': 'Fri, 10 Aug 2018 16:05:44 GMT',
+	'endTime': 'Fri, 10 Aug 2018 16:06:51 GMT',
+	'externalId': 'job_1533773070125_0266',
+	'externalChildID': 'job_1533773070125_0267',
+	'status': 'OK',
+	'externalStatus': 'SUCCEEDED',
+	'errorCode': None,
+	'name': 'hive-node',
+	'type': 'hive',
+	'retries': 0,
+	'_plugin': 'hadoop',
+	'_documentType': 'oozieWorkflowActions',
+	'_tag_appName': 'kodiak_cluster'
+}
+
+{
+	'id': '0000039-180809041031612-oozie-oozi-W@hive-node',
+	'startTime': 'Fri, 10 Aug 2018 16:05:44 GMT',
+	'endTime': 'Fri, 10 Aug 2018 16:06:51 GMT',
+	'externalId': 'job_1533773070125_0266',
+	'externalChildID': 'job_1533773070125_0268',
+	'status': 'OK',
+	'externalStatus': 'SUCCEEDED',
+	'errorCode': None,
+	'name': 'hive-node',
+	'type': 'hive',
+	'retries': 0,
+	'_plugin': 'hadoop',
+	'_documentType': 'oozieWorkflowActions',
+	'_tag_appName': 'kodiak_cluster'
+}
+
+since map-reduce workflow action contains only one yarn job both externalId and externalChildID are  - 1 document posted to elastic search
+map-reduce action
+{
+	'id': '0000039-180809041031612-oozie-oozi-W@mr-node',
+	'startTime': 'Fri, 10 Aug 2018 16:06:51 GMT',
+	'endTime': 'Fri, 10 Aug 2018 16:10:23 GMT',
+	'externalId': 'job_1533773070125_0270',
+	'externalChildID': 'job_1533773070125_0270',
+	'status': 'OK',
+	'externalStatus': 'SUCCEEDED',
+	'errorCode': None,
+	'name': 'mr-node',
+	'type': 'map-reduce',
+	'retries': 0,
+	'_plugin': 'hadoop',
+	'_documentType': 'oozieWorkflowActions',
+	'_tag_appName': 'kodiak_cluster'
+}

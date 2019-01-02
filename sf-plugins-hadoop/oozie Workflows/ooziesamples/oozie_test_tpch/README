@@ -1,0 +1,3 @@
+For secure clusters, copy workflow.xml.security to workflow.xml and fix the metastore location appropriately.
+# command to run the oozie job
+sudo -su pnda oozie job -oozie http://pndademocloud-hadoop-mgr-4:11000/oozie -config job.properties -run

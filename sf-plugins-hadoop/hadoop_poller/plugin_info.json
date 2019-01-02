@@ -1,0 +1,6 @@
+[{
+  "pluginType": "hadoop",
+  "filename": "hadoop_poller.py",
+  "pluginCodeType": "python",
+  "enable": true
+}]

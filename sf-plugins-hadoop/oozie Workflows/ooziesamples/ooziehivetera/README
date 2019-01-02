@@ -1,0 +1,2 @@
+#Run oozie job as bellow
+sudo -su pnda oozie job -oozie http://10.25.14.64:11000/oozie -config job.properties -run
