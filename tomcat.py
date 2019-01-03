@@ -154,6 +154,7 @@ class JmxStat(object):
                                   mbean='Catalina:context=/ispring,host=localhost,name=Cache,type=WebResourceRoot',
                                   attribute='lookupCount')
         jolokiaclient.add_request(type='read', mbean='Catalina:type=Server', attribute='serverInfo')
+        jolokiaclient.add_request(type='read', mbean='java.lang:type=Runtime', attribute='Uptime')
 
         bulkdata = jolokiaclient.getRequests()
         dict_jmx['currentThreadsBusy'] = bulkdata[0].get('value', 0)
@@ -162,6 +163,7 @@ class JmxStat(object):
         dict_jmx['hitCount'] = bulkdata[3].get('value', 0)
         dict_jmx['lookupCount'] = bulkdata[4].get('value', 0)
         version = bulkdata[5].get('value', 0)
+        dict_jmx['upTime'] = bulkdata[6].get('value', 0)
         dict_jmx['version'] = version.split('/')[1]
 
     def add_jvm_parameters(self, jolokiaclient, dict_jmx):
@@ -170,14 +172,13 @@ class JmxStat(object):
         jolokiaclient.add_request(type='read', mbean='java.lang:type=ClassLoading', attribute='UnLoadedClassCount')
         jolokiaclient.add_request(type='read', mbean='java.lang:type=Memory', attribute='HeapMemoryUsage')
         jolokiaclient.add_request(type='read', mbean='java.lang:type=Memory', attribute='NonHeapMemoryUsage')
-        jolokiaclient.add_request(type='read', mbean='java.lang:type=Runtime', attribute='Uptime')
 
         bulkdata = jolokiaclient.getRequests()
-        dict_jmx['LoadedClassCount'] = bulkdata[0].get('value', 0)
-        dict_jmx['UnLoadedClassCount'] = bulkdata[1].get('value', 0)
-        dict_jmx['HeapMemoryUsage'] = bulkdata[2].get('value', 0)
-        dict_jmx['NonHeapMemoryUsage'] = bulkdata[3].get('value', 0)
-        dict_jmx['Uptime'] = bulkdata[4].get('value', 0)
+        dict_jmx['loadedClassCount'] = bulkdata[0].get('value', 0)
+        dict_jmx['unloadedClassCount'] = bulkdata[1].get('value', 0)
+        dict_jmx['heapMemoryUsage'] = bulkdata[2].get('value', 0)
+        dict_jmx['nonHeapMemoryUsage'] = bulkdata[3].get('value', 0)
+
         self.add_gc_parameters(jolokiaclient, dict_jmx)
 
     def add_gc_parameters(self, jolokiaclient, dict_jmx):
@@ -192,13 +193,13 @@ class JmxStat(object):
                     mp_name = "TenuredGen"
                 elif re.search("Old", mem):
                     mp_name = "OldGen"
-                elif re.search("Compressed Class", mem):
+                elif re.search("CompressedClass", mem):
                     mp_name = "CompClass"
                 elif re.search("Metaspace", mem):
                     mp_name = "Metaspace"
                 elif re.search("Survivor", mem):
                     mp_name = "Survivor"
-                elif re.search("Code Cache", mem):
+                elif re.search("CodeCache", mem):
                     mp_name = "CodeCache"
                 elif re.search("Eden", mem):
                     mp_name = "Eden"
@@ -222,12 +223,12 @@ class JmxStat(object):
                 if gc_values['status'] == 200:
                     # dict_jmx[gc_name_no_spaces+'StartTime'] = gc_values['value']['startTime']
                     # dict_jmx[gc_name_no_spaces+'EndTime'] = gc_values['value']['endTime']
-                    dict_jmx['GcDuration'] = gc_values['value']['duration']
-                    dict_jmx[gc_name_no_spaces + 'GcThreadCount'] = gc_values['value']['GcThreadCount']
+                    dict_jmx['gcDuration'] = gc_values['value']['duration']
+                    dict_jmx['gcThreadCount'] = gc_values['value']['GcThreadCount']
                     mem_aftergc = gc_values['value']['memoryUsageAfterGc']
-                    memory_gc_usage(self, mem_aftergc, 'AfGc', gc_name_no_spaces, dict_jmx)
+                    memory_gc_usage(self, mem_aftergc, 'afGc', gc_name_no_spaces, dict_jmx)
                     mem_beforegc = gc_values['value']['memoryUsageBeforeGc']
-                    memory_gc_usage(self, mem_beforegc, 'BfGc', gc_name_no_spaces, dict_jmx)
+                    memory_gc_usage(self, mem_beforegc, 'bfGc', gc_name_no_spaces, dict_jmx)
 
     def get_gc_names(self, jolokiaclient):
         gc_json = jolokiaclient.request(type='read', mbean='java.lang:type=GarbageCollector,*', attribute='Name')
