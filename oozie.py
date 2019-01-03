@@ -2,6 +2,7 @@
 
 #!/usr/bin/python
 import sys
+import requests
 from os import path
 import signal # pylint: disable=unused-import
 import time
@@ -32,6 +33,10 @@ class Oozie:
     def __init__(self):
         """Initializes interval, oozie server, Job history and Timeline server details"""
         self.retries = 3
+        self.url_knox = "https://localhost:8443/gateway/default/ambari/api/v1/clusters"
+        self.cluster_name = None
+        self.knox_username = "admin"
+        self.knox_password = "admin"
 
     def check_fields(self, line, dic_fields):
         for field in dic_fields:
@@ -44,7 +49,8 @@ class Oozie:
         lines = []
         flag = 0
         jobhistory_copy_dir = jobhistory_copy_dir.strip(".")
-        dic_fields = {"oozie": oozie, "job_history_server": job_history_server, "timeline_server": timeline_server, "elastic": elastic, "indices": indices, "use_rest_api": use_rest_api, "hdfs": hdfs, "jobhistory_copy_dir": jobhistory_copy_dir, "tag_app_name": tag_app_name}
+        logging_config["ozzieWorkflows"] = logging_config["ozzieWorkflows"].strip(".")
+        dic_fields = {"oozie": oozie, "job_history_server": job_history_server, "timeline_server": timeline_server, "elastic": elastic, "indices": indices, "use_rest_api": use_rest_api, "hdfs": hdfs, "jobhistory_copy_dir": jobhistory_copy_dir, "tag_app_name": tag_app_name, "logging_config": logging_config}
         with open(file_name, "r") as read_config_file:
             for line in read_config_file.readlines():
                 field = self.check_fields(line, dic_fields)
@@ -53,7 +59,6 @@ class Oozie:
                 elif field or flag:
                     if field:
                         if field == "jobhistory_copy_dir":
-                            collectd.info("%s %s" %(field,dic_fields[field]))
                             lines.append('%s = "%s"\n' %(field, dic_fields[field]))
                         else:
                             lines.append("%s = %s\n" %(field, dic_fields[field]))
@@ -118,35 +123,50 @@ class Oozie:
                     return
         sys.exit(1)
 
+    def get_cluster(self):
+        res_json = requests.get(self.url_knox, auth=(self.knox_username, self.knox_password), verify=False)
+        if res_json.status_code != 200:
+            return None
+        cluster_name = res_json.json()["items"][0]["Clusters"]["cluster_name"]
+        return cluster_name
+
+
+    def get_hadoop_service_details(self, url):
+        res_json = requests.get(url, auth=(self.knox_username, self.knox_password), verify=False)
+        if res_json.status_code != 200:
+            collectd.error("Couldn't get history_server details")
+            return None
+        lst_servers = []
+        res_json = res_json.json()
+        for host_component in res_json["host_components"]:
+            lst_servers.append(host_component["HostRoles"]["host_name"])
+        return lst_servers
+
     def read_config(self, cfg):
         """Initializes variables from conf files."""
         for children in cfg.children:
             if children.key == INTERVAL:
                 self.interval = children.values[0]
-            elif children.key == OOZIEHOST:
-                oozie["host"] = children.values[0]
-            elif children.key == OOZIEPORT:
-                oozie["port"] = children.values[0]
-            elif children.key == JOB_HISTORY_SERVER:
-                job_history_server["host"]  = children.values[0]
-            elif children.key == JOB_HISTORY_PORT:
-                job_history_server["port"] = children.values[0]
-            elif children.key == TIMELINE_SERVER:
-                timeline_server["host"]  = children.values[0]
-            elif children.key == TIMELINE_PORT:
-                timeline_server["port"] = children.values[0]
             elif children.key == USE_REST_API:
                 use_rest_api = int(children.values[0])
-            elif children.key == HDFS_HOSTS:
-                self.hdfs_hosts = children.values[0].split(",")
-            elif children.key == HDFS_PORT:
-                self.hdfs_port = children.values[0]
+
         host, port, index = self.get_elastic_search_details()
         elastic["host"] = host
         elastic["port"] = port
         indices["workflow"] = index
         appname = self.get_app_name()
         tag_app_name['oozie'] = appname
+        self.cluster_name = self.get_cluster()
+
+        job_history_server["host"] = self.get_hadoop_service_details(self.url_knox+"/"+self.cluster_name+"/services/MAPREDUCE2/components/HISTORYSERVER")[0]
+        timeline_server["host"] = self.get_hadoop_service_details(self.url_knox+"/"+self.cluster_name+"/services/YARN/components/APP_TIMELINE_SERVER")[0]
+        oozie["host"] = self.get_hadoop_service_details(self.url_knox+"/"+self.cluster_name+"/services/OOZIE/components/OOZIE_SERVER")[0]
+        self.hdfs_hosts = self.get_hadoop_service_details(self.url_knox+"/"+self.cluster_name+"/services/HDFS/components/NAMENODE")
+
+        job_history_server["port"] = "19888"
+        timeline_server["port"] = "8188"
+        oozie["port"] = "11000"
+        self.hdfs_port = "50070"
         if not os.path.isdir(jobhistory_copy_dir):
             try:
                 os.mkdir(jobhistory_copy_dir)
@@ -177,6 +197,7 @@ class Oozie:
         """Collects all data."""
         data = run_application()
         data = run_application_elastic(index=0)
+        collectd.info("oozie workflow collection successful")
         docs = [{"wfId": 0, "wfaId": 0, "wfName": 0, "wfaName": 0, "time": int(math.floor(time.time())), "jobId": 0, 'timePeriodStart': 0, 'timePeriodEnd': 0, "mapTaskCount": 0, "reduceTaskCount": 0, 'duration': 0, "_plugin": plugin_name['oozie'], "_documentType": "taskCounts","_tag_appName": tag_app_name['oozie']}]
         for doc in docs:
             self.add_common_params(doc, doc['_documentType'])

@@ -1,3 +1,4 @@
+import requests
 import time
 import subprocess
 from subprocess import check_output
@@ -20,6 +21,10 @@ class YarnStats:
         """Plugin object will be created only once and \
            collects yarn statistics info every interval."""
         self.retries = 3
+        self.url_knox = "https://localhost:8443/gateway/default/ambari/api/v1/clusters"
+        self.cluster_name = None
+        self.knox_username = "admin"
+        self.knox_password = "admin"
 
     def check_fields(self, line, dic_fields):
         for field in dic_fields:
@@ -32,7 +37,10 @@ class YarnStats:
         lines = []
         flag = 0
         previous_json_yarn = previous_json_yarn.strip(".")
-        dic_fields = {"resource_manager": resource_manager,"elastic": elastic, "indices": indices, "previous_json_yarn": previous_json_yarn, "tag_app_name": tag_app_name}
+
+        logging_config["yarn"] = logging_config["yarn"].strip(".")
+        dic_fields = {"resource_manager": resource_manager,"elastic": elastic, "indices": indices, "previous_json_yarn": previous_json_yarn, "tag_app_name": tag_app_name, "logging_config": logging_config}
+
         with open(file_name, "r") as read_config_file:
             for line in read_config_file.readlines():
                 field = self.check_fields(line, dic_fields)
@@ -105,21 +113,39 @@ class YarnStats:
         except IOError:
             collectd.error("Could not read file: /opt/collectd/conf/filters.conf")
 
+    def get_cluster(self):
+        res_json = requests.get(self.url_knox, auth=(self.knox_username, self.knox_password), verify=False)
+        if res_json.status_code != 200:
+            return None
+        cluster_name = res_json.json()["items"][0]["Clusters"]["cluster_name"]
+        return cluster_name
+
+
+    def get_hadoop_service_details(self, url):
+        res_json = requests.get(url, auth=(self.knox_username, self.knox_password), verify=False)
+        if res_json.status_code != 200:
+            collectd.error("Couldn't get history_server details")
+            return None
+        lst_servers = []
+        res_json = res_json.json()
+        for host_component in res_json["host_components"]:
+            lst_servers.append(host_component["HostRoles"]["host_name"])
+        return lst_servers
+
     def read_config(self, cfg):
         """Initializes variables from conf files."""
         for children in cfg.children:
             if children.key == INTERVAL:
                 self.interval = children.values[0]
-            elif children.key == YARN_NODE:
-                resource_manager["hosts"]  = children.values[0].split(",")
-            elif children.key == RESOURCE_MANAGER_PORT:
-                resource_manager["port"]  = children.values[0]
         host, port, index = self.get_elastic_search_details()
         elastic["host"] = host
         elastic["port"] = port
         indices["yarn"] = index
         appname = self.get_app_name()
         tag_app_name['yarn'] = appname
+        cluster_name = self.get_cluster()
+        resource_manager["port"] = "8088"
+        resource_manager["hosts"] = self.get_hadoop_service_details(self.url_knox+"/"+cluster_name+"/services/YARN/components/RESOURCEMANAGER")
         self.update_config_file(previous_json_yarn)
         cmd = "pip install -r /opt/collectd/plugins/sf-plugins-hadoop/Collectors/requirements.txt"
         self.run_cmd(cmd, shell=True, ignore_err=True)
