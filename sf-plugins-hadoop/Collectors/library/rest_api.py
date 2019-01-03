@@ -251,7 +251,7 @@ def get_taskattempt_container_info(job_id, task_ids, wfName, wfId, wfaId, wfaNam
 
                 task_attempt.update(task_attempt_counter)
                 if task_attempt['nodeHttpAddress']:
-                    task_attempt['nodeHttpAddress'] = task_attempt['nodeHttpAddress'].slice(0,task_attempt['nodeHttpAddress'].find(":"))
+                    task_attempt['nodeHttpAddress'] = task_attempt['nodeHttpAddress'].split(":")[0]
 
                 task_attempt_document.append(task_attempt)
 

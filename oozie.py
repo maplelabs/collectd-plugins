@@ -7,6 +7,8 @@ import signal # pylint: disable=unused-import
 import time
 from datetime import datetime # pylint: disable=W
 import json
+import subprocess
+from subprocess import check_output
 from copy import deepcopy
 import collectd
 import os
@@ -17,6 +19,7 @@ from constants import * # pylint: disable=W
 sys.path.append(path.dirname(path.abspath("/opt/collectd/plugins/sf-plugins-hadoop/Collectors/configuration.py")))
 sys.path.append(path.dirname(path.abspath("/opt/collectd/plugins/sf-plugins-hadoop/Collectors/OozieJobsCollector/processOzzieWorkflows.py")))
 sys.path.append(path.dirname(path.abspath("/opt/collectd/plugins/sf-plugins-hadoop/Collectors/OozieJobsCollector/processElasticWorkflows.py")))
+sys.path.append(path.dirname(path.abspath("/opt/collectd/plugins/sf-plugins-hadoop/Collectors/requirements.txt")))
 
 from configuration import *
 from processOzzieWorkflows import run_application, initialize_app
@@ -28,7 +31,7 @@ class Oozie:
     """Plugin object will be created only once and collects oozie statistics info every interval."""
     def __init__(self):
         """Initializes interval, oozie server, Job history and Timeline server details"""
-        pass
+        self.retries = 3
 
     def check_fields(self, line, dic_fields):
         for field in dic_fields:
@@ -89,6 +92,32 @@ class Oozie:
         except IOError:
             collectd.error("Could not read file: /opt/collectd/conf/elasticsearch.conf")
 
+    def run_cmd(self, cmd, shell, ignore_err=False, print_output=False):
+        """
+        return output and status after runing a shell command
+        :param cmd:
+        :param shell:
+        :param ignore_err:
+        :param print_output:
+        :return:
+        """
+        for i in xrange(self.retries):
+            try:
+                output = subprocess.check_output(cmd, shell=shell)
+                if print_output:
+                    print output
+                    return output
+                return
+            except subprocess.CalledProcessError as error:
+                if not ignore_err:
+                    print >> sys.stderr, "ERROR: {0}".format(error)
+                    sleep(0.05)
+                    continue
+                else:
+                    print >> sys.stdout, "WARNING: {0}".format(error)
+                    return
+        sys.exit(1)
+
     def read_config(self, cfg):
         """Initializes variables from conf files."""
         for children in cfg.children:
@@ -128,6 +157,8 @@ class Oozie:
         else:
             hdfs["url"] = "http://{0}:{1}" .format(self.hdfs_hosts[0], self.hdfs_port)
         self.update_config_file(use_rest_api, jobhistory_copy_dir)
+        cmd = "pip install -r /opt/collectd/plugins/sf-plugins-hadoop/Collectors/requirements.txt"
+        self.run_cmd(cmd, shell=True, ignore_err=True)
         initialize_app()
         initialize_app_elastic()
 
