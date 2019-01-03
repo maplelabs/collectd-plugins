@@ -1,0 +1,10 @@
+oozie job -oozie http://pndademocloud-hadoop-mgr-4:11000/oozie -config job.properties -run
+
+oozie job -oozie http://pndademocloud-hadoop-mgr-4:11000/oozie -kill 0000015-180808010200159-oozie-oozi-C
+
+sudo -su pnda oozie job -oozie http://pndademocloud-hadoop-mgr-4:11000/oozie -log 0000003-180809000728107-oozie-oozi-C
+
+the job.properties user.name and oozie.job.acl values are needed for impersonationation of the user as pnda for coordinator job
+
+Changed the map memory needed in ambari to make hive job work. with 512MB it was failing with Java heap space error 
+

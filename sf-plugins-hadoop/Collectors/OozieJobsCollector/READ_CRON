@@ -1,0 +1,3 @@
+*/5 * * * * python3 /root/arun/OozieJobsCollector/processOzzieWorkflows.py >> /root/arun/OozieJobsCollector/logs/processOzzieWorkflows.err 2>&1
+*/7 * * * * python3 /root/arun/OozieJobsCollector/processElasticWorkflows.py >> /root/arun/OozieJobsCollector/logs/processElasticWorkflows.err 2>&1
+*/10 * * * * sudo -su pnda oozie job -oozie http://10.25.14.64:11000/oozie -config /root/arun/ooziesamples/ooziehivemapreduce/job.properties -run >> /root/arun/OozieJobsCollector/logs/workflows_created 2>&1

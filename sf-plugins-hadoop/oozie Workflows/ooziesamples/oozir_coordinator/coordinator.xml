@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<coordinator-app xmlns="uri:oozie:coordinator:0.5" end="2018-08-08T01:00Z" frequency="${coord:minutes(5)}" name="hive-wf-coordinator" start="2018-08-08T00:00Z" timezone="GMT-08:00">
+    <action>
+        <workflow>
+            <app-path>/user/pnda/ooziehivetestcode/oozie_test_tpch</app-path>
+            <configuration>
+                <property>
+                    <name>user.name</name>
+                    <value>pnda</value>
+                </property>
+                <property>
+                    <name>oozie.job.acl</name>
+                    <value>pnda</value>
+                </property>
+            </configuration>
+        </workflow>
+    </action>
+</coordinator-app>

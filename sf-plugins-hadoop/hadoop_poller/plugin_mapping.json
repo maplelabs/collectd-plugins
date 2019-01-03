@@ -1,0 +1,1644 @@
+{
+  "hadoop": {
+    "containerStats": [
+      {
+        "_hostName": {
+          "Datatype": "text",
+          "Desc": "IP address or HostName",
+          "Unit": "",
+          "Label": "Host Name"
+        }
+      },
+      {
+        "_plugin": {
+          "Datatype": "text",
+          "Desc": "Plugin that generated the document",
+          "Unit": "",
+          "Label": "Plugin"
+        }
+      },
+      {
+        "_documentType": {
+          "Datatype": "text",
+          "Desc": "hadoop doc type",
+          "Unit": "",
+          "Label": "documentType"
+        }
+      },
+      {
+        "tags": {
+          "Datatype": "text",
+          "Desc": "User specific tags",
+          "Unit": "",
+          "Label": "Tags"
+        }
+      },
+      {
+        "time": {
+          "Datatype": "time",
+          "Desc": "Time at which document was processed by plugin in UTC",
+          "Unit": "UTC",
+          "Label": "Timestamp"
+        }
+      },
+      {
+        "containerId": {
+          "Datatype": "text",
+          "Desc": "Id of the container",
+          "Unit": "",
+          "Label": "containerId"
+        }
+      },
+      {
+        "allocatedVCores": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "allocatedVCores"
+        }
+      },
+      {
+        "nodeHttpAddress": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "nodeHttpAddress"
+        }
+      },
+      {
+        "elapsedTime": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "elapsedTime"
+        }
+      },
+      {
+        "allocatedMB": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "allocatedMB"
+        }
+      },
+      {
+        "finishedTime": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "finishedTime"
+        }
+      },
+      {
+        "diagnosticsInfo": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "diagnosticsInfo"
+        }
+      },
+      {
+        "nodeId": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "nodeId"
+        }
+      },
+      {
+        "startedTime": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "startedTime"
+        }
+      },
+      {
+        "priority": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "priority"
+        }
+      },
+      {
+        "containerState": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "containerState"
+        }
+      },
+      {
+        "containerExitStatus": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "containerExitStatus"
+        }
+      },
+      {
+        "logUrl": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "logUrl"
+        }
+      },
+      {
+        "assignedNodeId": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "assignedNodeId"
+        }
+      }
+    ],
+    "appStats": [
+      {
+        "_hostName": {
+          "Datatype": "text",
+          "Desc": "IP address or HostName",
+          "Unit": "",
+          "Label": "Host Name"
+        }
+      },
+      {
+        "_plugin": {
+          "Datatype": "text",
+          "Desc": "Plugin that generated the document",
+          "Unit": "",
+          "Label": "Plugin"
+        }
+      },
+      {
+        "_documentType": {
+          "Datatype": "text",
+          "Desc": "hadoop doc type",
+          "Unit": "",
+          "Label": "documentType"
+        }
+      },
+      {
+        "tags": {
+          "Datatype": "text",
+          "Desc": "User specific tags",
+          "Unit": "",
+          "Label": "Tags"
+        }
+      },
+      {
+        "time": {
+          "Datatype": "time",
+          "Desc": "Time at which document was processed by plugin in UTC",
+          "Unit": "UTC",
+          "Label": "Timestamp"
+        }
+      },
+      {
+        "appId": {
+          "Datatype": "text",
+          "Desc": "Id of app",
+          "Unit": "",
+          "Label": "appId"
+        }
+      },
+      {
+        "currentAppAttemptId": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "currentAppAttemptId"
+        }
+      },
+      {
+        "workflowActionName": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "workflowActionName"
+        }
+      },
+      {
+        "workflowActionId": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "workflowActionId"
+        }
+      },
+      {
+        "workflowId": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "workflowId"
+        }
+      },
+      {
+        "workflowName": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "workflowName"
+        }
+      },
+      {
+        "user": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "user"
+        }
+      },
+      {
+        "name": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "name"
+        }
+      },
+      {
+        "queue": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "queue"
+        }
+      },
+      {
+        "type": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "type"
+        }
+      },
+      {
+        "host": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "host"
+        }
+      },
+      {
+        "rpcPort": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "rpcPort"
+        }
+      },
+      {
+        "appState": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "appState"
+        }
+      },
+      {
+        "runningContainers": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "runningContainers"
+        }
+      },
+      {
+        "progress": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "progress"
+        }
+      },
+      {
+        "diagnosticsInfo": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "diagnosticsInfo"
+        }
+      },
+      {
+        "originalTrackingUrl": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "originalTrackingUrl"
+        }
+      },
+      {
+        "trackingUrl": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "trackingUrl"
+        }
+      },
+      {
+        "finalAppStatus": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "finalAppStatus"
+        }
+      },
+      {
+        "submittedTime": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "submittedTime"
+        }
+      },
+      {
+        "startedTime": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "startedTime"
+        }
+      },
+      {
+        "finishedTime": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "finishedTime"
+        }
+      },
+      {
+        "elapsedTime": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "elapsedTime"
+        }
+      },
+      {
+        "applicationTags": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "applicationTags"
+        }
+      },
+      {
+        "priority": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "priority"
+        }
+      },
+      {
+        "allocatedCpuVcores": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "allocatedCpuVcores"
+        }
+      },
+      {
+        "allocatedMemoryMB": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "allocatedMemoryMB"
+        }
+      },
+      {
+        "unmanagedApplication": {
+          "Datatype": "boolean",
+          "Desc": "",
+          "Unit": "",
+          "Label": "unmanagedApplication"
+        }
+      },
+      {
+        "appNodeLabelExpression": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "appNodeLabelExpression"
+        }
+      },
+      {
+        "amNodeLabelExpression": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "amNodeLabelExpression"
+        }
+      }
+    ],
+    "taskAttemptStat": [
+      {
+        "_hostName": {
+          "Datatype": "text",
+          "Desc": "IP address or HostName",
+          "Unit": "",
+          "Label": "Host Name"
+        }
+      },
+      {
+        "_plugin": {
+          "Datatype": "text",
+          "Desc": "Plugin that generated the document",
+          "Unit": "",
+          "Label": "Plugin"
+        }
+      },
+      {
+        "_documentType": {
+          "Datatype": "text",
+          "Desc": "hadoop doc type",
+          "Unit": "",
+          "Label": "documentType"
+        }
+      },
+      {
+        "tags": {
+          "Datatype": "text",
+          "Desc": "User specific tags",
+          "Unit": "",
+          "Label": "Tags"
+        }
+      },
+      {
+        "time": {
+          "Datatype": "time",
+          "Desc": "Time at which document was processed by plugin in UTC",
+          "Unit": "UTC",
+          "Label": "Timestamp"
+        }
+      },
+      {
+        "startTime": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "startTime"
+        }
+      },
+      {
+        "finishTime": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "finishTime"
+        }
+      },
+      {
+        "elapsedTime": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "elapsedTime"
+        }
+      },
+      {
+        "shuffleFinishTime": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "shuffleFinishTime"
+        }
+      },
+      {
+        "mergeFinishTime": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "mergeFinishTime"
+        }
+      },
+      {
+        "elapsedShuffleTime": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "elapsedShuffleTime"
+        }
+      },
+      {
+        "elapsedMergeTime": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "elapsedMergeTime"
+        }
+      },
+      {
+        "elapsedReduceTime": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "elapsedReduceTime"
+        }
+      },
+      {
+        "progress": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "progress"
+        }
+      },
+      {
+        "rack": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "rack"
+        }
+      },
+      {
+        "state": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "state"
+        }
+      },
+      {
+        "status": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "status"
+        }
+      },
+      {
+        "nodeHttpAddress": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "nodeHttpAddress"
+        }
+      },
+      {
+        "diagnostics": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "diagnostics"
+        }
+      },
+      {
+        "type": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "type"
+        }
+      },
+      {
+        "containerId": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "containerId"
+        }
+      },
+      {
+        "jobId": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "jobId"
+        }
+      },
+      {
+        "taskId": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "taskId"
+        }
+      },
+      {
+        "taskAttemptId": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "taskAttemptId"
+        }
+      }
+    ],
+    "taskAttemptCounters": [
+      {
+        "_hostName": {
+          "Datatype": "text",
+          "Desc": "IP address or HostName",
+          "Unit": "",
+          "Label": "Host Name"
+        }
+      },
+      {
+        "_plugin": {
+          "Datatype": "text",
+          "Desc": "Plugin that generated the document",
+          "Unit": "",
+          "Label": "Plugin"
+        }
+      },
+      {
+        "_documentType": {
+          "Datatype": "text",
+          "Desc": "hadoop doc type",
+          "Unit": "",
+          "Label": "documentType"
+        }
+      },
+      {
+        "tags": {
+          "Datatype": "text",
+          "Desc": "User specific tags",
+          "Unit": "",
+          "Label": "Tags"
+        }
+      },
+      {
+        "time": {
+          "Datatype": "time",
+          "Desc": "Time at which document was processed by plugin in UTC",
+          "Unit": "UTC",
+          "Label": "Timestamp"
+        }
+      },
+      {
+        "type": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "type"
+        }
+      },
+      {
+        "jobId": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "jobId"
+        }
+      },
+      {
+        "taskId": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "taskId"
+        }
+      },
+      {
+        "taskAttemptId": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "taskAttemptId"
+        }
+      },
+      {
+        "fileBytesRead": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "fileBytesRead"
+        }
+      },
+      {
+        "fileBytesWritten": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "fileBytesWritten"
+        }
+      },
+      {
+        "fileReadOps": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "fileReadOps"
+        }
+      },
+      {
+        "fileLargeReadOps": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "fileLargeReadOps"
+        }
+      },
+      {
+        "fileWriteOps": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "fileWriteOps"
+        }
+      },
+      {
+        "hdfsBytesRead": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "hdfsBytesRead"
+        }
+      },
+      {
+        "hdfsBytesWritten": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "hdfsBytesWritten"
+        }
+      },
+      {
+        "hdfsReadOps": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "hdfsReadOps"
+        }
+      },
+      {
+        "hdfsLargeReadOps": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "hdfsLargeReadOps"
+        }
+      },
+      {
+        "hdfsWriteOps": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "hdfsWriteOps"
+        }
+      },
+      {
+        "mapInputRecords": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "mapInputRecords"
+        }
+      },
+      {
+        "mapOutputRecords": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "mapOutputRecords"
+        }
+      },
+      {
+        "mapOutputBytes": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "mapOutputBytes"
+        }
+      },
+      {
+        "mapOutputMaterializedBytes": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "mapOutputMaterializedBytes"
+        }
+      },
+      {
+        "splitRawBytes": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "splitRawBytes"
+        }
+      },
+      {
+        "combineInputRecords": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "combineInputRecords"
+        }
+      },
+      {
+        "combineOutputRecords": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "combineOutputRecords"
+        }
+      },
+      {
+        "reduceInputGroups": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "reduceInputGroups"
+        }
+      },
+      {
+        "reduceShuffleBytes": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "reduceShuffleBytes"
+        }
+      },
+      {
+        "reduceInputRecords": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "reduceInputRecords"
+        }
+      },
+      {
+        "reduceOutputRecords": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "reduceOutputRecords"
+        }
+      },
+      {
+        "shuffledMaps": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "shuffledMaps"
+        }
+      },
+      {
+        "spilledRecords": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "spilledRecords"
+        }
+      },
+      {
+        "failedShuffle": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "failedShuffle"
+        }
+      },
+      {
+        "mergedMapOutputs": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "mergedMapOutputs"
+        }
+      },
+      {
+        "gcTimeMillis": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "gcTimeMillis"
+        }
+      },
+      {
+        "cpuMilliseconds": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "cpuMilliseconds"
+        }
+      },
+      {
+        "physicalMemoryBytes": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "physicalMemoryBytes"
+        }
+      },
+      {
+        "virtualMemoryBytes": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "virtualMemoryBytes"
+        }
+      },
+      {
+        "committedHeapBytes": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "committedHeapBytes"
+        }
+      },
+      {
+        "bytesRead": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "bytesRead"
+        }
+      },
+      {
+        "bytesWritten": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "bytesWritten"
+        }
+      },
+      {
+        "badId": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "badId"
+        }
+      },
+      {
+        "connection": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "connection"
+        }
+      },
+      {
+        "ioError": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "ioError"
+        }
+      },
+      {
+        "wrongLength": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "wrongLength"
+        }
+      },
+      {
+        "wrongMap": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "wrongMap"
+        }
+      },
+      {
+        "wrongReduce": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "wrongReduce"
+        }
+      }
+    ],
+    "taskStats": [
+      {
+        "_hostName": {
+          "Datatype": "text",
+          "Desc": "IP address or HostName",
+          "Unit": "",
+          "Label": "Host Name"
+        }
+      },
+      {
+        "_plugin": {
+          "Datatype": "text",
+          "Desc": "Plugin that generated the document",
+          "Unit": "",
+          "Label": "Plugin"
+        }
+      },
+      {
+        "_documentType": {
+          "Datatype": "text",
+          "Desc": "hadoop doc type",
+          "Unit": "",
+          "Label": "documentType"
+        }
+      },
+      {
+        "tags": {
+          "Datatype": "text",
+          "Desc": "User specific tags",
+          "Unit": "",
+          "Label": "Tags"
+        }
+      },
+      {
+        "time": {
+          "Datatype": "time",
+          "Desc": "Time at which document was processed by plugin in UTC",
+          "Unit": "UTC",
+          "Label": "Timestamp"
+        }
+      },
+      {
+        "startTime": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "startTime"
+        }
+      },
+      {
+        "finishTime": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "finishTime"
+        }
+      },
+      {
+        "elapsedTime": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "elapsedTime"
+        }
+      },
+      {
+        "progress": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "progress"
+        }
+      },
+      {
+        "state": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "state"
+        }
+      },
+      {
+        "type": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "type"
+        }
+      },
+      {
+        "successfulAttempt": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "successfulAttempt"
+        }
+      },
+      {
+        "jobId": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "jobId"
+        }
+      },
+      {
+        "name": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "name"
+        }
+      },
+      {
+        "taskId": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "taskId"
+        }
+      }
+    ],
+    "jobStats": [
+      {
+        "_hostName": {
+          "Datatype": "text",
+          "Desc": "IP address or HostName",
+          "Unit": "",
+          "Label": "Host Name"
+        }
+      },
+      {
+        "_plugin": {
+          "Datatype": "text",
+          "Desc": "Plugin that generated the document",
+          "Unit": "",
+          "Label": "Plugin"
+        }
+      },
+      {
+        "_documentType": {
+          "Datatype": "text",
+          "Desc": "hadoop doc type",
+          "Unit": "",
+          "Label": "documentType"
+        }
+      },
+      {
+        "tags": {
+          "Datatype": "text",
+          "Desc": "User specific tags",
+          "Unit": "",
+          "Label": "Tags"
+        }
+      },
+      {
+        "time": {
+          "Datatype": "time",
+          "Desc": "Time at which document was processed by plugin in UTC",
+          "Unit": "UTC",
+          "Label": "Timestamp"
+        }
+      },
+      {
+        "workflowActionName": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "workflowActionName"
+        }
+      },
+      {
+        "workflowActionId": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "workflowActionId"
+        }
+      },
+      {
+        "workflowId": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "workflowId"
+        }
+      },
+      {
+        "workflowName": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "workflowName"
+        }
+      },
+      {
+        "startTime": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "startTime"
+        }
+      },
+      {
+        "submitTime": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "submitTime"
+        }
+      },
+      {
+        "finishTime": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "finishTime"
+        }
+      },
+      {
+        "name": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "name"
+        }
+      },
+      {
+        "queue": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "queue"
+        }
+      },
+      {
+        "user": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "user"
+        }
+      },
+      {
+        "state": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "state"
+        }
+      },
+      {
+        "mapsTotal": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "mapsTotal"
+        }
+      },
+      {
+        "mapsCompleted": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "mapsCompleted"
+        }
+      },
+      {
+        "reducesTotal": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "reducesTotal"
+        }
+      },
+      {
+        "reducesCompleted": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "reducesCompleted"
+        }
+      },
+      {
+        "uberized": {
+          "Datatype": "boolean",
+          "Desc": "",
+          "Unit": "",
+          "Label": "uberized"
+        }
+      },
+      {
+        "diagnostics": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "diagnostics"
+        }
+      },
+      {
+        "avgMapTime": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "avgMapTime"
+        }
+      },
+      {
+        "avgReduceTime": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "avgReduceTime"
+        }
+      },
+      {
+        "avgShuffleTime": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "avgShuffleTime"
+        }
+      },
+      {
+        "avgMergeTime": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "avgMergeTime"
+        }
+      },
+      {
+        "failedReduceAttempts": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "failedReduceAttempts"
+        }
+      },
+      {
+        "killedReduceAttempts": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "killedReduceAttempts"
+        }
+      },
+      {
+        "successfulReduceAttempts": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "successfulReduceAttempts"
+        }
+      },
+      {
+        "failedMapAttempts": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "failedMapAttempts"
+        }
+      },
+      {
+        "killedMapAttempts": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "killedMapAttempts"
+        }
+      },
+      {
+        "successfulMapAttempts": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "successfulMapAttempts"
+        }
+      },
+      {
+        "jobId": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "jobId"
+        }
+      }
+    ],
+    "oozieWorkflows": [
+      {
+        "_hostName": {
+          "Datatype": "text",
+          "Desc": "IP address or HostName",
+          "Unit": "",
+          "Label": "Host Name"
+        }
+      },
+      {
+        "_plugin": {
+          "Datatype": "text",
+          "Desc": "Plugin that generated the document",
+          "Unit": "",
+          "Label": "Plugin"
+        }
+      },
+      {
+        "_documentType": {
+          "Datatype": "text",
+          "Desc": "hadoop doc type",
+          "Unit": "",
+          "Label": "documentType"
+        }
+      },
+      {
+        "tags": {
+          "Datatype": "text",
+          "Desc": "User specific tags",
+          "Unit": "",
+          "Label": "Tags"
+        }
+      },
+      {
+        "time": {
+          "Datatype": "time",
+          "Desc": "Time at which document was processed by plugin in UTC",
+          "Unit": "UTC",
+          "Label": "Timestamp"
+        }
+      },
+      {
+        "appName": {
+          "Datatype": "text",
+          "Desc": "Name of an application",
+          "Unit": "",
+          "Label": "appName"
+        }
+      },
+      {
+        "id": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "id"
+        }
+      },
+      {
+        "lastModTime": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "lastModTime"
+        }
+      },
+      {
+        "createdTime": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "createdTime"
+        }
+      },
+      {
+        "startTime": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "startTime"
+        }
+      },
+      {
+        "endTime": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "endTime"
+        }
+      },
+      {
+        "status": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "status"
+        }
+      },
+      {
+        "workflowMonitorStatus": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "workflowMonitorStatus"
+        }
+      }
+    ],
+    "oozieWorkflowActions": [
+      {
+        "_hostName": {
+          "Datatype": "text",
+          "Desc": "IP address or HostName",
+          "Unit": "",
+          "Label": "Host Name"
+        }
+      },
+      {
+        "_plugin": {
+          "Datatype": "text",
+          "Desc": "Plugin that generated the document",
+          "Unit": "",
+          "Label": "Plugin"
+        }
+      },
+      {
+        "_documentType": {
+          "Datatype": "text",
+          "Desc": "hadoop doc type",
+          "Unit": "",
+          "Label": "documentType"
+        }
+      },
+      {
+        "tags": {
+          "Datatype": "text",
+          "Desc": "User specific tags",
+          "Unit": "",
+          "Label": "Tags"
+        }
+      },
+      {
+        "time": {
+          "Datatype": "time",
+          "Desc": "Time at which document was processed by plugin in UTC",
+          "Unit": "UTC",
+          "Label": "Timestamp"
+        }
+      },
+      {
+        "id": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "id"
+        }
+      },
+      {
+        "workflowId": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "workflowId"
+        }
+      },
+      {
+        "startTime": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "startTime"
+        }
+      },
+      {
+        "endTime": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "endTime"
+        }
+      },
+      {
+        "externalId": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "externalId"
+        }
+      },
+      {
+        "externalChildID": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "externalChildID"
+        }
+      },
+      {
+        "status": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "status"
+        }
+      },
+      {
+        "externalStatus": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "externalStatus"
+        }
+      },
+      {
+        "errorCode": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "errorCode"
+        }
+      },
+      {
+        "name": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "name"
+        }
+      },
+      {
+        "type": {
+          "Datatype": "text",
+          "Desc": "",
+          "Unit": "",
+          "Label": "type"
+        }
+      },
+      {
+        "retries": {
+          "Datatype": "long",
+          "Desc": "",
+          "Unit": "",
+          "Label": "retries"
+        }
+      }
+    ]
+  }
+}
