@@ -161,7 +161,8 @@ class JmxStat(object):
         dict_jmx['maxThreads'] = bulkdata[2].get('value', 0)
         dict_jmx['hitCount'] = bulkdata[3].get('value', 0)
         dict_jmx['lookupCount'] = bulkdata[4].get('value', 0)
-        dict_jmx['version'] = bulkdata[5].get('value', 0)
+        version = bulkdata[5].get('value', 0)
+        dict_jmx['version'] = version.split('/')[1]
 
     def add_jvm_parameters(self, jolokiaclient, dict_jmx):
         """Add jmx stats specific to tomcat metrics"""
