@@ -1,4 +1,6 @@
 import time
+import subprocess
+from subprocess import check_output
 from copy import deepcopy
 import collectd
 import sys
@@ -8,6 +10,7 @@ import write_json
 from utils import * # pylint: disable=W
 sys.path.append(path.dirname(path.abspath("/opt/collectd/plugins/sf-plugins-hadoop/Collectors/configuration.py")))
 sys.path.append(path.dirname(path.abspath("/opt/collectd/plugins/sf-plugins-hadoop/Collectors/hadoopClusterCollector/yarn_stats.py")))
+sys.path.append(path.dirname(path.abspath("/opt/collectd/plugins/sf-plugins-hadoop/Collectors/requirements.txt")))
 
 from configuration import *
 from yarn_stats import run_application, initialize_app
@@ -16,7 +19,8 @@ class YarnStats:
     def __init__(self):
         """Plugin object will be created only once and \
            collects yarn statistics info every interval."""
-        pass
+        self.retries = 3
+
     def check_fields(self, line, dic_fields):
         for field in dic_fields:
             if (field+"=" in line or field+" =" in line):
@@ -51,6 +55,32 @@ class YarnStats:
             for line in lines:
                 write_config.write(line)
         write_config.close()
+
+    def run_cmd(self, cmd, shell, ignore_err=False, print_output=False):
+        """
+        return output and status after runing a shell command
+        :param cmd:
+        :param shell:
+        :param ignore_err:
+        :param print_output:
+        :return:
+        """
+        for i in xrange(self.retries):
+            try:
+                output = subprocess.check_output(cmd, shell=shell)
+                if print_output:
+                    print output
+                    return output
+                return
+            except subprocess.CalledProcessError as error:
+                if not ignore_err:
+                    print >> sys.stderr, "ERROR: {0}".format(error)
+                    sleep(0.05)
+                    continue
+                else:
+                    print >> sys.stdout, "WARNING: {0}".format(error)
+                    return
+        sys.exit(1)
 
     def get_elastic_search_details(self):
         try:
@@ -91,6 +121,8 @@ class YarnStats:
         appname = self.get_app_name()
         tag_app_name['yarn'] = appname
         self.update_config_file(previous_json_yarn)
+        cmd = "pip install -r /opt/collectd/plugins/sf-plugins-hadoop/Collectors/requirements.txt"
+        self.run_cmd(cmd, shell=True, ignore_err=True)
         initialize_app()
 
 
