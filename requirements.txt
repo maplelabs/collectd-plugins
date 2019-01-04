@@ -10,3 +10,15 @@ pytz
 redis
 hdfs==2.1.0
 PyHDFS==0.2.1
+hdfs==2.1.0	
+idna==2.7	
+ipaddress==1.0.22	
+pconf==1.4.0	
+pycparser==2.19	
+PyYAML==3.13	
+requests-kerberos==0.12.0	
+simplejson==3.16.0	
+six==1.11.0	
+urllib3==1.23	
+virtualenv==16.0.0	
+pykerberos==1.2.1
