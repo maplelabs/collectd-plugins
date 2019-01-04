@@ -4,7 +4,7 @@ from library.kerberos_utils import *
 from library.log import configure_logger
 import time
 from library import graceful_exit
-from metrics import *
+from spark_metrics import *
 from library.redis_utils import *
 
 logger = logging.getLogger(__name__)
