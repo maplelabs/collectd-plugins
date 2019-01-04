@@ -51,7 +51,8 @@ def get_spark_apps_processing_status():
         return get_processing_status("sparkStatus")
 
 def initialize_app():
-    configure_logger('loggingspark.conf', logging_config['sparkJobs'])
+    log_config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "loggingspark.conf") 
+    configure_logger(log_config_file, logging_config['sparkJobs'])
 
     if kerberos["enabled"]:
         if kinit_tgt_for_user():

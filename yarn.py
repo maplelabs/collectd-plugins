@@ -64,32 +64,6 @@ class YarnStats:
                 write_config.write(line)
         write_config.close()
 
-    def run_cmd(self, cmd, shell, ignore_err=False, print_output=False):
-        """
-        return output and status after runing a shell command
-        :param cmd:
-        :param shell:
-        :param ignore_err:
-        :param print_output:
-        :return:
-        """
-        for i in xrange(self.retries):
-            try:
-                output = subprocess.check_output(cmd, shell=shell)
-                if print_output:
-                    print output
-                    return output
-                return
-            except subprocess.CalledProcessError as error:
-                if not ignore_err:
-                    print >> sys.stderr, "ERROR: {0}".format(error)
-                    sleep(0.05)
-                    continue
-                else:
-                    print >> sys.stdout, "WARNING: {0}".format(error)
-                    return
-        sys.exit(1)
-
     def get_elastic_search_details(self):
         try:
             with open("/opt/collectd/conf/elasticsearch.conf", "r") as file_obj:
@@ -147,8 +121,6 @@ class YarnStats:
         resource_manager["port"] = "8088"
         resource_manager["hosts"] = self.get_hadoop_service_details(self.url_knox+"/"+cluster_name+"/services/YARN/components/RESOURCEMANAGER")
         self.update_config_file(previous_json_yarn)
-        cmd = "pip install -r /opt/collectd/plugins/sf-plugins-hadoop/Collectors/requirements.txt"
-        self.run_cmd(cmd, shell=True, ignore_err=True)
         initialize_app()
 
 

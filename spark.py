@@ -1,37 +1,25 @@
-"""Python plugin for collectd to fetch oozie workflow statistics information."""
-
-#!/usr/bin/python
-import sys
-import requests
-from os import path
-import signal # pylint: disable=unused-import
 import time
-from datetime import datetime # pylint: disable=W
-import json
+import requests
+from copy import deepcopy
 import subprocess
 from subprocess import check_output
-from copy import deepcopy
 import collectd
-import os
-import math
-from utils import *
-import write_json
+from utils import * # pylint: disable=W
 from constants import * # pylint: disable=W
+import sys
+from os import path
+import os
+from utils import * # pylint: disable=W
+import write_json
 sys.path.append(path.dirname(path.abspath("/opt/collectd/plugins/sf-plugins-hadoop/Collectors/configuration.py")))
-sys.path.append(path.dirname(path.abspath("/opt/collectd/plugins/sf-plugins-hadoop/Collectors/OozieJobsCollector/processOzzieWorkflows.py")))
-sys.path.append(path.dirname(path.abspath("/opt/collectd/plugins/sf-plugins-hadoop/Collectors/OozieJobsCollector/processElasticWorkflows.py")))
+sys.path.append(path.dirname(path.abspath("/opt/collectd/plugins/sf-plugins-hadoop/Collectors/sparkJobsCollector/processSparkApps.py")))
 sys.path.append(path.dirname(path.abspath("/opt/collectd/plugins/sf-plugins-hadoop/Collectors/requirements.txt")))
 
 from configuration import *
-from processOzzieWorkflows import run_application, initialize_app
-from processElasticWorkflows import run_application as run_application_elastic
-from processElasticWorkflows import initialize_app as initialize_app_elastic
+from processSparkApps import run_application, initialize_app
 
-
-class Oozie:
-    """Plugin object will be created only once and collects oozie statistics info every interval."""
+class Spark:
     def __init__(self):
-        """Initializes interval, oozie server, Job history and Timeline server details"""
         self.retries = 3
         self.url_knox = "https://localhost:8443/gateway/default/ambari/api/v1/clusters"
         self.cluster_name = None
@@ -44,13 +32,12 @@ class Oozie:
                 return field
         return None
 
-    def update_config_file(self, use_rest_api, jobhistory_copy_dir):
+    def update_config_file(self):
         file_name = "/opt/collectd/plugins/sf-plugins-hadoop/Collectors/configuration.py"
         lines = []
         flag = 0
-        jobhistory_copy_dir = jobhistory_copy_dir.strip(".")
-        logging_config["ozzieWorkflows"] = logging_config["ozzieWorkflows"].strip(".")
-        dic_fields = {"oozie": oozie, "job_history_server": job_history_server, "timeline_server": timeline_server, "elastic": elastic, "indices": indices, "use_rest_api": use_rest_api, "hdfs": hdfs, "jobhistory_copy_dir": jobhistory_copy_dir, "tag_app_name": tag_app_name, "logging_config": logging_config}
+        logging_config["sparkJobs"] = logging_config["sparkJobs"].strip(".")
+        dic_fields = { "name_node": name_node,"elastic": elastic, "indices": indices, "tag_app_name": tag_app_name, "logging_config": logging_config, "spark2_history_server": spark2_history_server}
         with open(file_name, "r") as read_config_file:
             for line in read_config_file.readlines():
                 field = self.check_fields(line, dic_fields)
@@ -58,10 +45,7 @@ class Oozie:
                     lines.append("%s = %s\n" %(field, dic_fields[field]))
                 elif field or flag:
                     if field:
-                        if field == "jobhistory_copy_dir":
-                            lines.append('%s = "%s"\n' %(field, dic_fields[field]))
-                        else:
-                            lines.append("%s = %s\n" %(field, dic_fields[field]))
+                        lines.append("%s = %s\n" %(field, dic_fields[field]))
                     if field and "{" in line:
                         flag = 1
                     if "}" in line:
@@ -100,10 +84,10 @@ class Oozie:
     def get_cluster(self):
         res_json = requests.get(self.url_knox, auth=(self.knox_username, self.knox_password), verify=False)
         if res_json.status_code != 200:
+            collectd.error("Couldn't get cluster name")
             return None
         cluster_name = res_json.json()["items"][0]["Clusters"]["cluster_name"]
         return cluster_name
-
 
     def get_hadoop_service_details(self, url):
         res_json = requests.get(url, auth=(self.knox_username, self.knox_password), verify=False)
@@ -121,56 +105,35 @@ class Oozie:
         for children in cfg.children:
             if children.key == INTERVAL:
                 self.interval = children.values[0]
-            elif children.key == USE_REST_API:
-                use_rest_api = int(children.values[0])
 
         host, port, index = self.get_elastic_search_details()
         elastic["host"] = host
         elastic["port"] = port
-        indices["workflow"] = index
+        spark2_history_server["port"] = "18081"
+        indices["spark"] = index
         appname = self.get_app_name()
-        tag_app_name['oozie'] = appname
-        self.cluster_name = self.get_cluster()
-
-        job_history_server["host"] = self.get_hadoop_service_details(self.url_knox+"/"+self.cluster_name+"/services/MAPREDUCE2/components/HISTORYSERVER")[0]
-        timeline_server["host"] = self.get_hadoop_service_details(self.url_knox+"/"+self.cluster_name+"/services/YARN/components/APP_TIMELINE_SERVER")[0]
-        oozie["host"] = self.get_hadoop_service_details(self.url_knox+"/"+self.cluster_name+"/services/OOZIE/components/OOZIE_SERVER")[0]
-        self.hdfs_hosts = self.get_hadoop_service_details(self.url_knox+"/"+self.cluster_name+"/services/HDFS/components/NAMENODE")
-
-        job_history_server["port"] = "19888"
-        timeline_server["port"] = "8188"
-        oozie["port"] = "11000"
-        self.hdfs_port = "50070"
-        if not os.path.isdir(jobhistory_copy_dir):
-            try:
-                os.mkdir(jobhistory_copy_dir)
-            except:
-                collectd.error("Unable to create job history directory %s" %jobhistory_copy_dir)
-        if len(self.hdfs_hosts) == 2:
-            hdfs["url"] = "http://{0}:{1};http://{2}:{3}" .format(self.hdfs_hosts[0], self.hdfs_port, self.hdfs_hosts[1], self.hdfs_port)
-        else:
-            hdfs["url"] = "http://{0}:{1}" .format(self.hdfs_hosts[0], self.hdfs_port)
-        self.update_config_file(use_rest_api, jobhistory_copy_dir)
+        tag_app_name['spark'] = appname
+        cluster_name = self.get_cluster()
+        spark2_history_server["host"] = self.get_hadoop_service_details(self.url_knox+"/"+cluster_name+"/services/SPARK2/components/SPARK2_JOBHISTORYSERVER")[0]
+        self.update_config_file()
         initialize_app()
-        initialize_app_elastic()
 
-    def add_common_params(self, oozie_dict, doc_type):
+    @staticmethod
+    def add_common_params(spark_dic, doc_type):
         """Adds TIMESTAMP, PLUGIN, PLUGIN_INS to dictionary."""
         hostname = gethostname()
         timestamp = int(round(time.time()))
 
-        oozie_dict[HOSTNAME] = hostname
-        oozie_dict[TIMESTAMP] = timestamp
-        oozie_dict[PLUGIN] = 'oozie'
-        oozie_dict[ACTUALPLUGINTYPE] = 'oozie'
-        oozie_dict[PLUGINTYPE] = doc_type
+        spark_dic[HOSTNAME] = hostname
+        spark_dic[TIMESTAMP] = timestamp
+        spark_dic[PLUGIN] = 'spark'
+        spark_dic[ACTUALPLUGINTYPE] = 'spark'
+        spark_dic[PLUGINTYPE] = doc_type
 
     def collect_data(self):
         """Collects all data."""
-        data = run_application()
-        data = run_application_elastic(index=0)
-        collectd.info("oozie workflow collection successful")
-        docs = [{"wfId": 0, "wfaId": 0, "wfName": 0, "wfaName": 0, "time": int(math.floor(time.time())), "jobId": 0, 'timePeriodStart': 0, 'timePeriodEnd': 0, "mapTaskCount": 0, "reduceTaskCount": 0, 'duration': 0, "_plugin": plugin_name['oozie'], "_documentType": "taskCounts","_tag_appName": tag_app_name['oozie']}]
+        data = run_application(index=0)
+        docs = [{'_documentType': "sparkTaskCounts", 'appName': 0, 'appId': 0, 'appAttemptId': 0, 'stageAttemptId': 0, 'stageId': 0, 'time': 0, 'timePeriodStart': 0, 'timePeriodEnd': 0, 'duration': 0, 'taskCount': 0}]
         for doc in docs:
             self.add_common_params(doc, doc['_documentType'])
             write_json.write(doc)
@@ -187,6 +150,6 @@ class Oozie:
         collectd.unregister_read(self.read_temp) # pylint: disable=E1101
         collectd.register_read(self.read, interval=int(self.interval)) # pylint: disable=E1101
 
-oozieinstance = Oozie()
-collectd.register_config(oozieinstance.read_config) # pylint: disable=E1101
-collectd.register_read(oozieinstance.read_temp) # pylint: disable=E1101
+sparkinstance = Spark()
+collectd.register_config(sparkinstance.read_config) # pylint: disable=E1101
+collectd.register_read(sparkinstance.read_temp) # pylint: disable=E1101
