@@ -17,8 +17,6 @@ error_wfs_processed = 0
 
 logger = logging.getLogger(__name__)
 
-
-
 def read_unprocessed_workflows():
     try:
         global with_threading

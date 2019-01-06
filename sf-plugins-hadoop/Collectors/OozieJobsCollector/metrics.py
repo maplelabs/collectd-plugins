@@ -84,7 +84,7 @@ def get_critical_path(jobs_list, startTimeKey, endTimeKey):
     if jobs_list:
         sorted_job_list = sorted(jobs_list, key=lambda k: k[startTimeKey])
     #logger.debug("sorted_job_list: {0}".format(sorted_job_list))
-    if sorted_job_list and len(sorted_job_list) > 1:
+    if sorted_job_list and len(sorted_job_list) > 0:
         index = 0
         for job in sorted_job_list:
             if job[startTimeKey] and job[endTimeKey] and job[startTimeKey] > 0 and job[endTimeKey] > 0:
@@ -106,6 +106,7 @@ def get_critical_path(jobs_list, startTimeKey, endTimeKey):
                 if index == len(sorted_job_list):
                     critical_path.append({startTimeKey: iterationStartTime, endTimeKey: iterationEndTime})
             else:
+                logger.error("We have jobs without proper start time or end time. Cannot calculate critical path")
                 return None
     else:
         return None
@@ -154,7 +155,7 @@ def calculate_scheduling_delays_from_critical_path(workflow, wfa_list):
             sigma_job_runtime += job['finishTime'] - job['startTime']
     if sigma_job_runtime:
         workflow['jobSchedulingDelay'] = wf_runtime - sigma_job_runtime
-        logger.debug("Workflow Id: {0} wfSchedulingDelay: {1}".format(workflow['id'], wf_runtime - sigma_job_runtime))
+        logger.debug("Workflow Id: {0} jobSchedulingDelay: {1}".format(workflow['id'], wf_runtime - sigma_job_runtime))
 
 
 def calculate_wf_metrics(workflow, wfa_list):

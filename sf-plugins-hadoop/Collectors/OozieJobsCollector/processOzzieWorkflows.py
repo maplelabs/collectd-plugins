@@ -9,9 +9,9 @@ logger = logging.getLogger(__name__)
 
 def get_oozie_wfs_processing_status():
     if app_status['use_redis']:
-        return read_from_redis("oozieStatus")
+        return read_from_redis(app_status['oozie-key'])
     else:
-        return get_processing_status("oozieStatus")
+        return get_processing_status(app_status['oozie-key'])
 
 def get_last_runinfo(lastProcessedCreatedTime=0,lastProcessWorkflowId=None,runStatus='init'):
     lastRun = get_oozie_wfs_processing_status()
@@ -19,7 +19,10 @@ def get_last_runinfo(lastProcessedCreatedTime=0,lastProcessWorkflowId=None,runSt
     if lastRun:
         return lastRun
     else:
-        return init_last_runinfo()
+        if lastRun is not None:
+            return init_last_runinfo()
+        else:
+            return None
 
 def init_last_runinfo():
     document = {
@@ -38,7 +41,7 @@ def init_last_runinfo():
             logger.error("Unable to init status in elastic.. Exiting")
             exit(1)
     else:
-        result = write_to_redis("oozieStatus", json.dumps(document))
+        result = write_to_redis(app_status['oozie-key'], json.dumps(document))
         if not result:
             logger.error("Unable to init status in redis. Exiting")
             exit(1)
@@ -95,7 +98,7 @@ def read_oozie_wfs(lastRunDetails, lastRunDocumentId):
 
 def update_status(statusData, lastRunDocumentId):
     if app_status['use_redis']:
-        return write_to_redis('oozieStatus', json.dumps(statusData))
+        return write_to_redis(app_status['oozie-key'], json.dumps(statusData))
     else:
         return update_document_in_elastic({"doc": statusData}, lastRunDocumentId, indices['workflowmonitor'])
 
@@ -120,8 +123,8 @@ def run_application(index=0):
             lastRunInfo = lastRunDocument
             lastRunDocumentId =  None if app_status['use_redis'] else lastRunDocument['id']
         else:
-            logger.error("Could not get application status . Exiting")
-            exit(1)
+            logger.error("Could not get application status . Retrying")
+            return
         logger.debug(lastRunInfo)
         read_oozie_wfs(lastRunInfo, lastRunDocumentId)
         logger.info("Processing Oozie workflows end for iteration {0}".format(index + 1))
