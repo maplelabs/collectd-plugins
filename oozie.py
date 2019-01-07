@@ -50,6 +50,8 @@ class Oozie:
         flag = 0
         jobhistory_copy_dir = jobhistory_copy_dir.strip(".")
         logging_config["ozzieWorkflows"] = logging_config["ozzieWorkflows"].strip(".")
+        logging_config["elasticWorkflows"] = logging_config["elasticWorkflows"].strip(".")
+        logging_config["hadoopCluster"] = logging_config["hadoopCluster"].strip(".")
         dic_fields = {"oozie": oozie, "job_history_server": job_history_server, "timeline_server": timeline_server, "elastic": elastic, "indices": indices, "use_rest_api": use_rest_api, "hdfs": hdfs, "jobhistory_copy_dir": jobhistory_copy_dir, "tag_app_name": tag_app_name, "logging_config": logging_config}
         with open(file_name, "r") as read_config_file:
             for line in read_config_file.readlines():
@@ -97,32 +99,6 @@ class Oozie:
         except IOError:
             collectd.error("Could not read file: /opt/collectd/conf/elasticsearch.conf")
 
-    def run_cmd(self, cmd, shell, ignore_err=False, print_output=False):
-        """
-        return output and status after runing a shell command
-        :param cmd:
-        :param shell:
-        :param ignore_err:
-        :param print_output:
-        :return:
-        """
-        for i in xrange(self.retries):
-            try:
-                output = subprocess.check_output(cmd, shell=shell)
-                if print_output:
-                    print output
-                    return output
-                return
-            except subprocess.CalledProcessError as error:
-                if not ignore_err:
-                    print >> sys.stderr, "ERROR: {0}".format(error)
-                    sleep(0.05)
-                    continue
-                else:
-                    print >> sys.stdout, "WARNING: {0}".format(error)
-                    return
-        sys.exit(1)
-
     def get_cluster(self):
         res_json = requests.get(self.url_knox, auth=(self.knox_username, self.knox_password), verify=False)
         if res_json.status_code != 200:
@@ -134,7 +110,7 @@ class Oozie:
     def get_hadoop_service_details(self, url):
         res_json = requests.get(url, auth=(self.knox_username, self.knox_password), verify=False)
         if res_json.status_code != 200:
-            collectd.error("Couldn't get history_server details")
+            collectd.error("Couldn't get server details")
             return None
         lst_servers = []
         res_json = res_json.json()
@@ -177,8 +153,6 @@ class Oozie:
         else:
             hdfs["url"] = "http://{0}:{1}" .format(self.hdfs_hosts[0], self.hdfs_port)
         self.update_config_file(use_rest_api, jobhistory_copy_dir)
-        cmd = "pip install -r /opt/collectd/plugins/sf-plugins-hadoop/Collectors/requirements.txt"
-        self.run_cmd(cmd, shell=True, ignore_err=True)
         initialize_app()
         initialize_app_elastic()
 

@@ -1,25 +1,25 @@
-import requests
 import time
+import requests
+from copy import deepcopy
 import subprocess
 from subprocess import check_output
-from copy import deepcopy
 import collectd
+from utils import * # pylint: disable=W
+from constants import * # pylint: disable=W
 import sys
 from os import path
 import os
-import write_json
 from utils import * # pylint: disable=W
+import write_json
 sys.path.append(path.dirname(path.abspath("/opt/collectd/plugins/sf-plugins-hadoop/Collectors/configuration.py")))
-sys.path.append(path.dirname(path.abspath("/opt/collectd/plugins/sf-plugins-hadoop/Collectors/hadoopClusterCollector/yarn_stats.py")))
+sys.path.append(path.dirname(path.abspath("/opt/collectd/plugins/sf-plugins-hadoop/Collectors/sparkJobsCollector/processSparkApps.py")))
 sys.path.append(path.dirname(path.abspath("/opt/collectd/plugins/sf-plugins-hadoop/Collectors/requirements.txt")))
 
 from configuration import *
-from yarn_stats import run_application, initialize_app
+from processSparkApps import run_application, initialize_app
 
-class YarnStats:
+class Spark:
     def __init__(self):
-        """Plugin object will be created only once and \
-           collects yarn statistics info every interval."""
         self.retries = 3
         self.url_knox = "https://localhost:8443/gateway/default/ambari/api/v1/clusters"
         self.cluster_name = None
@@ -32,16 +32,12 @@ class YarnStats:
                 return field
         return None
 
-    def update_config_file(self, previous_json_yarn):
+    def update_config_file(self):
         file_name = "/opt/collectd/plugins/sf-plugins-hadoop/Collectors/configuration.py"
         lines = []
         flag = 0
-        previous_json_yarn = previous_json_yarn.strip(".")
-
-        logging_config["yarn"] = logging_config["yarn"].strip(".")
-        logging_config["hadoopCluster"] = logging_config["hadoopCluster"].strip(".")
-        dic_fields = {"resource_manager": resource_manager,"elastic": elastic, "indices": indices, "previous_json_yarn": previous_json_yarn, "tag_app_name": tag_app_name, "logging_config": logging_config}
-
+        logging_config["sparkJobs"] = logging_config["sparkJobs"].strip(".")
+        dic_fields = { "name_node": name_node,"elastic": elastic, "indices": indices, "tag_app_name": tag_app_name, "logging_config": logging_config, "spark2_history_server": spark2_history_server}
         with open(file_name, "r") as read_config_file:
             for line in read_config_file.readlines():
                 field = self.check_fields(line, dic_fields)
@@ -49,10 +45,7 @@ class YarnStats:
                     lines.append("%s = %s\n" %(field, dic_fields[field]))
                 elif field or flag:
                     if field:
-                        if field == "previous_json_yarn":
-                            lines.append('%s = "%s"\n' %(field, dic_fields[field]))
-                        else:
-                            lines.append("%s = %s\n" %(field, dic_fields[field]))
+                        lines.append("%s = %s\n" %(field, dic_fields[field]))
                     if field and "{" in line:
                         flag = 1
                     if "}" in line:
@@ -64,6 +57,16 @@ class YarnStats:
             for line in lines:
                 write_config.write(line)
         write_config.close()
+
+    def get_app_name(self):
+        try:
+            with open("/opt/collectd/conf/filters.conf", "r") as file_obj:
+                for line in file_obj.readlines():
+                    if 'MetaData "_tag_appName"' not in line:
+                        continue
+                    return line.split(" ")[2].strip('"')
+        except IOError:
+            collectd.error("Could not read file: /opt/collectd/conf/filters.conf")
 
     def get_elastic_search_details(self):
         try:
@@ -78,23 +81,13 @@ class YarnStats:
         except IOError:
             collectd.error("Could not read file: /opt/collectd/conf/elasticsearch.conf")
 
-    def get_app_name(self):
-        try:
-            with open("/opt/collectd/conf/filters.conf", "r") as file_obj:
-                for line in file_obj.readlines():
-                    if 'MetaData "_tag_appName"' not in line:
-                        continue
-                    return line.split(" ")[2].strip('"')
-        except IOError:
-            collectd.error("Could not read file: /opt/collectd/conf/filters.conf")
-
     def get_cluster(self):
         res_json = requests.get(self.url_knox, auth=(self.knox_username, self.knox_password), verify=False)
         if res_json.status_code != 200:
+            collectd.error("Couldn't get cluster name")
             return None
         cluster_name = res_json.json()["items"][0]["Clusters"]["cluster_name"]
         return cluster_name
-
 
     def get_hadoop_service_details(self, url):
         res_json = requests.get(url, auth=(self.knox_username, self.knox_password), verify=False)
@@ -112,35 +105,35 @@ class YarnStats:
         for children in cfg.children:
             if children.key == INTERVAL:
                 self.interval = children.values[0]
+
         host, port, index = self.get_elastic_search_details()
         elastic["host"] = host
         elastic["port"] = port
-        indices["yarn"] = index
+        spark2_history_server["port"] = "18081"
+        indices["spark"] = index
         appname = self.get_app_name()
-        tag_app_name['yarn'] = appname
+        tag_app_name['spark'] = appname
         cluster_name = self.get_cluster()
-        resource_manager["port"] = "8088"
-        resource_manager["hosts"] = self.get_hadoop_service_details(self.url_knox+"/"+cluster_name+"/services/YARN/components/RESOURCEMANAGER")
-        self.update_config_file(previous_json_yarn)
+        spark2_history_server["host"] = self.get_hadoop_service_details(self.url_knox+"/"+cluster_name+"/services/SPARK2/components/SPARK2_JOBHISTORYSERVER")[0]
+        self.update_config_file()
         initialize_app()
 
-
     @staticmethod
-    def add_common_params(namenode_dic, doc_type):
+    def add_common_params(spark_dic, doc_type):
         """Adds TIMESTAMP, PLUGIN, PLUGIN_INS to dictionary."""
         hostname = gethostname()
         timestamp = int(round(time.time()))
 
-        namenode_dic[HOSTNAME] = hostname
-        namenode_dic[TIMESTAMP] = timestamp
-        namenode_dic[PLUGIN] = 'yarn'
-        namenode_dic[ACTUALPLUGINTYPE] = 'yarn'
-        namenode_dic[PLUGINTYPE] = doc_type
+        spark_dic[HOSTNAME] = hostname
+        spark_dic[TIMESTAMP] = timestamp
+        spark_dic[PLUGIN] = 'spark'
+        spark_dic[ACTUALPLUGINTYPE] = 'spark'
+        spark_dic[PLUGINTYPE] = doc_type
 
     def collect_data(self):
         """Collects all data."""
-        data = run_application(0)
-        docs = [{"NumRebootedNMs": 0, "_documentType": "yarnStatsClusterMetrics", "NumDecommissionedNMs": 0, "name": "Hadoop:service=ResourceManager,name=ClusterMetrics", "AMLaunchDelayNumOps": 0, "_tag_context": "yarn", "AMRegisterDelayNumOps": 0, "_tag_clustermetrics": "ResourceManager", "modelerType": "ClusterMetrics", "NumLostNMs": 0, "time": 1543301379, "_tag_appName": "hadoopapp1", "NumUnhealthyNMs": 0, "AMRegisterDelayAvgTime": 0, "NumActiveNMs": 0, "AMLaunchDelayAvgTime": 0}]
+        data = run_application(index=0)
+        docs = [{'_documentType': "sparkTaskCounts", 'appName': 0, 'appId': 0, 'appAttemptId': 0, 'stageAttemptId': 0, 'stageId': 0, 'time': 0, 'timePeriodStart': 0, 'timePeriodEnd': 0, 'duration': 0, 'taskCount': 0}]
         for doc in docs:
             self.add_common_params(doc, doc['_documentType'])
             write_json.write(doc)
@@ -157,6 +150,6 @@ class YarnStats:
         collectd.unregister_read(self.read_temp) # pylint: disable=E1101
         collectd.register_read(self.read, interval=int(self.interval)) # pylint: disable=E1101
 
-namenodeinstance = YarnStats()
-collectd.register_config(namenodeinstance.read_config) # pylint: disable=E1101
-collectd.register_read(namenodeinstance.read_temp) # pylint: disable=E1101
+sparkinstance = Spark()
+collectd.register_config(sparkinstance.read_config) # pylint: disable=E1101
+collectd.register_read(sparkinstance.read_temp) # pylint: disable=E1101

@@ -4,7 +4,7 @@ from library.kerberos_utils import *
 from library.log import configure_logger
 import time
 from library import graceful_exit
-from metrics import *
+from spark_metrics import *
 from library.redis_utils import *
 
 logger = logging.getLogger(__name__)
@@ -46,12 +46,13 @@ def get_app_list(last_processed_end_time, pending_apps):
 
 def get_spark_apps_processing_status():
     if app_status['use_redis']:
-        return read_from_redis("sparkStatus")
+        return read_from_redis(app_status['spark-key'])
     else:
-        return get_processing_status("sparkStatus")
+        return get_processing_status(app_status['spark-key'])
 
 def initialize_app():
-    configure_logger('loggingspark.conf', logging_config['sparkJobs'])
+    log_config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "loggingspark.conf")
+    configure_logger(log_config_file, logging_config['sparkJobs'])
 
     if kerberos["enabled"]:
         if kinit_tgt_for_user():
@@ -73,9 +74,9 @@ def run_application(index):
         last_processed_end_time = int(time.time() * 1000)
     else:
         index += 1
-        logger.error("Unable to get status from elastic . Will retry after {0} seconds".format(index * 30))
+        logger.error("Unable to get last processed status  . Will retry after {0} seconds".format(30))
         logger.debug("Iteration {0} end Time is :{1} ".format(index, time.time()))
-        time.sleep(index * 30)
+        time.sleep(30)
         return
 
     logger.debug("The last processing status {0}".format(collector_status))
@@ -110,7 +111,7 @@ def run_application(index):
                         app_attempt_id = app_attempt['appAttemptId']
                         logger.debug("Processing spark application with app_id {0}, app_attempt_id:{1}".format(app_id,
                                                                                                                app_attempt_id))
-                        if (retry_attempt_id is None and app_attempt['endTimeEpoch'] < last_processed_end_time) or (
+                        if (retry_attempt_id is None and app_attempt['endTimeEpoch'] <= last_processed_end_time) or (
                                 retry_attempt_id is not None and int(app_attempt_id) < int(retry_attempt_id)):
                             logger.debug(
                                 "Skipping app_attempt_id:{0} of app-id:{1} since endTime:{2} less than lastProcessedEndTime:{3} or attemptId less than retry_attempt_id:{4}".format(
@@ -208,7 +209,7 @@ def main():
 
 def update_status(collector_status, status_app_id, status_app_attempt_end_time_in_ms, pending_apps, app_attempt_id):
     if app_status['use_redis']: # redis replaces the value. so we cannot just update some of it
-        lastUpdatedStatus = read_from_redis('sparkStatus')
+        lastUpdatedStatus = read_from_redis(app_status['spark-key'])
         if not status_app_attempt_end_time_in_ms:
             status_app_attempt_end_time_in_ms = lastUpdatedStatus['lastProcessedEndTime']
 
@@ -216,7 +217,7 @@ def update_status(collector_status, status_app_id, status_app_attempt_end_time_i
                                          pending_apps)
 
     if app_status['use_redis']:
-        result = write_to_redis("sparkStatus", json.dumps(run_status))
+        result = write_to_redis(app_status['spark-key'], json.dumps(run_status))
     else:
         if collector_status:
             result = update_document_in_elastic(data={"doc": run_status},
@@ -227,11 +228,11 @@ def update_status(collector_status, status_app_id, status_app_attempt_end_time_i
                                                index=indices['workflowmonitor'])
     if result:
         logger.debug(
-            "Successfully pushed app attempt:{0} for application:{1} to elastic".format(
+            "Successfully pushed app attempt:{0} for application:{1}".format(
                 app_attempt_id, status_app_id))
     else:
         logger.error(
-            "Failed to push app attempt:{0} for application:{1} to elastic".format(
+            "Failed to push app attempt:{0} for application:{1}".format(
                 app_attempt_id, status_app_id))
 
 def send_sparkTaskCounts_for_stages(task_points_list,  app_id):

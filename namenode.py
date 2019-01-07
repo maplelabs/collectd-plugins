@@ -39,6 +39,7 @@ class Namenode:
         previous_json_nn = previous_json_nn.strip(".")
 
         logging_config["namenode"] = logging_config["namenode"].strip(".")
+        logging_config["hadoopCluster"] = logging_config["hadoopCluster"].strip(".")
         dic_fields = { "name_node": name_node,"elastic": elastic, "indices": indices, "tag_app_name": tag_app_name, "previous_json_nn": previous_json_nn, "logging_config": logging_config}
         with open(file_name, "r") as read_config_file:
             for line in read_config_file.readlines():
@@ -63,31 +64,6 @@ class Namenode:
                 write_config.write(line)
         write_config.close()
 
-    def run_cmd(self, cmd, shell, ignore_err=False, print_output=False):
-        """
-        return output and status after runing a shell command
-        :param cmd:
-        :param shell:
-        :param ignore_err:
-        :param print_output:
-        :return:
-        """
-        for i in xrange(self.retries):
-            try:
-                output = subprocess.check_output(cmd, shell=shell)
-                if print_output:
-                    print output
-                    return output
-                return
-            except subprocess.CalledProcessError as error:
-                if not ignore_err:
-                    print >> sys.stderr, "ERROR: {0}".format(error)
-                    sleep(0.05)
-                    continue
-                else:
-                    print >> sys.stdout, "WARNING: {0}".format(error)
-                    return
-        sys.exit(1)
 
     def get_app_name(self):
         try:
@@ -113,7 +89,7 @@ class Namenode:
             collectd.error("Could not read file: /opt/collectd/conf/elasticsearch.conf")
 
     def get_cluster(self):
-        res_json = requests.get(self.url_knox, auth=("admin", "admin"), verify=False)
+        res_json = requests.get(self.url_knox, auth=(self.knox_username, self.knox_password), verify=False)
         if res_json.status_code != 200:
             collectd.error("Couldn't get cluster name")
             return None
@@ -121,7 +97,7 @@ class Namenode:
         return cluster_name
 
     def get_hadoop_service_details(self, url):
-        res_json = requests.get(url, auth=("admin", "admin"), verify=False)
+        res_json = requests.get(url, auth=(self.knox_username, self.knox_password), verify=False)
         if res_json.status_code != 200:
             collectd.error("Couldn't get history_server details")
             return None
@@ -146,10 +122,7 @@ class Namenode:
         tag_app_name['namenode'] = appname
         cluster_name = self.get_cluster()
         name_node["hosts"] = self.get_hadoop_service_details(self.url_knox+"/"+cluster_name+"/services/HDFS/components/NAMENODE")
-        self.update_config_file(previous_json_yarn)
         self.update_config_file(previous_json_nn)
-        cmd = "pip install -r /opt/collectd/plugins/sf-plugins-hadoop/Collectors/requirements.txt"
-        self.run_cmd(cmd, shell=True, ignore_err=True)
         initialize_app()
 
     @staticmethod
