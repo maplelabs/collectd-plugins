@@ -39,6 +39,7 @@ class YarnStats:
         previous_json_yarn = previous_json_yarn.strip(".")
 
         logging_config["yarn"] = logging_config["yarn"].strip(".")
+        logging_config["hadoopCluster"] = logging_config["hadoopCluster"].strip(".")
         dic_fields = {"resource_manager": resource_manager,"elastic": elastic, "indices": indices, "previous_json_yarn": previous_json_yarn, "tag_app_name": tag_app_name, "logging_config": logging_config}
 
         with open(file_name, "r") as read_config_file:

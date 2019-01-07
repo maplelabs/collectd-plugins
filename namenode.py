@@ -39,6 +39,7 @@ class Namenode:
         previous_json_nn = previous_json_nn.strip(".")
 
         logging_config["namenode"] = logging_config["namenode"].strip(".")
+        logging_config["hadoopCluster"] = logging_config["hadoopCluster"].strip(".")
         dic_fields = { "name_node": name_node,"elastic": elastic, "indices": indices, "tag_app_name": tag_app_name, "previous_json_nn": previous_json_nn, "logging_config": logging_config}
         with open(file_name, "r") as read_config_file:
             for line in read_config_file.readlines():
