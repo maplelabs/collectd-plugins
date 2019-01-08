@@ -168,7 +168,7 @@ class Oozie:
                 else:
                     hdfs["url"] = "http://{0}:{1}" .format(self.hdfs_hosts[0], self.hdfs_port)
             else:
-                collectd.error("Unable to get oozie ip")
+                collectd.error("Unable to get hdfs ips")
             if job_history_host and timeline_host and oozie_host and self.hdfs_hosts:
                 self.update_config_file(use_rest_api, jobhistory_copy_dir)
                 self.is_config_updated = 1
