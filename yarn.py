@@ -23,6 +23,7 @@ class YarnStats:
         self.retries = 3
         self.url_knox = "https://localhost:8443/gateway/default/ambari/api/v1/clusters"
         self.cluster_name = None
+        self.is_config_updated = 0
         self.knox_username = "admin"
         self.knox_password = "admin"
 
@@ -118,11 +119,20 @@ class YarnStats:
         indices["yarn"] = index
         appname = self.get_app_name()
         tag_app_name['yarn'] = appname
-        cluster_name = self.get_cluster()
         resource_manager["port"] = "8088"
-        resource_manager["hosts"] = self.get_hadoop_service_details(self.url_knox+"/"+cluster_name+"/services/YARN/components/RESOURCEMANAGER")
-        self.update_config_file(previous_json_yarn)
-        initialize_app()
+        cluster_name = self.get_cluster()
+        if cluster_name:
+            resource_manager["hosts"] = self.get_hadoop_service_details(self.url_knox+"/"+cluster_name+"/services/YARN/components/RESOURCEMANAGER")
+            hosts = self.get_hadoop_service_details(self.url_knox+"/"+cluster_name+"/services/YARN/components/RESOURCEMANAGER")
+            if hosts:
+                resource_manager["hosts"] = hosts
+                self.update_config_file(previous_json_yarn)
+                self.is_config_updated = 1
+                initialize_app()
+            else:
+                collectd.error("Unable to get yarn hosts")
+        else:
+            collectd.error("Unable to get cluster name")
 
 
     @staticmethod
@@ -139,7 +149,8 @@ class YarnStats:
 
     def collect_data(self):
         """Collects all data."""
-        data = run_application(0)
+        if self.is_config_updated:
+            data = run_application(0)
         docs = [{"NumRebootedNMs": 0, "_documentType": "yarnStatsClusterMetrics", "NumDecommissionedNMs": 0, "name": "Hadoop:service=ResourceManager,name=ClusterMetrics", "AMLaunchDelayNumOps": 0, "_tag_context": "yarn", "AMRegisterDelayNumOps": 0, "_tag_clustermetrics": "ResourceManager", "modelerType": "ClusterMetrics", "NumLostNMs": 0, "time": 1543301379, "_tag_appName": "hadoopapp1", "NumUnhealthyNMs": 0, "AMRegisterDelayAvgTime": 0, "NumActiveNMs": 0, "AMLaunchDelayAvgTime": 0}]
         for doc in docs:
             self.add_common_params(doc, doc['_documentType'])

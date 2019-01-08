@@ -25,6 +25,7 @@ class Spark:
         self.cluster_name = None
         self.knox_username = "admin"
         self.knox_password = "admin"
+        self.is_config_updated = 0
 
     def check_fields(self, line, dic_fields):
         for field in dic_fields:
@@ -114,9 +115,18 @@ class Spark:
         appname = self.get_app_name()
         tag_app_name['spark'] = appname
         cluster_name = self.get_cluster()
-        spark2_history_server["host"] = self.get_hadoop_service_details(self.url_knox+"/"+cluster_name+"/services/SPARK2/components/SPARK2_JOBHISTORYSERVER")[0]
-        self.update_config_file()
-        initialize_app()
+        if cluster_name:
+#            spark2_history_server["host"] = self.get_hadoop_service_details(self.url_knox+"/"+cluster_name+"/services/SPARK2/components/SPARK2_JOBHISTORYSERVER")[0]
+            hosts = self.get_hadoop_service_details(self.url_knox+"/"+cluster_name+"/services/SPARK2/components/SPARK2_JOBHISTORYSERVER")
+            if hosts:
+                spark2_history_server["host"] = hosts[0]
+                self.update_config_file()
+                self.is_config_updated = 1
+                initialize_app()
+            else:
+                collectd.error("Unable to get spark2 server")
+        else:
+            collectd.error("Unable to get Cluster name")
 
     @staticmethod
     def add_common_params(spark_dic, doc_type):
@@ -132,7 +142,8 @@ class Spark:
 
     def collect_data(self):
         """Collects all data."""
-        data = run_application(index=0)
+        if self.is_config_updated:
+            data = run_application(index=0)
         docs = [{'_documentType': "sparkTaskCounts", 'appName': 0, 'appId': 0, 'appAttemptId': 0, 'stageAttemptId': 0, 'stageId': 0, 'time': 0, 'timePeriodStart': 0, 'timePeriodEnd': 0, 'duration': 0, 'taskCount': 0}]
         for doc in docs:
             self.add_common_params(doc, doc['_documentType'])
