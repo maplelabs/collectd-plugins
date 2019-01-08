@@ -35,6 +35,7 @@ class Oozie:
         self.retries = 3
         self.url_knox = "https://localhost:8443/gateway/default/ambari/api/v1/clusters"
         self.cluster_name = None
+        self.is_config_updated = 0
         self.knox_username = "admin"
         self.knox_password = "admin"
 
@@ -134,11 +135,6 @@ class Oozie:
         tag_app_name['oozie'] = appname
         self.cluster_name = self.get_cluster()
 
-        job_history_server["host"] = self.get_hadoop_service_details(self.url_knox+"/"+self.cluster_name+"/services/MAPREDUCE2/components/HISTORYSERVER")[0]
-        timeline_server["host"] = self.get_hadoop_service_details(self.url_knox+"/"+self.cluster_name+"/services/YARN/components/APP_TIMELINE_SERVER")[0]
-        oozie["host"] = self.get_hadoop_service_details(self.url_knox+"/"+self.cluster_name+"/services/OOZIE/components/OOZIE_SERVER")[0]
-        self.hdfs_hosts = self.get_hadoop_service_details(self.url_knox+"/"+self.cluster_name+"/services/HDFS/components/NAMENODE")
-
         job_history_server["port"] = "19888"
         timeline_server["port"] = "8188"
         oozie["port"] = "11000"
@@ -148,13 +144,38 @@ class Oozie:
                 os.mkdir(jobhistory_copy_dir)
             except:
                 collectd.error("Unable to create job history directory %s" %jobhistory_copy_dir)
-        if len(self.hdfs_hosts) == 2:
-            hdfs["url"] = "http://{0}:{1};http://{2}:{3}" .format(self.hdfs_hosts[0], self.hdfs_port, self.hdfs_hosts[1], self.hdfs_port)
+
+        if self.cluster_name:
+            job_history_host = self.get_hadoop_service_details(self.url_knox+"/"+self.cluster_name+"/services/MAPREDUCE2/components/HISTORYSERVER")
+            if job_history_host:
+                job_history_server["host"] = job_history_host[0]
+            else:
+                collectd.error("Unable to get Job_history ip")
+            timeline_host = self.get_hadoop_service_details(self.url_knox+"/"+self.cluster_name+"/services/YARN/components/APP_TIMELINE_SERVER")
+            if timeline_host:
+                timeline_server["host"] = timeline_host[0]
+            else:
+                collectd.error("Unable to get timeline_server ip")
+            oozie_host = self.get_hadoop_service_details(self.url_knox+"/"+self.cluster_name+"/services/OOZIE/components/OOZIE_SERVER")
+            if oozie_host:
+                oozie["host"] = oozie_host[0]
+            else:
+                collectd.error("Unable to get oozie ip")
+            self.hdfs_hosts = self.get_hadoop_service_details(self.url_knox+"/"+self.cluster_name+"/services/HDFS/components/NAMENODE")
+            if self.hdfs_hosts:
+                if len(self.hdfs_hosts) == 2:
+                    hdfs["url"] = "http://{0}:{1};http://{2}:{3}" .format(self.hdfs_hosts[0], self.hdfs_port, self.hdfs_hosts[1], self.hdfs_port)
+                else:
+                    hdfs["url"] = "http://{0}:{1}" .format(self.hdfs_hosts[0], self.hdfs_port)
+            else:
+                collectd.error("Unable to get oozie ip")
+            if job_history_host and timeline_host and oozie_host and self.hdfs_hosts:
+                self.update_config_file(use_rest_api, jobhistory_copy_dir)
+                self.is_config_updated = 1
+                initialize_app()
+                initialize_app_elastic()
         else:
-            hdfs["url"] = "http://{0}:{1}" .format(self.hdfs_hosts[0], self.hdfs_port)
-        self.update_config_file(use_rest_api, jobhistory_copy_dir)
-        initialize_app()
-        initialize_app_elastic()
+            collectd.error("Unable to get cluster name")
 
     def add_common_params(self, oozie_dict, doc_type):
         """Adds TIMESTAMP, PLUGIN, PLUGIN_INS to dictionary."""
@@ -169,8 +190,9 @@ class Oozie:
 
     def collect_data(self):
         """Collects all data."""
-        data = run_application()
-        data = run_application_elastic(index=0)
+        if self.is_config_updated:
+            data = run_application()
+            data = run_application_elastic(index=0)
         collectd.info("oozie workflow collection successful")
         docs = [{"wfId": 0, "wfaId": 0, "wfName": 0, "wfaName": 0, "time": int(math.floor(time.time())), "jobId": 0, 'timePeriodStart': 0, 'timePeriodEnd': 0, "mapTaskCount": 0, "reduceTaskCount": 0, 'duration': 0, "_plugin": plugin_name['oozie'], "_documentType": "taskCounts","_tag_appName": tag_app_name['oozie']}]
         for doc in docs:

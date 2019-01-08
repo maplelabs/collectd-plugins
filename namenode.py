@@ -23,6 +23,7 @@ class Namenode:
         self.retries = 3
         self.url_knox = "https://localhost:8443/gateway/default/ambari/api/v1/clusters"
         self.cluster_name = None
+        self.is_config_updated = 0
         self.knox_username = "admin"
         self.knox_password = "admin"
 
@@ -121,9 +122,17 @@ class Namenode:
         appname = self.get_app_name()
         tag_app_name['namenode'] = appname
         cluster_name = self.get_cluster()
-        name_node["hosts"] = self.get_hadoop_service_details(self.url_knox+"/"+cluster_name+"/services/HDFS/components/NAMENODE")
-        self.update_config_file(previous_json_nn)
-        initialize_app()
+        if cluster_name:
+            name_node["hosts"] = self.get_hadoop_service_details(self.url_knox+"/"+cluster_name+"/services/HDFS/components/NAMENODE")
+            hosts = name_node["hosts"]
+            if hosts:
+                self.update_config_file(previous_json_nn)
+                initialize_app()
+                self.is_config_updated = 1
+            else:
+                collectd.error("Unable to get namenode hosts")
+        else:
+            collectd.error("Unable to get cluster name")
 
     @staticmethod
     def add_common_params(namenode_dic, doc_type):
@@ -139,7 +148,8 @@ class Namenode:
 
     def collect_data(self):
         """Collects all data."""
-        data = run_application(index=0)
+        if self.is_config_updated:
+            data = run_application(index=0)
         docs = [{"nameNodeStatsRpcActivity": "_tag_hostname: manager-1", "_tag_context": "rpc", "RpcQueueTimeAvgTime": 0.066667, "RpcProcessingTimeAvgTime": 0.244444, "SentBytes": 0, "RpcAuthenticationSuccesses": 0, "_tag_numopenconnectionsperuser": 0, "modelerType": "RpcActivityForPort8020", "RpcClientBackoff": 0, "RpcAuthenticationFailures": 0, "_tag_port": 8020, "_documentType": "nameNodeStatsRpcActivity", "_plugin": "namenode", "RpcSlowCalls": 0, "ReceivedBytes": 0, "RpcAuthorizationFailures": 0, "NumOpenConnections": 0, "RpcAuthorizationSuccesses": 0, "name": "Hadoop:service=NameNode,name=RpcActivityForPort8020", "RpcProcessingTimeNumOps": 0, "RpcQueueTimeNumOps": 0, "time": 0, "CallQueueLength": 0}]
         for doc in docs:
             self.add_common_params(doc, doc['_documentType'])
