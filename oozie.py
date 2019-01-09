@@ -119,6 +119,13 @@ class Oozie:
             lst_servers.append(host_component["HostRoles"]["host_name"])
         return lst_servers
 
+    def get_time_zone(self):
+        try:
+            timezone = subprocess.check_output("date").split(' ')[-2]
+            return timezone
+        except:
+            return None
+
     def read_config(self, cfg):
         """Initializes variables from conf files."""
         for children in cfg.children:
@@ -145,7 +152,11 @@ class Oozie:
             except:
                 collectd.error("Unable to create job history directory %s" %jobhistory_copy_dir)
 
-        if self.cluster_name:
+
+        timezone = self.get_time_zone()
+        if not timezone:
+            collectd.error("Unable to get timezone")
+        if self.cluster_name and timezone:
             job_history_host = self.get_hadoop_service_details(self.url_knox+"/"+self.cluster_name+"/services/MAPREDUCE2/components/HISTORYSERVER")
             if job_history_host:
                 job_history_server["host"] = job_history_host[0]
@@ -167,6 +178,7 @@ class Oozie:
                     hdfs["url"] = "http://{0}:{1};http://{2}:{3}" .format(self.hdfs_hosts[0], self.hdfs_port, self.hdfs_hosts[1], self.hdfs_port)
                 else:
                     hdfs["url"] = "http://{0}:{1}" .format(self.hdfs_hosts[0], self.hdfs_port)
+                hdfs['timezone'] = timezone
             else:
                 collectd.error("Unable to get hdfs ips")
             if job_history_host and timeline_host and oozie_host and self.hdfs_hosts:
