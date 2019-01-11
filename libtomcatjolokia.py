@@ -37,9 +37,10 @@ def get_cmd_output(cmd, shell_value=True, stdout_value=subprocess.PIPE,
 
 class JolokiaClient(object):
 
-    def __init__(self, plugin_name, process_name):
+    def __init__(self, plugin_name, process_name, java_path):
         self.plugin_name = plugin_name
         self.process_name = process_name
+        self.java_path = java_path
 
     def check_prerequiste(self):
         """Need to run plugin as root."""
@@ -64,7 +65,8 @@ class JolokiaClient(object):
 
     def get_pid(self):
         """Get PIDs of the java process."""
-        pid_cmd = "/home/fusionops/ispring/jdk/bin/jcmd | awk '{print $1 \" \" $2}' | grep -w \"%s\"" % self.process_name
+        pid_cmd = self.java_path + "/jcmd | awk '{print $1 \" \" $2}' | grep -w \"%s\"" % self.process_name
+        #collectd.error("PID_CMD = %s" % pid_cmd)
         pids, err, _ = get_cmd_output(pid_cmd)
         if err:
             collectd.error("Plugin %s: Error in collecting pid for process %s: %s" % (self.plugin_name, self.process_name, err))
@@ -90,7 +92,9 @@ class JolokiaClient(object):
     def run_jolokia_cmd(self, cmd, pid, port=None):
         """Common logic to run jolokia cmds."""
         process_uid = self.get_uid_of_pid(pid)
-        jolokia_cmd = "sudo -u '#{0}' /home/fusionops/ispring/jdk/bin/java -jar {1}jolokia.jar --host=127.0.0.1 {2} {3}".format(process_uid, JOLOKIA_PATH, cmd, pid)
+        jolokia_cmd = "sudo -u '#{0}' ".format(process_uid) + self.java_path + "/java -jar {0}jolokia.jar --host=127.0.0.1 {1} {2}".format(JOLOKIA_PATH, cmd, pid)
+
+        #collectd.error("JOLOKIA_CMD = %s" % jolokia_cmd)
         if port:
             jolokia_cmd += " --port=%s" % port
         return get_cmd_output(jolokia_cmd)
@@ -132,3 +136,4 @@ class JolokiaClient(object):
                 return True
         except requests.exceptions.ConnectionError:
             return False
+

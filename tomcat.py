@@ -7,6 +7,7 @@ import signal
 import json
 import time
 import collectd
+import traceback
 import Queue
 import multiprocessing
 from copy import deepcopy
@@ -19,11 +20,11 @@ import utils
 from constants import *
 from libtomcatjolokia import JolokiaClient
 
-TOMCAT_DOCS = ["tomcatStats", "requestProcessorStats", "jvmStats"]
+TOMCAT_DOCS = ["contextStats", "tomcatStats", "requestProcessorStats", "jvmStats"]
 DEFAULT_GC = ['PS MarkSweep', 'MarkSweepCompact']
 
 
-class JmxStat(object):
+class TomcatStat(object):
     """Plugin object will be created only once and collects JMX statistics info every interval."""
 
     def __init__(self):
@@ -32,10 +33,12 @@ class JmxStat(object):
         self.process = 'catalina'
         self.listenerip = 'localhost'
         self.prev_req_data = {}
+        self.prev_context_data = {}
         self.prev_data = {}
         self.port = None
+        self.java_path = None
         self.documentsTypes = []
-        self.jclient = JolokiaClient(os.path.basename(__file__)[:-3], self.process)
+        self.jclient = None
 
     def config(self, cfg):
         """Initializes variables from conf files."""
@@ -46,6 +49,10 @@ class JmxStat(object):
                 self.port = children.values[0]
             if children.key == DOCUMENTSTYPES:
                 self.documentsTypes = children.values[0]
+            if children.key == "java_path":
+                self.java_path = children.values[0]
+
+        self.jclient = JolokiaClient(os.path.basename(__file__)[:-3], self.process, self.java_path)
 
     def get_jmx_parameters(self, jolokiaclient, doc, dict_jmx):
         """Fetch stats based on doc_type"""
@@ -55,18 +62,19 @@ class JmxStat(object):
             self.add_request_proc_parameters(jolokiaclient, dict_jmx)
         elif doc == "jvmStats":
             self.add_jvm_parameters(jolokiaclient, dict_jmx)
+        elif doc == "contextStats":
+            contexts = self.add_context_parameters(jolokiaclient, dict_jmx)
 
     def add_default_diff_value(self, dict_jmx, doctype):
         """Add default value to rate key based on type"""
-        if doctype == "tomcatStats":
+        if doctype == "contextstats":
             keylist = ["hitCount", "lookupCount"]
             for key in keylist:
                 dict_jmx[key] = 0
         elif doctype == "requestProcessorStats":
-            keylist = ["bytesReceived", "bytesSent"]
+            keylist = ["bReceived", "bSent"]
             for key in keylist:
                 dict_jmx[key] = 0.0
-
 
     def get_diff(self, key, curr_data, prev_data):
         """Calculate and returns rate. Rate=(current_value-prev_value)/time."""
@@ -98,41 +106,37 @@ class JmxStat(object):
         #    rate = 0.0
         return diff
 
-    def add_diff(self, pid, doc, dict_info):
+    def add_diff(self, pid, dict_info, doc, context):
         """diff tomcatStats and requestProcessorStats"""
-        if doc == "tomcatStats":
-            diff = self.get_diff('hitCount', dict_info, self.prev_data[pid])
+        if doc == "contextStats":
+            diff = self.get_diff('hitCount', dict_info, self.prev_context_data[pid][context])
             if diff != NAN:
-                dict_info['hitCount'] = diff
-            diff = self.get_diff('lookupCount', dict_info, self.prev_data[pid])
+                dict_info['hitCount'] = round(diff, FLOATING_FACTOR)
+            diff = self.get_diff('lookupCount', dict_info, self.prev_context_data[pid][context])
             if diff != NAN:
-                dict_info['lookupCount'] = diff
+                dict_info['lookupCount'] = round(diff, FLOATING_FACTOR)
         elif doc == "requestProcessorStats":
-            diff = self.get_diff('bytesReceived', dict_info, self.prev_req_data[pid])
+            diff = self.get_diff('bReceived', dict_info, self.prev_req_data[pid])
             if diff != NAN:
-                dict_info['bytesReceived'] = round(diff, FLOATING_FACTOR)
-            diff = self.get_diff('bytesSent', dict_info, self.prev_req_data[pid])
+                dict_info['bReceived'] = round(diff, FLOATING_FACTOR)
+            diff = self.get_diff('bSent', dict_info, self.prev_req_data[pid])
             if diff != NAN:
-                dict_info['bytesSent'] = round(diff, FLOATING_FACTOR)
+                dict_info['bSent'] = round(diff, FLOATING_FACTOR)
 
     def add_request_proc_parameters(self, jolokiaclient, dict_jmx):
         """Add jmx stats specific to tomcat metrics"""
-        jolokiaclient.add_request(type='read', mbean='Catalina:name=http-nio-80,type=GlobalRequestProcessor',
-                                  attribute='bytesSent')
-        jolokiaclient.add_request(type='read', mbean='Catalina:name=http-nio-80,type=GlobalRequestProcessor',
-                                  attribute='bytesReceived')
-        jolokiaclient.add_request(type='read', mbean='Catalina:name=http-nio-80,type=GlobalRequestProcessor',
-                                  attribute='requestCount')
-        jolokiaclient.add_request(type='read', mbean='Catalina:name=http-nio-80,type=GlobalRequestProcessor',
-                                  attribute='errorCount')
-        jolokiaclient.add_request(type='read', mbean='Catalina:name=http-nio-80,type=GlobalRequestProcessor',
-                                  attribute='maxTime')
-        jolokiaclient.add_request(type='read', mbean='Catalina:name=http-nio-80,type=GlobalRequestProcessor',
-                                  attribute='processingTime')
+        cn_name = self.get_connector_name(jolokiaclient)
+        mbean_name = 'Catalina:name="'+cn_name+'",type=GlobalRequestProcessor'
+        jolokiaclient.add_request(type='read', mbean=mbean_name, attribute='bytesSent')
+        jolokiaclient.add_request(type='read', mbean=mbean_name, attribute='bytesReceived')
+        jolokiaclient.add_request(type='read', mbean=mbean_name, attribute='requestCount')
+        jolokiaclient.add_request(type='read', mbean=mbean_name, attribute='errorCount')
+        jolokiaclient.add_request(type='read', mbean=mbean_name, attribute='maxTime')
+        jolokiaclient.add_request(type='read', mbean=mbean_name, attribute='processingTime')
 
         bulkdata = jolokiaclient.getRequests()
-        dict_jmx['bytesSent'] = bulkdata[0].get('value', 0) / (1024.0 * 1024.0)
-        dict_jmx['bytesReceived'] = bulkdata[1].get('value', 0) / (1024.0 * 1024.0)
+        dict_jmx['bSent'] = round(bulkdata[0].get('value', 0) / 1024.0 / 1024.0, 2)
+        dict_jmx['bReceived'] = round(bulkdata[1].get('value', 0) / 1024.0 /1024.0, 2)
         dict_jmx['requestCount'] = bulkdata[2].get('value', 0)
         dict_jmx['errorCount'] = bulkdata[3].get('value', 0)
         dict_jmx['maxTime'] = bulkdata[4].get('value', 0)
@@ -141,18 +145,13 @@ class JmxStat(object):
     def add_tomcat_parameters(self, jolokiaclient, dict_jmx):
         """Add jmx stats specific to tomcat metrics"""
 
-        jolokiaclient.add_request(type='read', mbean='Catalina:name=http-nio-80,type=ThreadPool',
-                                  attribute='currentThreadsBusy')
-        jolokiaclient.add_request(type='read', mbean='Catalina:name=http-nio-80,type=ThreadPool',
-                                  attribute='currentThreadCount')
-        jolokiaclient.add_request(type='read', mbean='Catalina:name=http-nio-80,type=ThreadPool',
-                                  attribute='maxThreads')
-        jolokiaclient.add_request(type='read',
-                                  mbean='Catalina:context=/ispring,host=localhost,name=Cache,type=WebResourceRoot',
-                                  attribute='hitCount')
-        jolokiaclient.add_request(type='read',
-                                  mbean='Catalina:context=/ispring,host=localhost,name=Cache,type=WebResourceRoot',
-                                  attribute='lookupCount')
+        cn_name = self.get_connector_name(jolokiaclient)
+        mbean_name = 'Catalina:name="'+cn_name+'",type=ThreadPool'
+        jolokiaclient.add_request(type='read', mbean=mbean_name, attribute='currentThreadsBusy')
+        jolokiaclient.add_request(type='read', mbean=mbean_name, attribute='currentThreadCount')
+        jolokiaclient.add_request(type='read', mbean=mbean_name, attribute='maxThreads')
+        #jolokiaclient.add_request(type='read', mbean='Catalina:context=/,host=localhost,name=Cache,type=WebResourceRoot',attribute='hitCount')
+        #jolokiaclient.add_request(type='read', mbean='Catalina:context=/,host=localhost,name=Cache,type=WebResourceRoot',attribute='lookupCount')
         jolokiaclient.add_request(type='read', mbean='Catalina:type=Server', attribute='serverInfo')
         jolokiaclient.add_request(type='read', mbean='java.lang:type=Runtime', attribute='Uptime')
 
@@ -160,11 +159,32 @@ class JmxStat(object):
         dict_jmx['currentThreadsBusy'] = bulkdata[0].get('value', 0)
         dict_jmx['currentThreadCount'] = bulkdata[1].get('value', 0)
         dict_jmx['maxThreads'] = bulkdata[2].get('value', 0)
-        dict_jmx['hitCount'] = bulkdata[3].get('value', 0)
-        dict_jmx['lookupCount'] = bulkdata[4].get('value', 0)
-        version = bulkdata[5].get('value', 0)
-        dict_jmx['upTime'] = bulkdata[6].get('value', 0)
+        #dict_jmx['hitCount'] = bulkdata[3].get('value', 0)
+        #dict_jmx['lookupCount'] = bulkdata[4].get('value', 0)
+        version = bulkdata[3].get('value', 0)
+        dict_jmx['upTime'] = bulkdata[4].get('value', 0)
         dict_jmx['version'] = version.split('/')[1]
+
+    def add_context_parameters(self, jolokiaclient, dict_jmx):
+        dict_context = {}
+        contexts = self.get_context_names(jolokiaclient)
+        for context in contexts:
+            mbean_name = "Catalina:context=" + context + ",host=localhost,name=Cache,type=WebResourceRoot"
+            jolokiaclient.add_request(type='read', mbean=mbean_name, attribute='hitCount')
+            jolokiaclient.add_request(type='read', mbean=mbean_name, attribute='lookupCount')
+
+            bulkdata = jolokiaclient.getRequests()
+            dict_context['hitCount'] = bulkdata[0].get('value', 0)
+            dict_context['lookupCount'] = bulkdata[1].get('value', 0)
+            if context == "/":
+                dict_context['contextName'] = context
+            else:
+                dict_context['contextName'] = context.strip("/")
+
+            cont_name = dict_context['contextName']
+
+            dict_jmx[cont_name] = {}
+            dict_jmx[cont_name].update(dict_context)
 
     def add_jvm_parameters(self, jolokiaclient, dict_jmx):
         """Add jmx stats specific to tomcat metrics"""
@@ -178,7 +198,6 @@ class JmxStat(object):
         dict_jmx['unloadedClassCount'] = bulkdata[1].get('value', 0)
         dict_jmx['heapMemoryUsage'] = bulkdata[2].get('value', 0)
         dict_jmx['nonHeapMemoryUsage'] = bulkdata[3].get('value', 0)
-
         self.add_gc_parameters(jolokiaclient, dict_jmx)
 
     def add_gc_parameters(self, jolokiaclient, dict_jmx):
@@ -231,6 +250,7 @@ class JmxStat(object):
                     memory_gc_usage(self, mem_beforegc, 'bfGc', gc_name_no_spaces, dict_jmx)
 
     def get_gc_names(self, jolokiaclient):
+        """Return list of garbage collector names"""
         gc_json = jolokiaclient.request(type='read', mbean='java.lang:type=GarbageCollector,*', attribute='Name')
         gc_names = []
         if gc_json['status'] == 200:
@@ -240,6 +260,28 @@ class JmxStat(object):
                 else:
                     collectd.error("Plugin tomcat: not supported for GC %s" % value['Name'])
         return gc_names
+
+    def get_connector_name(self, jolokiaclient):
+        """Return name of the nio connector"""
+        tp_json = jolokiaclient.request(type='read',mbean='Catalina:name=*,type=ThreadPool', attribute='name')
+
+        if tp_json['status'] == 200:
+            for _, value in tp_json['value'].items():
+                if "http" in value['name']:
+                    tp_name = value['name']
+        return tp_name
+
+    def get_context_names(self, jolokiaclient):
+        wr_json = jolokiaclient.request(type='read', mbean='Catalina:context=*,host=localhost,name=Cache,type=WebResourceRoot')
+        cont_names = []
+        if wr_json['status'] == 200:
+            for bean in wr_json['value'].keys():
+                context_field = re.findall('context=[^\s+,\']+(?=[\s+,\'])', bean)[0]
+                context_name = re.split('context=', context_field)[1].strip("\"")
+                if context_name not in ['/manager', '/examples', '/docs', '/host-manager']:
+                    cont_names.append(context_name)
+
+        return cont_names
 
     def add_common_params(self, doc, dict_jmx):
         """Adds TIMESTAMP, PLUGIN, PLUGITYPE to dictionary."""
@@ -255,23 +297,28 @@ class JmxStat(object):
         """Rate calculation for topic metrics"""
         # for topic, topic_info in dict_jmx.items():
         #    self.add_common_params(doc, topic_info)
-        if doc == "tomcatStats":
-            if pid in self.prev_data:
-                temp_tomcatStats = deepcopy(dict_jmx)
-                self.add_diff(pid, doc, dict_jmx)
-                self.prev_data[pid] = temp_tomcatStats
-            else:
-                self.prev_data[pid] = deepcopy(dict_jmx)
-                self.add_default_diff_value(dict_jmx, doc)
+        if doc == "contextStats":
+            for context, contextinfo in dict_jmx.items():
+                if pid in self.prev_context_data:
+                    if context in self.prev_context_data[pid]:
+                        self.add_diff(pid, contextinfo, doc, context)
+                    else:
+                        self.add_default_diff_value(contextinfo, doc)
+                else:
+                    self.prev_context_data[pid] = {}
+                    self.add_default_diff_value(contextinfo, doc)
+
+                collectd.info("Plugin tomcat: Added %s doctype information for %s context successfully for pid %s" % (doc, context, pid))
+                self.prev_context_data[pid][context] = contextinfo
+                self.dispatch_data(doc, deepcopy(contextinfo))
+
         elif doc == "requestProcessorStats":
             if pid in self.prev_req_data:
-                temp_reqStats = deepcopy(dict_jmx)
-                self.add_diff(pid, doc, dict_jmx)
-                self.prev_req_data[pid] = temp_reqStats
+                self.add_diff(pid, dict_jmx, doc, "requestProcessor")
             else:
-                self.prev_req_data[pid] = deepcopy(dict_jmx)
                 self.add_default_diff_value(dict_jmx, doc)
-        self.dispatch_data(doc, deepcopy(dict_jmx))
+            self.prev_req_data[pid] = dict_jmx
+            self.dispatch_data(doc, deepcopy(dict_jmx))
 
     def get_pid_jmx_stats(self, pid, port, output):
         """Call get_jmx_parameters function for each doc_type and add dict to queue"""
@@ -280,6 +327,17 @@ class JmxStat(object):
             try:
                 dict_jmx = {}
                 self.get_jmx_parameters(jolokiaclient, doc, dict_jmx)
+
+                if doc == 'contextStats':
+                    if not dict_jmx:
+                        raise ValueError("No data found")
+
+                    for context in dict_jmx.keys():
+                        self.add_common_params(doc, dict_jmx[context])
+                    output.put((pid, doc, dict_jmx))
+
+                    continue
+
                 if not dict_jmx:
                     raise ValueError("No data found")
 
@@ -292,6 +350,7 @@ class JmxStat(object):
                 output.put((pid, doc, dict_jmx))
             except Exception as err:
                 collectd.error("Plugin tomcat: Error in collecting stats of %s doctype: %s" % (doc, str(err)))
+                collectd.error("Plugin tomcat: %s" % traceback.format_exc())
 
     def run_pid_process(self, list_pid):
         """Spawn process for each pid"""
@@ -326,11 +385,13 @@ class JmxStat(object):
                     collectd.error("Failed to send one or more doctype document to collectd")
                     continue
                 # Dispatching documentsTypes which are requetsed alone
+                self.documentsTypes = ["contextStats", "tomcatStats", "requestProcessorStats", "jvmStats"]
+
                 if doc_name in self.documentsTypes:
                     # self.add_common_params(doc_name, doc_result)
                     # self.dispatch_data(doc_name, doc_result)
 
-                    if doc_name in ["tomcatStats", "requestProcessorStats"]:
+                    if doc_name in ["contextStats", "requestProcessorStats"]:
                         self.add_dispatch_tomcat(pid, doc_name, doc_result)
                     else:
                         self.dispatch_data(doc_name, doc_result)
@@ -339,7 +400,7 @@ class JmxStat(object):
     def dispatch_data(self, doc_name, result):
         """Dispatch data to collectd."""
         collectd.info("Plugin tomcat: Succesfully sent %s doctype to collectd." % doc_name)
-        collectd.debug("Plugin tomcat: Values dispatched =%s" % json.dumps(result))
+        collectd.debug("Plugin tomcat: Values dispatched for %s = %s" % (doc_name, json.dumps(result)))
 
         utils.dispatch(result)
 
@@ -356,7 +417,8 @@ def init():
     signal.signal(signal.SIGCHLD, signal.SIG_DFL)
 
 
-OBJ = JmxStat()
+OBJ = TomcatStat()
 collectd.register_init(init)
 collectd.register_config(OBJ.config)
 collectd.register_read(OBJ.read_temp)
+
