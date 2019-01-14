@@ -126,6 +126,11 @@ class YarnStats:
         for children in cfg.children:
             if children.key == INTERVAL:
                 self.interval = children.values[0]
+            elif children.key == USER:
+                self.username = children.values[0]
+            elif children.key == PASSWORD:
+                self.password = children.values[0]
+
         host, port, index = self.get_elastic_search_details()
         elastic["host"] = host
         elastic["port"] = port

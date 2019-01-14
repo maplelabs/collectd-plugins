@@ -145,6 +145,10 @@ class Oozie:
                 self.interval = children.values[0]
             elif children.key == USE_REST_API:
                 use_rest_api = int(children.values[0])
+            elif children.key == USER:
+                self.username = children.values[0]
+            elif children.key == PASSWORD:
+                self.password = children.values[0]
 
         host, port, index = self.get_elastic_search_details()
         elastic["host"] = host

@@ -311,6 +311,9 @@ NAMENODE_PORT = "namenode_port"
 YARN_NODE = "yarn_node"
 CLUSTER = "cluster"
 
+USER = "user"
+PASSWORD = "password"
+
 # ESA constants
 class ESA(object):
     HOST_CONFIG_FILE = '/opt/esa_conf.json'
