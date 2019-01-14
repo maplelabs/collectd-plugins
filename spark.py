@@ -21,10 +21,11 @@ from processSparkApps import run_application, initialize_app
 class Spark:
     def __init__(self):
         self.retries = 3
-        self.url_knox = "https://localhost:8443/gateway/default/ambari/api/v1/clusters"
+#        self.url_knox = "https://localhost:8443/gateway/default/ambari/api/v1/clusters"
+        self.url_knox = "http://localhost:8080/api/v1/clusters"
         self.cluster_name = None
-        self.knox_username = "admin"
-        self.knox_password = "admin"
+        self.username = "admin"
+        self.password = "MapleAdmin123$"
         self.is_config_updated = 0
 
     def check_fields(self, line, dic_fields):
@@ -83,7 +84,7 @@ class Spark:
             collectd.error("Could not read file: /opt/collectd/conf/elasticsearch.conf")
 
     def get_cluster(self):
-        res_json = requests.get(self.url_knox, auth=(self.knox_username, self.knox_password), verify=False)
+        res_json = requests.get(self.url_knox, auth=(self.username, self.password), verify=False)
         if res_json.status_code != 200:
             collectd.error("Couldn't get cluster name")
             return None
@@ -91,7 +92,7 @@ class Spark:
         return cluster_name
 
     def get_hadoop_service_details(self, url):
-        res_json = requests.get(url, auth=(self.knox_username, self.knox_password), verify=False)
+        res_json = requests.get(url, auth=(self.username, self.password), verify=False)
         if res_json.status_code != 200:
             collectd.error("Couldn't get history_server details")
             return None

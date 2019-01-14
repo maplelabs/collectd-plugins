@@ -33,11 +33,12 @@ class Oozie:
     def __init__(self):
         """Initializes interval, oozie server, Job history and Timeline server details"""
         self.retries = 3
-        self.url_knox = "https://localhost:8443/gateway/default/ambari/api/v1/clusters"
+#        self.url_knox = "https://localhost:8443/gateway/default/ambari/api/v1/clusters"
+        self.url_knox = "http://localhost:8080/api/v1/clusters"
         self.cluster_name = None
         self.is_config_updated = 0
-        self.knox_username = "admin"
-        self.knox_password = "admin"
+        self.username = "admin"
+        self.password = "MapleAdmin123$"
 
     def check_fields(self, line, dic_fields):
         for field in dic_fields:
@@ -101,7 +102,7 @@ class Oozie:
             collectd.error("Could not read file: /opt/collectd/conf/elasticsearch.conf")
 
     def get_cluster(self):
-        res_json = requests.get(self.url_knox, auth=(self.knox_username, self.knox_password), verify=False)
+        res_json = requests.get(self.url_knox, auth=(self.username, self.password), verify=False)
         if res_json.status_code != 200:
             return None
         cluster_name = res_json.json()["items"][0]["Clusters"]["cluster_name"]
@@ -109,7 +110,7 @@ class Oozie:
 
 
     def get_hadoop_service_details(self, url):
-        res_json = requests.get(url, auth=(self.knox_username, self.knox_password), verify=False)
+        res_json = requests.get(url, auth=(self.username, self.password), verify=False)
         if res_json.status_code != 200:
             collectd.error("Couldn't get server details")
             return None
