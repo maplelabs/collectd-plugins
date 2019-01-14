@@ -94,8 +94,20 @@ class YarnStats:
         res_json = requests.get(self.url_knox, auth=(self.username, self.password), verify=False)
         if res_json.status_code != 200:
             return None
-        cluster_name = res_json.json()["items"][0]["Clusters"]["cluster_name"]
-        return cluster_name
+        self.cluster_name = res_json.json()["items"][0]["Clusters"]["cluster_name"]
+        return self.cluster_name
+
+    def is_service_running(self, services):
+        for service in services:
+            res_json = requests.get(self.url_knox+"/"+self.cluster_name+"/services/%s" %service, auth=(self.username, self.password), verify=False)
+            if res_json.status_code != 200:
+                collectd.error("URL is not responding for %s" %service)
+                return False
+            if res_json.json()["ServiceInfo"]["state"] != "INSTALLED" and res_json.json()["ServiceInfo"]["state"] != "STARTED":
+                collectd.error("%s is not running" %service)
+                return False
+        return True
+
 
 
     def get_hadoop_service_details(self, url):
@@ -121,9 +133,9 @@ class YarnStats:
         appname = self.get_app_name()
         tag_app_name['yarn'] = appname
         resource_manager["port"] = "8088"
-        cluster_name = self.get_cluster()
-        if cluster_name:
-            hosts = self.get_hadoop_service_details(self.url_knox+"/"+cluster_name+"/services/YARN/components/RESOURCEMANAGER")
+        self.cluster_name = self.get_cluster()
+        if self.cluster_name and self.is_service_running(["YARN"]):
+            hosts = self.get_hadoop_service_details(self.url_knox+"/"+self.cluster_name+"/services/YARN/components/RESOURCEMANAGER")
             if hosts:
                 resource_manager["hosts"] = hosts
                 self.update_config_file(previous_json_yarn)

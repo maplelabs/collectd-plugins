@@ -88,8 +88,19 @@ class Spark:
         if res_json.status_code != 200:
             collectd.error("Couldn't get cluster name")
             return None
-        cluster_name = res_json.json()["items"][0]["Clusters"]["cluster_name"]
-        return cluster_name
+        self.cluster_name = res_json.json()["items"][0]["Clusters"]["cluster_name"]
+        return self.cluster_name
+
+    def is_service_running(self, services):
+        for service in services:
+            res_json = requests.get(self.url_knox+"/"+self.cluster_name+"/services/%s" %service, auth=(self.username, self.password), verify=False)
+            if res_json.status_code != 200:
+                collectd.error("URL is not responding for %s" %service)
+                return False
+            if res_json.json()["ServiceInfo"]["state"] != "INSTALLED" and res_json.json()["ServiceInfo"]["state"] != "STARTED":
+                collectd.error("%s is not running" %service)
+                return False
+        return True
 
     def get_hadoop_service_details(self, url):
         res_json = requests.get(url, auth=(self.username, self.password), verify=False)
@@ -115,10 +126,10 @@ class Spark:
         indices["spark"] = index
         appname = self.get_app_name()
         tag_app_name['spark'] = appname
-        cluster_name = self.get_cluster()
-        if cluster_name:
-#            spark2_history_server["host"] = self.get_hadoop_service_details(self.url_knox+"/"+cluster_name+"/services/SPARK2/components/SPARK2_JOBHISTORYSERVER")[0]
-            hosts = self.get_hadoop_service_details(self.url_knox+"/"+cluster_name+"/services/SPARK2/components/SPARK2_JOBHISTORYSERVER")
+        self.cluster_name = self.get_cluster()
+        if self.cluster_name and self.is_service_running(["SPARK2"]):
+#            spark2_history_server["host"] = self.get_hadoop_service_details(self.url_knox+"/"+self.cluster_name+"/services/SPARK2/components/SPARK2_JOBHISTORYSERVER")[0]
+            hosts = self.get_hadoop_service_details(self.url_knox+"/"+self.cluster_name+"/services/SPARK2/components/SPARK2_JOBHISTORYSERVER")
             if hosts:
                 spark2_history_server["host"] = hosts[0]
                 self.update_config_file()
