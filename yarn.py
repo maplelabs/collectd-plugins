@@ -123,7 +123,6 @@ class YarnStats:
         resource_manager["port"] = "8088"
         cluster_name = self.get_cluster()
         if cluster_name:
-            resource_manager["hosts"] = self.get_hadoop_service_details(self.url_knox+"/"+cluster_name+"/services/YARN/components/RESOURCEMANAGER")
             hosts = self.get_hadoop_service_details(self.url_knox+"/"+cluster_name+"/services/YARN/components/RESOURCEMANAGER")
             if hosts:
                 resource_manager["hosts"] = hosts

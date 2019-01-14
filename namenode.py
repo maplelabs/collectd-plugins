@@ -124,9 +124,9 @@ class Namenode:
         tag_app_name['namenode'] = appname
         cluster_name = self.get_cluster()
         if cluster_name:
-            name_node["hosts"] = self.get_hadoop_service_details(self.url_knox+"/"+cluster_name+"/services/HDFS/components/NAMENODE")
-            hosts = name_node["hosts"]
+            hosts = self.get_hadoop_service_details(self.url_knox+"/"+cluster_name+"/services/HDFS/components/NAMENODE")
             if hosts:
+                name_node["hosts"] = hosts
                 self.update_config_file(previous_json_nn)
                 initialize_app()
                 self.is_config_updated = 1
