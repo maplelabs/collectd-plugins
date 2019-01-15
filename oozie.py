@@ -33,11 +33,12 @@ class Oozie:
     def __init__(self):
         """Initializes interval, oozie server, Job history and Timeline server details"""
         self.retries = 3
-        self.url_knox = "https://localhost:8443/gateway/default/ambari/api/v1/clusters"
+#        self.url_knox = "https://localhost:8443/gateway/default/ambari/api/v1/clusters"
+        self.url_knox = "http://localhost:8080/api/v1/clusters"
         self.cluster_name = None
         self.is_config_updated = 0
-        self.knox_username = "admin"
-        self.knox_password = "admin"
+        self.username = "admin"
+        self.password = "MapleAdmin123$"
 
     def check_fields(self, line, dic_fields):
         for field in dic_fields:
@@ -101,7 +102,7 @@ class Oozie:
             collectd.error("Could not read file: /opt/collectd/conf/elasticsearch.conf")
 
     def get_cluster(self):
-        res_json = requests.get(self.url_knox, auth=(self.knox_username, self.knox_password), verify=False)
+        res_json = requests.get(self.url_knox, auth=(self.username, self.password), verify=False)
         if res_json.status_code != 200:
             return None
         cluster_name = res_json.json()["items"][0]["Clusters"]["cluster_name"]
@@ -109,7 +110,7 @@ class Oozie:
 
 
     def get_hadoop_service_details(self, url):
-        res_json = requests.get(url, auth=(self.knox_username, self.knox_password), verify=False)
+        res_json = requests.get(url, auth=(self.username, self.password), verify=False)
         if res_json.status_code != 200:
             collectd.error("Couldn't get server details")
             return None
@@ -126,6 +127,17 @@ class Oozie:
         except:
             return None
 
+    def is_service_running(self, services):
+        for service in services:
+            res_json = requests.get(self.url_knox+"/"+self.cluster_name+"/services/%s" %service, auth=(self.username, self.password), verify=False)
+            if res_json.status_code != 200:
+                collectd.error("URL is not responding for %s" %service)
+                return False
+            if res_json.json()["ServiceInfo"]["state"] != "INSTALLED" and res_json.json()["ServiceInfo"]["state"] != "STARTED":
+                collectd.error("%s is not running" %service)
+                return False
+        return True
+
     def read_config(self, cfg):
         """Initializes variables from conf files."""
         for children in cfg.children:
@@ -133,6 +145,10 @@ class Oozie:
                 self.interval = children.values[0]
             elif children.key == USE_REST_API:
                 use_rest_api = int(children.values[0])
+            elif children.key == USER:
+                self.username = children.values[0]
+            elif children.key == PASSWORD:
+                self.password = children.values[0]
 
         host, port, index = self.get_elastic_search_details()
         elastic["host"] = host
@@ -156,7 +172,8 @@ class Oozie:
         timezone = self.get_time_zone()
         if not timezone:
             collectd.error("Unable to get timezone")
-        if self.cluster_name and timezone:
+        
+        if self.cluster_name and timezone and self.is_service_running(["OOZIE", "MAPREDUCE2", "SPARK2", "HDFS"]):
             job_history_host = self.get_hadoop_service_details(self.url_knox+"/"+self.cluster_name+"/services/MAPREDUCE2/components/HISTORYSERVER")
             if job_history_host:
                 job_history_server["host"] = job_history_host[0]

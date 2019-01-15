@@ -21,11 +21,12 @@ class YarnStats:
         """Plugin object will be created only once and \
            collects yarn statistics info every interval."""
         self.retries = 3
-        self.url_knox = "https://localhost:8443/gateway/default/ambari/api/v1/clusters"
+#        self.url_knox = "https://localhost:8443/gateway/default/ambari/api/v1/clusters"
+        self.url_knox = "http://localhost:8080/api/v1/clusters"
         self.cluster_name = None
         self.is_config_updated = 0
-        self.knox_username = "admin"
-        self.knox_password = "admin"
+        self.username = "admin"
+        self.password = "MapleAdmin123$"
 
     def check_fields(self, line, dic_fields):
         for field in dic_fields:
@@ -90,15 +91,27 @@ class YarnStats:
             collectd.error("Could not read file: /opt/collectd/conf/filters.conf")
 
     def get_cluster(self):
-        res_json = requests.get(self.url_knox, auth=(self.knox_username, self.knox_password), verify=False)
+        res_json = requests.get(self.url_knox, auth=(self.username, self.password), verify=False)
         if res_json.status_code != 200:
             return None
-        cluster_name = res_json.json()["items"][0]["Clusters"]["cluster_name"]
-        return cluster_name
+        self.cluster_name = res_json.json()["items"][0]["Clusters"]["cluster_name"]
+        return self.cluster_name
+
+    def is_service_running(self, services):
+        for service in services:
+            res_json = requests.get(self.url_knox+"/"+self.cluster_name+"/services/%s" %service, auth=(self.username, self.password), verify=False)
+            if res_json.status_code != 200:
+                collectd.error("URL is not responding for %s" %service)
+                return False
+            if res_json.json()["ServiceInfo"]["state"] != "INSTALLED" and res_json.json()["ServiceInfo"]["state"] != "STARTED":
+                collectd.error("%s is not running" %service)
+                return False
+        return True
+
 
 
     def get_hadoop_service_details(self, url):
-        res_json = requests.get(url, auth=(self.knox_username, self.knox_password), verify=False)
+        res_json = requests.get(url, auth=(self.username, self.password), verify=False)
         if res_json.status_code != 200:
             collectd.error("Couldn't get history_server details")
             return None
@@ -113,6 +126,11 @@ class YarnStats:
         for children in cfg.children:
             if children.key == INTERVAL:
                 self.interval = children.values[0]
+            elif children.key == USER:
+                self.username = children.values[0]
+            elif children.key == PASSWORD:
+                self.password = children.values[0]
+
         host, port, index = self.get_elastic_search_details()
         elastic["host"] = host
         elastic["port"] = port
@@ -120,10 +138,9 @@ class YarnStats:
         appname = self.get_app_name()
         tag_app_name['yarn'] = appname
         resource_manager["port"] = "8088"
-        cluster_name = self.get_cluster()
-        if cluster_name:
-            resource_manager["hosts"] = self.get_hadoop_service_details(self.url_knox+"/"+cluster_name+"/services/YARN/components/RESOURCEMANAGER")
-            hosts = self.get_hadoop_service_details(self.url_knox+"/"+cluster_name+"/services/YARN/components/RESOURCEMANAGER")
+        self.cluster_name = self.get_cluster()
+        if self.cluster_name and self.is_service_running(["YARN"]):
+            hosts = self.get_hadoop_service_details(self.url_knox+"/"+self.cluster_name+"/services/YARN/components/RESOURCEMANAGER")
             if hosts:
                 resource_manager["hosts"] = hosts
                 self.update_config_file(previous_json_yarn)
