@@ -127,6 +127,18 @@ class Oozie:
         except:
             return None
 
+    def get_mr_history_user(self):
+        try:
+            lines = subprocess.check_output("hdfs dfs -ls /").splitlines()
+            for line in lines:
+                if '/mr-history' not in line:
+                    continue
+                hdfs_user = line.split(" ")[4]
+                return hdfs_user
+            
+        except:
+            return None
+
     def is_service_running(self, services):
         for service in services:
             res_json = requests.get(self.url_knox+"/"+self.cluster_name+"/services/%s" %service, auth=(self.username, self.password), verify=False)
@@ -172,8 +184,10 @@ class Oozie:
         timezone = self.get_time_zone()
         if not timezone:
             collectd.error("Unable to get timezone")
+
+        hdfs_user = self.get_mr_history_user()
         
-        if self.cluster_name and timezone and self.is_service_running(["OOZIE", "MAPREDUCE2", "SPARK2", "HDFS"]):
+        if self.cluster_name and timezone and self.is_service_running(["OOZIE", "MAPREDUCE2", "SPARK2", "HDFS"]) and hdfs_user:
             job_history_host = self.get_hadoop_service_details(self.url_knox+"/"+self.cluster_name+"/services/MAPREDUCE2/components/HISTORYSERVER")
             if job_history_host:
                 job_history_server["host"] = job_history_host[0]
@@ -196,6 +210,7 @@ class Oozie:
                 else:
                     hdfs["url"] = "http://{0}:{1}" .format(self.hdfs_hosts[0], self.hdfs_port)
                 hdfs['timezone'] = timezone
+                hdfs["user"] = hdfs_user
             else:
                 collectd.error("Unable to get hdfs ips")
             if job_history_host and timeline_host and oozie_host and self.hdfs_hosts:
