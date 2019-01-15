@@ -172,7 +172,7 @@ class Oozie:
         timezone = self.get_time_zone()
         if not timezone:
             collectd.error("Unable to get timezone")
-        
+
         if self.cluster_name and timezone and self.is_service_running(["OOZIE", "MAPREDUCE2", "SPARK2", "HDFS"]):
             job_history_host = self.get_hadoop_service_details(self.url_knox+"/"+self.cluster_name+"/services/MAPREDUCE2/components/HISTORYSERVER")
             if job_history_host:
@@ -196,6 +196,7 @@ class Oozie:
                 else:
                     hdfs["url"] = "http://{0}:{1}" .format(self.hdfs_hosts[0], self.hdfs_port)
                 hdfs['timezone'] = timezone
+                hdfs["user"] = "mapred"
             else:
                 collectd.error("Unable to get hdfs ips")
             if job_history_host and timeline_host and oozie_host and self.hdfs_hosts:
