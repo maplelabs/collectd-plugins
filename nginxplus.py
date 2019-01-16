@@ -174,16 +174,19 @@ class Nginx(object):
     def read(self):
         self.pollCounter += 1
         # collect data
-        for doc in docs:
-            result_dict = self.poll(doc)
-            #result_dict = self.nginxplusstats()
-            if not result_dict:
-                collectd.error("Plugin nginx: Unable to fetch information of nginx for document Type: " + doc)
-            else:
-                collectd.info("Plugin nginx:Success fetching information of nginx for document Type: " + doc)
-                self.add_common_params(result_dict, doc)
-                # dispatch data to collectd
-                self.dispatch_data(result_dict)
+        try:
+            for doc in docs:
+                result_dict = self.poll(doc)
+                #result_dict = self.nginxplusstats()
+                if not result_dict:
+                    collectd.error("Plugin nginx: Unable to fetch information of nginx for document Type: " + doc)
+                else:
+                    collectd.info("Plugin nginx:Success fetching information of nginx for document Type: " + doc)
+                    self.add_common_params(result_dict, doc)
+                    # dispatch data to collectd
+                    self.dispatch_data(result_dict)
+        except Exception as ex:
+            collectd.error("Plugin nginx: Unable to fetch information due to exception" +ex)
 
     def read_temp(self):
         collectd.unregister_read(self.read_temp)
