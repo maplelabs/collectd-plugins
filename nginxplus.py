@@ -46,7 +46,7 @@ class Nginx(object):
                 content = json.loads(resp.content)
                 return str(max(content))
         except Exception as ex:
-            raise ex
+            return
             
     def get_server_details(self):
         # Get the version of the NGINX server running
