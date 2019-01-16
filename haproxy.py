@@ -21,6 +21,7 @@ class haproxyStats(object):
     def __init__(self, interval=1, utilize_type="CPU", maximum_grep=5, process_name='*'):
         """Initializes interval."""
         self.interval = DEFAULT_INTERVAL
+        self.socket_path = None
         self.documentsTypes = []
         self.pollCounter = 0
         self.prev_frontend_data = {}
@@ -34,6 +35,8 @@ class haproxyStats(object):
                 self.interval = children.values[0]
             if children.key == DOCUMENTSTYPES:
                 self.documentsTypes = children.values[0]
+            if children.key == "socket_path":
+                self.socket_path = children.values[0]
 
     def get_keys(self, key_mapping, lines):
         key_buf = lines[0].strip("# \n").split(",")[2:]
@@ -145,9 +148,24 @@ class haproxyStats(object):
         except Exception as err:
             collectd.error("Plugin haproxy: Exception in get_haproxy_data due to %s" % err)
 
+    def get_nc_command(self):
+        try:
+            cmnd = "which nc"
+            process = subprocess.Popen(cmnd, shell=True, stdout=subprocess.PIPE)
+            output = process.stdout.readline()
+
+            if re.search("no nc", output):
+                cmnd = "sudo yum install -y nc"
+                process = subprocess.Popen(cmnd, shell=True, stdout=subprocess.PIPE)
+            else:
+                return
+        except Exception as err:
+            collectd.error("Plugin haproxy: Error in get_nc_command due to %s" % err)
+
     def collect_haproxy_data(self, doc):
         try:
             haproxy_data = defaultdict(dict)
+            self.get_nc_command()
             if doc == "frontendStats" or doc == "backendStats":
                 dict_stats = defaultdict(list)
                 key_mapping = []
