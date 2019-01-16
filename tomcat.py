@@ -190,14 +190,19 @@ class TomcatStat(object):
         """Add jmx stats specific to tomcat metrics"""
         jolokiaclient.add_request(type='read', mbean='java.lang:type=ClassLoading', attribute='LoadedClassCount')
         jolokiaclient.add_request(type='read', mbean='java.lang:type=ClassLoading', attribute='UnLoadedClassCount')
-        jolokiaclient.add_request(type='read', mbean='java.lang:type=Memory', attribute='HeapMemoryUsage')
-        jolokiaclient.add_request(type='read', mbean='java.lang:type=Memory', attribute='NonHeapMemoryUsage')
 
         bulkdata = jolokiaclient.getRequests()
         dict_jmx['loadedClassCount'] = bulkdata[0].get('value', 0)
         dict_jmx['unloadedClassCount'] = bulkdata[1].get('value', 0)
-        dict_jmx['heapMemoryUsage'] = bulkdata[2].get('value', 0)
-        dict_jmx['nonHeapMemoryUsage'] = bulkdata[3].get('value', 0)
+
+        heap = jolokiaclient.request(type='read', mbean='java.lang:type=Memory', attribute='HeapMemoryUsage')
+        non_heap = jolokiaclient.request(type='read', mbean='java.lang:type=Memory', attribute='NonHeapMemoryUsage')
+
+        dict_jmx['heapMemUsed'] =  round(heap['value']['used'] / 1024.0/ 1024.0, 2)
+        dict_jmx['heapMemCommitted'] = round(heap['value']['committed'] / 1024.0 /1024.0, 2)
+        dict_jmx['nonHeapMemUsed'] = round(non_heap['value']['used'] / 1024.0/ 1024.0, 2)
+        dict_jmx['nonHeapMemCommitted'] = round(non_heap['value']['committed'] / 1024.0/ 1024.0, 2)
+
         self.add_gc_parameters(jolokiaclient, dict_jmx)
 
     def add_gc_parameters(self, jolokiaclient, dict_jmx):
