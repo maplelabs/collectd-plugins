@@ -60,71 +60,80 @@ class haproxyStats(object):
         try:
             metrics_tmp = {}
             for index in dict_stats.keys():
-                if dict_stats[index][1] == "FRONTEND" and dict_stats[index][0] == "http":
+                if dict_stats[index][1] == "FRONTEND":
                     i = 2
                     for key in key_mapping:
-                        name = dict_stats[index][0] + "_" + key
-                        metrics_tmp[name] = dict_stats[index][i]
+                        metrics_tmp[key] = dict_stats[index][i]
+                        if metrics_tmp[key] == '':
+                            metrics_tmp[key] = 0
                         i += 1
 
-            if metrics_tmp:
-                haproxy_data['frontendStats']['httpReqRate'] = float(metrics_tmp['http_req_rate'])
-                haproxy_data['frontendStats']['httpRate'] = float(metrics_tmp['http_rate'])
-                haproxy_data['frontendStats']['httpEreq'] = int(metrics_tmp['http_ereq'])
-                haproxy_data['frontendStats']['httpDreq'] = int(metrics_tmp['http_dreq'])
-                haproxy_data['frontendStats']['httpHrsp_4xx'] = int(metrics_tmp['http_hrsp_4xx'])
-                haproxy_data['frontendStats']['httpHrsp_5xx'] = int(metrics_tmp['http_hrsp_5xx'])
-                haproxy_data['frontendStats']['httpBin'] = float(metrics_tmp['http_bin']) / 1024
-                haproxy_data['frontendStats']['httpBout'] = float(metrics_tmp['http_bout']) / 1024
-                haproxy_data['frontendStats']['httpSutil'] = (float(metrics_tmp['http_scur']) / float(metrics_tmp['http_slim'])) * 100
-                haproxy_data['frontendStats']['_documentType'] = 'frontendStats'
+                    pxname = dict_stats[index][0]
+                    if metrics_tmp:
+                        haproxy_data['frontendStats'][pxname] = {}
+                        haproxy_data['frontendStats'][pxname]['pxName'] = dict_stats[index][0]
+                        haproxy_data['frontendStats'][pxname]['reqRate'] = float(metrics_tmp['req_rate'])
+                        haproxy_data['frontendStats'][pxname]['rate'] = float(metrics_tmp['rate'])
+                        haproxy_data['frontendStats'][pxname]['ereq'] = int(metrics_tmp['ereq'])
+                        haproxy_data['frontendStats'][pxname]['dreq'] = int(metrics_tmp['dreq'])
+                        haproxy_data['frontendStats'][pxname]['hrsp_4xx'] = int(metrics_tmp['hrsp_4xx'])
+                        haproxy_data['frontendStats'][pxname]['hrsp_5xx'] = int(metrics_tmp['hrsp_5xx'])
+                        haproxy_data['frontendStats'][pxname]['bin'] = float(metrics_tmp['bin']) / 1024
+                        haproxy_data['frontendStats'][pxname]['bout'] = float(metrics_tmp['bout']) / 1024
+                        haproxy_data['frontendStats'][pxname]['sutil'] = (float(metrics_tmp['scur']) / float(metrics_tmp['slim'])) * 100
+                        haproxy_data['frontendStats'][pxname]['_documentType'] = 'frontendStats'
 
-            else:
-                collectd.error("Plugin haproxy: Error collecting frontend stats for http proxy")
-                return
+                        self.add_common_params(haproxy_data['frontendStats'][pxname], 'frontendStats')
 
-            self.add_common_params(haproxy_data['frontendStats'], 'frontendStats')
+                    else:
+                        collectd.info("Plugin haproxy: Error collecting frontend stats for %s proxy" % pxname)
+                        return
 
         except Exception as err:
             collectd.error("Plugin haproxy: Exception in get_frontend_data due to %s" % err)
+            collectd.error("Traceback: %s" % traceback.format_exc())
             return
 
     def get_backend_data(self, key_mapping, dict_stats, haproxy_data):
         try:
             metrics_tmp = {}
             for index in dict_stats.keys():
-                if dict_stats[index][1] == "BACKEND" and dict_stats[index][0] == "http":
+                if dict_stats[index][1] == "BACKEND":
                     i = 2
                     for key in key_mapping:
-                        name = dict_stats[index][0] + "_" + key
-                        metrics_tmp[name] = dict_stats[index][i]
+                        metrics_tmp[key] = dict_stats[index][i]
+                        if metrics_tmp[key] == '':
+                            metrics_tmp[key] = 0
                         i += 1
 
-            if metrics_tmp:
-                haproxy_data['backendStats']['httpRtime'] = int(metrics_tmp['http_rtime'])
-                haproxy_data['backendStats']['httpEcon'] = int(metrics_tmp['http_econ'])
-                haproxy_data['backendStats']['httpDresp'] = int(metrics_tmp['http_dresp'])
-                haproxy_data['backendStats']['httpEresp'] = int(metrics_tmp['http_eresp'])
-                haproxy_data['backendStats']['httpQcur'] = int(metrics_tmp['http_qcur'])
-                haproxy_data['backendStats']['httpQtime'] = int(metrics_tmp['http_qtime'])
-                haproxy_data['backendStats']['httpWredis'] = int(metrics_tmp['http_wredis'])
-                haproxy_data['backendStats']['httpWretr'] = int(metrics_tmp['http_wretr'])
-                haproxy_data['backendStats']['_documentType'] = 'backendStats'
+                    pxname = dict_stats[index][0]
+                    if metrics_tmp:
+                        haproxy_data['backendStats'][pxname] = {}
+                        haproxy_data['backendStats'][pxname]['pxName'] = pxname
+                        haproxy_data['backendStats'][pxname]['rtime'] = int(metrics_tmp['rtime'])
+                        haproxy_data['backendStats'][pxname]['econ'] = int(metrics_tmp['econ'])
+                        haproxy_data['backendStats'][pxname]['dresp'] = int(metrics_tmp['dresp'])
+                        haproxy_data['backendStats'][pxname]['eresp'] = int(metrics_tmp['eresp'])
+                        haproxy_data['backendStats'][pxname]['qcur'] = int(metrics_tmp['qcur'])
+                        haproxy_data['backendStats'][pxname]['qtime'] = int(metrics_tmp['qtime'])
+                        haproxy_data['backendStats'][pxname]['wredis'] = int(metrics_tmp['wredis'])
+                        haproxy_data['backendStats'][pxname]['wretr'] = int(metrics_tmp['wretr'])
+                        haproxy_data['backendStats'][pxname]['_documentType'] = 'backendStats'
+
+                        self.add_common_params(haproxy_data['backendStats'][pxname], 'backendStats')
+
+                    else:
+                        collectd.info("Plugin haproxy: Error collecting backend stats for %s proxy" % pxname)
+                        return
 
 
-
-            else:
-                collectd.error("Plugin haproxy: Error collecting backend stats for http proxy")
-                return
-
-            self.add_common_params(haproxy_data['backendStats'], 'backendStats')
 
         except Exception as err:
             collectd.error("Plugin haproxy: Exception in get_backend_data due to %s" % err)
+            collectd.error("Traceback: %s" % traceback.format_exc())
 
     def get_haproxy_data(self, lines, haproxy_data):
         dict_stats = {}
-
         try:
             for line in lines:
                 line = line.strip("\n")
@@ -194,10 +203,10 @@ class haproxyStats(object):
 
     def add_default_diff_value(self, doc_stats, doc):
         if doc == 'frontendStats':
-            keylist = ['httpEreq', 'httpDreq', 'httpHrsp_4xx', 'httpHrsp_5xx', 'httpBin', 'httpBout']
+            keylist = ['ereq', 'dreq', 'hrsp_4xx', 'hrsp_5xx', 'bin', 'bout']
 
         elif doc == 'backendStats':
-            keylist = ['httpEcon', 'httpDresp', 'httpEresp', 'httpWredis', 'httpWretr']
+            keylist = ['econ', 'dresp', 'eresp', 'wredis', 'wretr']
 
         elif doc == 'haproxyStats':
             keylist = ['sslCacheMisses', 'sslCacheLookups']
@@ -206,6 +215,9 @@ class haproxyStats(object):
             doc_stats[key] = 0
 
     def get_diff(self, key, curr_data, prev_data):
+        collectd.info("Current data: %s" %str(curr_data))
+        collectd.info("Previous data: %s" % str(prev_data))
+
         diff = NAN
         if not prev_data:
             return diff
@@ -233,52 +245,52 @@ class haproxyStats(object):
         #    rate = 0.0
         return diff
 
-    def add_diff(self, doc_stats, doc):
+    def add_diff(self, doc_stats, doc, pxname):
         if doc == 'frontendStats':
-            diff = self.get_diff('httpEreq', doc_stats, self.prev_frontend_data)
+            diff = self.get_diff('ereq', doc_stats, self.prev_frontend_data[pxname])
             if diff != NAN:
-                doc_stats['httpEreq'] = diff
+                doc_stats['ereq'] = diff
 
-            diff = self.get_diff('httpDreq', doc_stats, self.prev_frontend_data)
+            diff = self.get_diff('dreq', doc_stats, self.prev_frontend_data[pxname])
             if diff != NAN:
-                doc_stats['httpDreq'] = diff
+                doc_stats['dreq'] = diff
 
-            diff = self.get_diff('httpHrsp_4xx', doc_stats, self.prev_frontend_data)
+            diff = self.get_diff('hrsp_4xx', doc_stats, self.prev_frontend_data[pxname])
             if diff != NAN:
-                doc_stats['httpHrsp_4xx'] = diff
+                doc_stats['hrsp_4xx'] = diff
 
-            diff = self.get_diff('httpHrsp_5xx', doc_stats, self.prev_frontend_data)
+            diff = self.get_diff('hrsp_5xx', doc_stats, self.prev_frontend_data[pxname])
             if diff != NAN:
-                doc_stats['httpHrsp_5xx'] = diff
+                doc_stats['hrsp_5xx'] = diff
 
-            diff = self.get_diff('httpBin', doc_stats, self.prev_frontend_data)
+            diff = self.get_diff('bin', doc_stats, self.prev_frontend_data[pxname])
             if diff != NAN:
-                doc_stats['httpBin'] = round(diff, 2)
+                doc_stats['bin'] = round(diff, 2)
 
-            diff = self.get_diff('httpBout', doc_stats, self.prev_frontend_data)
+            diff = self.get_diff('bout', doc_stats, self.prev_frontend_data[pxname])
             if diff != NAN:
-                doc_stats['httpBout'] = round(diff, 2)
+                doc_stats['bout'] = round(diff, 2)
 
         if doc == 'backendStats':
-            diff = self.get_diff('httpEcon', doc_stats, self.prev_backend_data)
+            diff = self.get_diff('econ', doc_stats, self.prev_backend_data[pxname])
             if diff != NAN:
-                doc_stats['httpEcon'] = diff
+                doc_stats['econ'] = diff
 
-            diff = self.get_diff('httpDresp', doc_stats, self.prev_backend_data)
+            diff = self.get_diff('dresp', doc_stats, self.prev_backend_data[pxname])
             if diff != NAN:
-                doc_stats['httpDresp'] = diff
+                doc_stats['dresp'] = diff
 
-            diff = self.get_diff('httpEresp', doc_stats, self.prev_backend_data)
+            diff = self.get_diff('eresp', doc_stats, self.prev_backend_data[pxname])
             if diff != NAN:
-                doc_stats['httpEresp'] = diff
+                doc_stats['eresp'] = diff
 
-            diff = self.get_diff('httpWredis', doc_stats, self.prev_backend_data)
+            diff = self.get_diff('wredis', doc_stats, self.prev_backend_data[pxname])
             if diff != NAN:
-                doc_stats['httpWredis'] = diff
+                doc_stats['wredis'] = diff
 
-            diff = self.get_diff('httpWretr', doc_stats, self.prev_backend_data)
+            diff = self.get_diff('wretr', doc_stats, self.prev_backend_data[pxname])
             if diff != NAN:
-                doc_stats['httpWretr'] = diff
+                doc_stats['wretr'] = diff
 
         if doc == 'haproxyStats':
             diff = self.get_diff('sslCacheMisses', doc_stats, self.prev_haproxy_data)
@@ -290,31 +302,40 @@ class haproxyStats(object):
                 doc_stats['sslCacheLookups'] = diff
 
     def add_dispatch_haproxy(self, doc_stats, doc):
-        if doc == 'frontendStats':
-            if self.pollCounter == 1:
-                self.prev_frontend_data = deepcopy(doc_stats)
-                self.add_default_diff_value(doc_stats, doc)
-            else:
-                self.add_diff(doc_stats, doc)
-                self.prev_frontend_data = deepcopy(doc_stats)
-
-        elif doc == 'backendStats':
-            if self.pollCounter == 1:
-                self.prev_backend_data = deepcopy(doc_stats)
-                self.add_default_diff_value(doc_stats, doc)
-            else:
-                self.add_diff(doc_stats, doc)
-                self.prev_backend_data = deepcopy(doc_stats)
-
-        elif doc == 'haproxyStats':
+        if doc == 'haproxyStats':
             if self.pollCounter == 1:
                 self.prev_haproxy_data = deepcopy(doc_stats)
                 self.add_default_diff_value(doc_stats, doc)
             else:
-                self.add_diff(doc_stats, doc)
+                self.add_diff(doc_stats, doc, 'haproxy')
                 self.prev_haproxy_data = deepcopy(doc_stats)
 
-        self.dispatch_data(deepcopy(doc_stats), doc)
+            self.dispatch_data(deepcopy(doc_stats), doc)
+
+    def add_dispatch_fbstats(self, doc_stats, doc):
+        try:
+            if doc == 'frontendStats':
+                for pxname in doc_stats.keys():
+                    if self.pollCounter==1 or pxname not in self.prev_frontend_data.keys():
+                        self.prev_frontend_data[pxname] = deepcopy(doc_stats)
+                        self.add_default_diff_value(doc_stats[pxname], doc)
+                    else:
+                        self.add_diff(doc_stats[pxname], doc, pxname)
+                        self.prev_frontend_data[pxname] = deepcopy(doc_stats[pxname])
+
+            elif doc == 'backendStats':
+                for pxname in doc_stats.keys():
+                    if self.pollCounter == 1 or pxname not in self.prev_backend_data.keys():
+                        self.prev_backend_data[pxname] = deepcopy(doc_stats)
+                        self.add_default_diff_value(doc_stats[pxname], doc)
+                    else:
+                        self.add_diff(doc_stats[pxname], doc, pxname)
+                        self.prev_backend_data[pxname] = deepcopy(doc_stats[pxname])
+
+            self.dispatch_data(deepcopy(doc_stats), doc)
+
+        except Exception as err:
+            collectd.error("Plugin haproxy: Error in add_dispatch_fbstats due to %s" % err)
 
     def add_common_params(self, dict_stats, doc):
         """Adds TIMESTAMP, PLUGIN, PLUGITYPE to dictionary."""
@@ -337,21 +358,32 @@ class haproxyStats(object):
                     collectd.error("Plugin haproxy: Unable to fetch data for document type: %s." % doc)
                     return
                 else:
-                    #self.documentsTypes = ['frontendStats', 'backendStats', 'haproxyStats']
-                    if haproxy_stats[doc]['_documentType'] not in self.documentsTypes:
+                    self.documentsTypes = ['frontendStats', 'backendStats', 'haproxyStats']
+                    if doc not in self.documentsTypes:
                             del haproxy_stats[doc]
 
-                    self.add_dispatch_haproxy(haproxy_stats[doc], doc)
+                    if doc == 'haproxyStats' and doc in self.documentsTypes:
+                        self.add_dispatch_haproxy(haproxy_stats[doc], doc)
+
+                    elif (doc == 'frontendStats' or doc == 'backendStats') and (doc in self.documentsTypes):
+                        self.add_dispatch_fbstats(haproxy_stats[doc], doc)
 
         except Exception as err:
             collectd.error("Plugin haproxy: Couldn't read and gather the metrics due to the exception %s in %s" % (err, traceback.format_exc()))
 
     def dispatch_data(self, result, doc):
         """Dispatch data to collectd."""
-        collectd.info("Plugin haproxy: Succesfully sent %s doctype to collectd." % doc)
-        collectd.info("Plugin haproxy: Values dispatched =%s" % json.dumps(result))
+        if doc == "haproxyStats":
+            collectd.info("Plugin haproxy: Succesfully sent %s doctype to collectd." % doc)
+            collectd.debug("Plugin haproxy: Values dispatched =%s" % json.dumps(result))
 
-        utils.dispatch(result)
+            utils.dispatch(result)
+
+        elif doc == "frontendStats" or doc == "backendStats":
+            for pxname in result.keys():
+                collectd.info("Plugin haproxy: Succesfully sent %s of %s to collectd." % (doc, pxname))
+                collectd.debug("Plugin haproxy: Values dispatched =%s" % json.dumps(result[pxname]))
+                utils.dispatch(result[pxname])
 
     def read_temp(self):
         """Collectd first calls register_read. At that time default interval is taken,
