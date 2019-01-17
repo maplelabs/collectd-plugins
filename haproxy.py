@@ -39,12 +39,14 @@ class haproxyStats(object):
                 self.socket_path = children.values[0]
 
     def get_keys(self, key_mapping, lines):
+        """Gets keys of metrics as specified by the haproxy csv stats exposed"""
         key_buf = lines[0].strip("# \n").split(",")[2:]
         for key in key_buf:
             if key:
                 key_mapping.append(key)
 
     def format_stats(self, dict_stats, lines):
+        """Formats the stats exposed by haproxy stats socket to form a dictionary"""
         for line in lines:
             line = line.strip("\n")
             if line != b'':
@@ -57,6 +59,7 @@ class haproxyStats(object):
                 dict_stats[name] = buf[:-1]
 
     def get_frontend_data(self, key_mapping, dict_stats, haproxy_data):
+        """Get data for frontend metrics"""
         try:
             metrics_tmp = {}
             for index in dict_stats.keys():
@@ -95,6 +98,7 @@ class haproxyStats(object):
             return
 
     def get_backend_data(self, key_mapping, dict_stats, haproxy_data):
+        """Get data for backend metrics"""
         try:
             metrics_tmp = {}
             for index in dict_stats.keys():
@@ -118,6 +122,8 @@ class haproxyStats(object):
                         haproxy_data['backendStats'][pxname]['qtime'] = int(metrics_tmp['qtime'])
                         haproxy_data['backendStats'][pxname]['wredis'] = int(metrics_tmp['wredis'])
                         haproxy_data['backendStats'][pxname]['wretr'] = int(metrics_tmp['wretr'])
+                        haproxy_data['backendStats'][pxname]['hrsp_4xx'] = int(metrics_tmp['hrsp_4xx'])
+                        haproxy_data['backendStats'][pxname]['hrsp_5xx'] = int(metrics_tmp['hrsp_5xx'])
                         haproxy_data['backendStats'][pxname]['_documentType'] = 'backendStats'
 
                         self.add_common_params(haproxy_data['backendStats'][pxname], 'backendStats')
@@ -133,6 +139,7 @@ class haproxyStats(object):
             collectd.error("Traceback: %s" % traceback.format_exc())
 
     def get_haproxy_data(self, lines, haproxy_data):
+        """Get general haproxy stats"""
         dict_stats = {}
         try:
             for line in lines:
@@ -157,24 +164,10 @@ class haproxyStats(object):
         except Exception as err:
             collectd.error("Plugin haproxy: Exception in get_haproxy_data due to %s" % err)
 
-    def get_nc_command(self):
-        try:
-            cmnd = "which nc"
-            process = subprocess.Popen(cmnd, shell=True, stdout=subprocess.PIPE)
-            output = process.stdout.readline()
-
-            if re.search("no nc", output):
-                cmnd = "sudo yum install -y nc"
-                process = subprocess.Popen(cmnd, shell=True, stdout=subprocess.PIPE)
-            else:
-                return
-        except Exception as err:
-            collectd.error("Plugin haproxy: Error in get_nc_command due to %s" % err)
-
     def collect_haproxy_data(self, doc):
+        """Collect haproxy data for various doc types"""
         try:
             haproxy_data = defaultdict(dict)
-            self.get_nc_command()
             if doc == "frontendStats" or doc == "backendStats":
                 dict_stats = defaultdict(list)
                 key_mapping = []
@@ -202,11 +195,12 @@ class haproxyStats(object):
             collectd.error("Plugin haproxy: Exception in collect_haproxy_data due to %s" % err)
 
     def add_default_diff_value(self, doc_stats, doc):
+        """Add default diff values for first poll"""
         if doc == 'frontendStats':
             keylist = ['ereq', 'dreq', 'hrsp_4xx', 'hrsp_5xx', 'bin', 'bout']
 
         elif doc == 'backendStats':
-            keylist = ['econ', 'dresp', 'eresp', 'wredis', 'wretr']
+            keylist = ['econ', 'dresp', 'eresp', 'wredis', 'wretr', 'hrsp_4xx', 'hrsp_5xx']
 
         elif doc == 'haproxyStats':
             keylist = ['sslCacheMisses', 'sslCacheLookups']
@@ -215,9 +209,7 @@ class haproxyStats(object):
             doc_stats[key] = 0
 
     def get_diff(self, key, curr_data, prev_data):
-        collectd.info("Current data: %s" %str(curr_data))
-        collectd.info("Previous data: %s" % str(prev_data))
-
+        """Get diff values"""
         diff = NAN
         if not prev_data:
             return diff
@@ -246,6 +238,7 @@ class haproxyStats(object):
         return diff
 
     def add_diff(self, doc_stats, doc, pxname):
+        """Add the diff values to metrics dictionary"""
         if doc == 'frontendStats':
             diff = self.get_diff('ereq', doc_stats, self.prev_frontend_data[pxname])
             if diff != NAN:
@@ -292,6 +285,14 @@ class haproxyStats(object):
             if diff != NAN:
                 doc_stats['wretr'] = diff
 
+            diff = self.get_diff('hrsp_4xx', doc_stats, self.prev_backend_data[pxname])
+            if diff != NAN:
+                doc_stats['hrsp_4xx'] = diff
+
+            diff = self.get_diff('hrsp_5xx', doc_stats, self.prev_backend_data[pxname])
+            if diff != NAN:
+                doc_stats['hrsp_5xx'] = diff
+
         if doc == 'haproxyStats':
             diff = self.get_diff('sslCacheMisses', doc_stats, self.prev_haproxy_data)
             if diff != NAN:
@@ -302,6 +303,7 @@ class haproxyStats(object):
                 doc_stats['sslCacheLookups'] = diff
 
     def add_dispatch_haproxy(self, doc_stats, doc):
+        """Add difference values to haproxyStats and dispatch values"""
         if doc == 'haproxyStats':
             if self.pollCounter == 1:
                 self.prev_haproxy_data = deepcopy(doc_stats)
@@ -313,6 +315,7 @@ class haproxyStats(object):
             self.dispatch_data(deepcopy(doc_stats), doc)
 
     def add_dispatch_fbstats(self, doc_stats, doc):
+        """Add difference values to frontend and backend stats and dispatch values"""
         try:
             if doc == 'frontendStats':
                 for pxname in doc_stats.keys():
@@ -358,7 +361,7 @@ class haproxyStats(object):
                     collectd.error("Plugin haproxy: Unable to fetch data for document type: %s." % doc)
                     return
                 else:
-                    self.documentsTypes = ['frontendStats', 'backendStats', 'haproxyStats']
+                    #self.documentsTypes = ['frontendStats', 'backendStats', 'haproxyStats']
                     if doc not in self.documentsTypes:
                             del haproxy_stats[doc]
 
