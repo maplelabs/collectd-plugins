@@ -591,7 +591,7 @@ class PostgresStats:
             dict_postgres = self.collect_data()
             #collectd.info(dict_postgres)
             if dict_postgres:
-                if self.pollCounter >= 1:
+                if self.pollCounter == 1:
                     self.pollDiff = deepcopy(dict_postgres)
             else:
                 collectd.error("Plugin Postgres: Unable to fetch data for Postgres.")
