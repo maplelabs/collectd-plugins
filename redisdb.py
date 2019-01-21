@@ -150,11 +150,11 @@ class RedisStats:
                     for k, v in keyspace_details.items():
                         totalk += int(v["keys"])
                         dbcount += 1
-                    stats_dict["totalKeys"] = totalk
+                    stats_dict["totKeys"] = totalk
                     stats_dict["totalDatabases"] = dbcount
                 else:
                     collectd.error("No Key details found")
-                    stats_dict["totalKeys"] = 0
+                    stats_dict["totKeys"] = 0
                     stats_dict["totalDatabases"] = 0
                 outlis = subprocess.check_output(["redis-cli", "--intrinsic-latency", "1"]).split()
                 if len(outlis) > 0:
