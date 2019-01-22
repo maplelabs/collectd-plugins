@@ -581,7 +581,11 @@ class PostgresStats:
             details[TIMESTAMP] = timestamp
             details[PLUGIN] = Postgres.POSTGRES
             details[ACTUALPLUGINTYPE] = Postgres.POSTGRES
-            details[PLUGIN_INS] = details_type
+            #Grouping all long running queries into single dir "queryDetails" in /data/postgres
+            if details["_documentType"] == "queryDetails":
+                details[PLUGIN_INS] = "queryDetails"
+            else:
+                details[PLUGIN_INS] = details_type
 
     def read(self):
         try:
