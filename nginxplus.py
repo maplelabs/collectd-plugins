@@ -110,8 +110,8 @@ class Nginx(object):
                 content = json.loads(resp.content)
                 data_dict['currentRequests'] = content['current']
                 data_dict['totalRequests'] = content['total']
-                data_dict["requestsPerSecond"] = round((content['total'] - self.previousData['previousTotal'])/ float(self.interval), 2)
-                self.previousData['previousTotal'] = content['total']
+                data_dict["requestsPerSecond"] = round(content['total'] / float(self.interval), 2)
+                #self.previousData['previousTotal'] = content['total']
             con_url='ssl'
             resp = requests.get(url+con_url, verify=False)
             if resp and resp.status_code == 200:
