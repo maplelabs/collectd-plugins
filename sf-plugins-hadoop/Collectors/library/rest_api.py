@@ -340,6 +340,34 @@ def get_app_details(app_details):
     return app_doc
 
 
+def get_job_details(app, name, attempt_id):
+    location = spark2_history_server.get('host')
+    port = spark2_history_server.get('port')
+
+    if attempt_id == 0:
+        path = '/api/v1/applications/{}/jobs'.format(app)
+    else:
+        path = '/api/v1/applications/{}/{}/jobs'.format(app, attempt_id)
+    job_details = http_request(location, port, path)
+    if job_details is None:
+        return None
+
+    for job in job_details:
+        job['appId'] = app
+        job['appAttemptId'] = attempt_id
+        job['appName'] = name
+        job['jobName'] = job.pop('name')
+        job['_documentType'] = 'sparkJobs'
+        job['_tag_appName'] = tag_app_name['spark']
+        job['_plugin'] = plugin_name['spark']
+        job['submissionTime'] = convert_to_epoch(job['submissionTime'])
+        job['completionTime'] = convert_to_epoch(job['completionTime'])
+        job['runTime'] = job['completionTime'] - job['submissionTime']
+        job['time'] = int(time.time())
+
+    return job_details
+
+
 def get_executors(app, name, attempt_id):
     location = spark2_history_server['host']
     port = spark2_history_server['port']

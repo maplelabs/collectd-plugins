@@ -9,10 +9,21 @@ from library.elastic import send_to_elasticsearch
 import json
 import logging
 import time
+import argparse
+import os
 
 logger = logging.getLogger(__name__)
 
+def parse_args_for_config():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--config", help="config file")
+    args = parser.parse_args()
+    return args
+
+
 def initialize_app():
+    args = parse_args_for_config()
+    initialize_configuration(args.config)
     configure_logger("logginghadoop.conf", logging_config['hadoopCluster'])
     if kerberos["enabled"]:
         if kinit_tgt_for_user():

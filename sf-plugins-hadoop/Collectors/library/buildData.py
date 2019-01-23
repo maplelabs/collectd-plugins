@@ -85,7 +85,7 @@ def generate_bulk_data(document_list, type):
 
     return document_str
 
-def build_bulk_spark_attempt_data(attempt, stages, executors):
+def build_bulk_spark_attempt_data(attempt, stages, executors, jobs):
     result = ""
     if attempt:
         result += generate_bulk_data(attempt, "spark")
@@ -93,6 +93,8 @@ def build_bulk_spark_attempt_data(attempt, stages, executors):
         result += generate_bulk_data(stages, "spark")
     if executors:
         result += generate_bulk_data(executors, "spark")
+    if jobs:
+        result += generate_bulk_data(jobs, "spark")
     return result
 
 def build_spark_task_data(tasks):

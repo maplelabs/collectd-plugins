@@ -1,9 +1,9 @@
 from library.elastic import *
 from library.buildData import *
 from library.log import configure_logger
-from library import graceful_exit
 from library.kerberos_utils import *
 from library.redis_utils import *
+import argparse
 
 logger = logging.getLogger(__name__)
 
@@ -102,8 +102,16 @@ def update_status(statusData, lastRunDocumentId):
     else:
         return update_document_in_elastic({"doc": statusData}, lastRunDocumentId, indices['workflowmonitor'])
 
+def parse_args_for_config():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--config", help="config file")
+    args = parser.parse_args()
+    return args
 
 def initialize_app():
+    args = parse_args_for_config()
+    initialize_configuration(args.config)
+
     log_config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'loggingoozie.conf')
     configure_logger(log_config_file, logging_config['ozzieWorkflows'])
     if kerberos["enabled"]:
