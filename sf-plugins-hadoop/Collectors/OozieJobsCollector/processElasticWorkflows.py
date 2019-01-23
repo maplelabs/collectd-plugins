@@ -9,6 +9,7 @@ from library.kerberos_utils import *
 from process_jhist import process_jhist
 from library.hdfs_client import initialize_hdfs_client, copy_to_local
 from  library.redis_utils import *
+import argparse
 
 THREAD_COUNT = 15
 pool = None
@@ -54,6 +55,12 @@ def _callback_error_wf_processed(status):
     global error_wfs_processed
     logger.debug("Callback called from error async processing")
     error_wfs_processed += 1
+
+def parse_args_for_config():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--config", help="config file")
+    args = parser.parse_args()
+    return args
 
 def process_workflows_with_threads(workFlowRes):
     logger.debug("Processing Workflows with threads")
@@ -238,6 +245,9 @@ def processYarnJob(yarnJobId, oozieWorkflowId, oozieWorkflowName, oozieWorkflowA
 
 def initialize_app():
     global pool
+    args = parse_args_for_config()
+    initialize_configuration(args.config)
+
     log_config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'loggingelastic.conf')
     configure_logger(log_config_file, logging_config['elasticWorkflows'])
     if kerberos["enabled"]:

@@ -127,6 +127,12 @@ def aggregate_stages_metrics(app_json, stages_json):
     app_json['numStages'] = len(stage_ids)
     app_json['totalCores'] = totalCores
 
+    app_json['dataProc'] = (app_json.get('inputBytes', 0) +
+                            app_json.get('outputBytes', 0) +
+                            app_json.get('shuffleWriteBytes', 0) +
+                            app_json.get('shuffleReadBytes', 0) +
+                            app_json.get('resultSize', 0))/ 1048576
+
 
 def get_critical_path(jobs_list, startTimeKey, endTimeKey):
     critical_path = []
