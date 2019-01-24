@@ -24,7 +24,7 @@ def get_job_info(job_id, wfName, wfId, wfaId, wfaName):
     job_info['startTime'] = int(job_info['startTime'] / 1000) if job_info['startTime'] else -1
     job_info['finishTime'] = int(job_info['finishTime'] / 1000) if job_info['finishTime'] else -1
     job_info['endTime'] = job_info['finishTime']
-    job_info['submitTime'] = int(job_info['submitTime'] / 1000)
+    job_info['submitTime'] = int(job_info['submitTime'] / 1000) if job_info['submitTime'] else -1
     job_info['avgMapTime'] = int(job_info['avgMapTime'] / 1000)
     job_info['avgReduceTime'] = int(job_info['avgReduceTime'] / 1000)
     job_info['avgShuffleTime'] = int(job_info['avgShuffleTime'] / 1000)
@@ -32,6 +32,10 @@ def get_job_info(job_id, wfName, wfId, wfaId, wfaName):
     job_info['avgReduceTimeMs'] = (job_info['avgReduceTime'])
     job_info['avgShuffleTimeMs'] = (job_info['avgShuffleTime'])
     job_info['avgMergeTimeMs'] = (job_info['avgMergeTime'])
+
+    job_info['elapsedTime'] = job_info['endTime'] - job_info['submitTime'] if job_info['endTime'] > 0 and job_info['submitTime'] > 0 else None
+    job_info['runTime'] = job_info['endTime'] - job_info['startTime'] if job_info['endTime'] > 0 and job_info['startTime'] > 0 else None
+    job_info['schedulingDelay'] = job_info['startTime'] - job_info['submitTime'] if job_info['startTime'] > 0 and job_info['submitTime']  > 0 else None
 
     job_info['jobId'] = job_info['id']
 
@@ -109,6 +113,8 @@ def get_task_info(job_id, wfName, wfId, wfaId, wfaName):
         task['finishTime'] = int(task['finishTime'] / 1000)
         task['endTime'] = int(task['finishTime'] / 1000)
         task['elapsedTime'] = int(task['elapsedTime'] / 1000)
+        task['runTime'] = task['endTime'] - task['startTime'] if task['endTime'] and task['startTime'] else None
+        task['schedulingDelay'] = task['startTime'] - task['submitTime'] if task['startTime'] and task['submitTime'] else None
         task_document_list.append(task)
 
     return task_document_list
@@ -217,6 +223,9 @@ def get_taskattempt_container_info(job_id, task_ids, wfName, wfId, wfaId, wfaNam
                 task_attempt['finishTime'] = int(task_attempt['finishTime'] / 1000) if task_attempt['finishTime'] else -1
                 task_attempt['endTime'] = task_attempt['finishTime']
                 task_attempt['elapsedTime'] = int(task_attempt['elapsedTime'] / 1000) if task_attempt['elapsedTime'] else -1
+                task_attempt['runTime'] = task_attempt['endTime'] - task_attempt['startTime'] if task_attempt['endTime'] > 0 and task_attempt['startTime'] > 0 else -1
+                task_attempt['schedulingDelay'] = task_attempt['startTime'] - task_attempt['submitTime'] if task_attempt['submitTime'] > 0 and \
+                                                                                                 task_attempt['startTime'] > 0 else -1
                 task_attempt['taskAttemptId'] = task_attempt['id']
                 task_attempt['containerId'] = task_attempt.pop('assignedContainerId')
                 if 'shuffleFinishTime' in task_attempt:
@@ -326,7 +335,11 @@ def get_app_details(app_details):
         else:
             attempt['appAttemptId'] = attempt.pop('attemptId')
         attempt['startTime'] = int(attempt['startTimeEpoch'])/1000
+        attempt['submitTime'] = attempt['startTime']
         attempt['endTime'] = int(attempt['endTimeEpoch'])/ 1000
+        attempt['elaspedTime'] = attempt['endTime'] - attempt['submitTime']
+        attempt['runTime'] = attempt['endTime'] - attempt['startTime']
+        attempt['schedulingDelay'] = attempt['startTime'] - attempt['submitTime']
         attempt['lastUpdated'] = int(attempt['lastUpdatedEpoch']) / 1000
         attempt.pop('startTimeEpoch')
         attempt.pop('lastUpdatedEpoch')
@@ -360,9 +373,12 @@ def get_job_details(app, name, attempt_id):
         job['_documentType'] = 'sparkJobs'
         job['_tag_appName'] = tag_app_name['spark']
         job['_plugin'] = plugin_name['spark']
-        job['submissionTime'] = convert_to_epoch(job['submissionTime'])
-        job['completionTime'] = convert_to_epoch(job['completionTime'])
-        job['runTime'] = job['completionTime'] - job['submissionTime']
+        job['submitTime'] = convert_to_epoch(job['submissionTime'])
+        job['startTime'] = convert_to_epoch(job['submissionTime'])
+        job['endTime'] = convert_to_epoch(job['completionTime'])
+        job['elapsedTime'] = job['completionTime'] - job['submissionTime']
+        job['runTime'] = job['completionTime'] - job['startTime']
+        job['schedulingDelay'] = job['startTime'] - job['submitTime']
         job['time'] = int(time.time())
 
     return job_details
@@ -453,6 +469,9 @@ def get_stages(app, name, attempt_id):
             d['submissionTime'] = convert_to_epoch(d['submissionTime']) if 'submissionTime' in d else convert_to_epoch(d['completionTime'])
             d['firstTaskLaunchedTime'] = convert_to_epoch(d['firstTaskLaunchedTime']) if 'firstTaskLaunchedTime' in d else convert_to_epoch(d['completionTime'])
             d['completionTime'] = convert_to_epoch(d['completionTime'])
+            d['runTime'] = d['completionTime'] - d['firstTaskLaunchedTime']
+            d['elapsedTime'] = d['completionTime'] - d['submissionTime']
+            d['schedulingDelay'] = d['firstTaskLaunchedTime'] - d['submissionTime']
             d['executorRunTime'] = int(d['executorRunTime']) if 'executorRunTime' in d else 0
         d['stageName'] = d.pop('name')
 
@@ -535,6 +554,9 @@ def get_tasks_per_stage(app, name, attempt_id):
             else:
                 task['executorRunTime'] = 0
             task['endTime'] = task['launchTime'] + int(task['executorRunTime'] / 1000)
+            task['runTime'] = task['endTime'] - task['launchTime']
+            task['elapsedTime'] = task['endTime'] - task['launchTime']
+            task['schedulingDelay'] = 0
             task['time'] = int(time.time())
 
         [updates(t) for t in tasks_json]
