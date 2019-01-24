@@ -337,7 +337,7 @@ def get_app_details(app_details):
         attempt['startTime'] = int(attempt['startTimeEpoch'])/1000
         attempt['submitTime'] = attempt['startTime']
         attempt['endTime'] = int(attempt['endTimeEpoch'])/ 1000
-        attempt['elaspedTime'] = attempt['endTime'] - attempt['submitTime']
+        attempt['elapsedTime'] = attempt['endTime'] - attempt['submitTime']
         attempt['runTime'] = attempt['endTime'] - attempt['startTime']
         attempt['schedulingDelay'] = attempt['startTime'] - attempt['submitTime']
         attempt['lastUpdated'] = int(attempt['lastUpdatedEpoch']) / 1000
@@ -376,8 +376,8 @@ def get_job_details(app, name, attempt_id):
         job['submitTime'] = convert_to_epoch(job['submissionTime'])
         job['startTime'] = convert_to_epoch(job['submissionTime'])
         job['endTime'] = convert_to_epoch(job['completionTime'])
-        job['elapsedTime'] = job['completionTime'] - job['submissionTime']
-        job['runTime'] = job['completionTime'] - job['startTime']
+        job['elapsedTime'] = job['endTime'] - job['submitTime']
+        job['runTime'] = job['endTime'] - job['startTime']
         job['schedulingDelay'] = job['startTime'] - job['submitTime']
         job['time'] = int(time.time())
 
