@@ -112,9 +112,7 @@ spark_job_history = True
 
 def initialize_configuration(file):
     if file:
-        if os.path.isfile(file):
-            initialize_configuration(file)
-        else:
+        if not os.path.isfile(file):
             print("Error reading from config file:{0} Exiting".format(file))
             exit(1)
 

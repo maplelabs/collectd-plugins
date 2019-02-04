@@ -250,6 +250,17 @@ def initialize_app():
 
     log_config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'loggingelastic.conf')
     configure_logger(log_config_file, logging_config['elasticWorkflows'])
+    if not os.path.exists(os.path.abspath(jobhistory_copy_dir)):
+        logger.debug("Directory {0} does not exist.Creating it".format(os.path.abspath(jobhistory_copy_dir)))
+        if not mkdir_p(os.path.abspath(jobhistory_copy_dir)):
+            logger.error("Failed to create jobhistory files copy dir:{0}. Exiting".format(jobhistory_copy_dir))
+            exit(1)
+        else:
+            logger.debug("Directory {0} created successfully".format(os.path.abspath(jobhistory_copy_dir)))
+    else:
+        logger.debug("Directory {0} exist".format(os.path.abspath(jobhistory_copy_dir)))
+        
+                
     if kerberos["enabled"]:
         if kinit_tgt_for_user():
             kerberos_initialize()
@@ -272,12 +283,8 @@ def run_application(index):
     logger.info("Iteration end time {0}".format(iter_end_time))
     logger.info("Iteration duration {0}".format((iter_end_time - iter_start_time)))
     logger.info("Processing Elastic workflows end for iteration {0}".format(index + 1))
-    while kerberos["enabled"] and kerberos_error:
-        handle_kerberos_error()
-        time.sleep(30)
-    while app_status['use_redis'] and redis_error:
-        time.sleep(30)
-        handle_redis_error()
+    handle_kerberos_error()
+    handle_redis_error()
 
 
 if __name__== "__main__":

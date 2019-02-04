@@ -136,12 +136,8 @@ def run_application(index=0):
         logger.debug(lastRunInfo)
         read_oozie_wfs(lastRunInfo, lastRunDocumentId)
         logger.info("Processing Oozie workflows end for iteration {0}".format(index + 1))
-        while kerberos["enabled"] and kerberos_error:
-            time.sleep(30)
-            handle_kerberos_error()
-        while app_status['use_redis'] and redis_error:
-            time.sleep(30)
-            handle_redis_error()
+        handle_kerberos_error()
+        handle_redis_error()
     except Exception:
         logger.exception("Received Exception")
 

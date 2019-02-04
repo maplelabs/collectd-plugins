@@ -59,6 +59,7 @@ def get_spark_apps_processing_status():
 
 def initialize_app():
     args = parse_args_for_config()
+    print("args to the process:{0}".format(args.config))
     initialize_configuration(args.config)
     log_config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'loggingspark.conf')
     configure_logger(log_config_file, logging_config['sparkJobs'])
@@ -206,6 +207,7 @@ def run_application(index):
     logger.debug("Iteration {0} end Time is :{1} ".format(index, time.time()))
     iteration_end_time = time.time()
     logger.debug("Time Taken for iteration is {0} seconds".format(iteration_end_time - iteration_start_time))
+    
 
 def main():
     initialize_app()
@@ -213,6 +215,8 @@ def main():
     while True:
         try:
             run_application(index)
+            handle_kerberos_error()
+            handle_redis_error()
         except Exception as e:
             logger.exception("Iteration Failed")
         finally:

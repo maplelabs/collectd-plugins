@@ -33,18 +33,21 @@ def initialize_app():
             exit(1)
 
 def run_application(index):
-    logger.info("Processing hadoop cluster stats start for iteration {0}".format(index + 1))
+    try:
+        logger.info("Processing hadoop cluster stats start for iteration {0}".format(index + 1))
 
-    collect_name_node_metrics()
+        collect_name_node_metrics()
 
-    collect_yarn_metrics()
+        collect_yarn_metrics()
 
-    container_docs = get_containers_node()
-    if container_docs:
-        logger.debug("CONTAINER DOCS: {0}".format(container_docs))
-        for doc in container_docs:
-            send_to_elasticsearch(json.dumps(doc), indices['yarn'])
-    logger.info("Processing hadoop cluster stats end for iteration {0}".format(index + 1))
+        container_docs = get_containers_node()
+        if container_docs:
+            logger.debug("CONTAINER DOCS: {0}".format(container_docs))
+            for doc in container_docs:
+                send_to_elasticsearch(json.dumps(doc), indices['yarn'])
+        logger.info("Processing hadoop cluster stats end for iteration {0}".format(index + 1))
+    except Exception as e:
+        logger.exception(e)
     handle_kerberos_error()
 
 def main():

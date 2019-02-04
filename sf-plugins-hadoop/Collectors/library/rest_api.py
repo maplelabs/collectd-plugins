@@ -361,7 +361,7 @@ def get_job_details(app, name, attempt_id):
         path = '/api/v1/applications/{}/jobs'.format(app)
     else:
         path = '/api/v1/applications/{}/{}/jobs'.format(app, attempt_id)
-    job_details = http_request(location, port, path)
+    job_details = http_request(location, port, path, scheme=spark2_history_server.get('scheme'))
     if job_details is None:
         return None
 
