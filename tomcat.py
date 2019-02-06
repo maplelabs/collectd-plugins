@@ -49,8 +49,16 @@ class TomcatStat(object):
                 self.port = children.values[0]
             if children.key == DOCUMENTSTYPES:
                 self.documentsTypes = children.values[0]
-            if children.key == "java_path":
-                self.java_path = children.values[0]
+            #if children.key == "java_path":
+            #    self.java_path = children.values[0]
+
+        if os.path.isfile("/tmp/jdkPath.txt"):
+            path_file = open("/tmp/jdkPath.txt", "r")
+            path_string = path_file.readline().strip("\n")
+            self.java_path = path_string
+
+        else:
+            self.java_path = "/usr/bin"
 
         self.jclient = JolokiaClient(os.path.basename(__file__)[:-3], self.process, self.java_path)
 
