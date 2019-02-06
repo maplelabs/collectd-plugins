@@ -1,3 +1,6 @@
+import json
+import os
+
 oozie = {'host': '10.81.1.98', 'scheme': 'http', 'port': '11000', 'jobs_size': 250}
 
 elastic = {'host': '10.81.1.212', 'scheme': 'http', 'port': '9200'}
@@ -61,7 +64,7 @@ jobhistory_copy_dir = "/var/jhist"
 hueristics_out_dir = "./var/hueristics"
 use_rest_api = 0
 
-hdfs = {'url': 'http://10.81.1.98:50070;http://10.81.1.104:50070', 'timezone': 'US/Eastern', 'user': 'root'}
+hdfs = {'url': 'http://10.81.1.154:50070;http://10.81.1.98:50070', 'timezone': 'US/Eastern', 'user': 'root'}
 
 modify_user_agent_header = True
 
@@ -102,3 +105,24 @@ redis_server = {
     "port": 6379,
     "password": None
 }
+
+hdfs_spark2history_directory = "/spark2-history/"
+sparkhistory_copy_dir = "/tmp"
+spark_job_history = True
+
+def initialize_configuration(file):
+    if file:
+        if not os.path.isfile(file):
+            print("Error reading from config file:{0} Exiting".format(file))
+            exit(1)
+
+        with open(file, 'r') as f:
+            config = json.load(f)
+
+        for key, value in config.iteritems():
+            globals()[key] = value
+
+        print(globals())
+
+
+

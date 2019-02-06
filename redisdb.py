@@ -150,11 +150,11 @@ class RedisStats:
                     for k, v in keyspace_details.items():
                         totalk += int(v["keys"])
                         dbcount += 1
-                    stats_dict["totalKeys"] = totalk
+                    stats_dict["totKeys"] = totalk
                     stats_dict["totalDatabases"] = dbcount
                 else:
                     collectd.error("No Key details found")
-                    stats_dict["totalKeys"] = 0
+                    stats_dict["totKeys"] = 0
                     stats_dict["totalDatabases"] = 0
                 outlis = subprocess.check_output(["redis-cli", "--intrinsic-latency", "1"]).split()
                 if len(outlis) > 0:
@@ -165,15 +165,15 @@ class RedisStats:
                         stats_dict["latency"] = 0
             memory_stats = self.redis_client.info(section="memory")
             if memory_stats:
-                if self.pollCounter <= 1:
-                    stats_dict["memoryUsed"] = round(memory_stats["used_memory"] / (1024.0 * 1024.0), 2)
-                else:
-                    stats_dict["memoryUsed"] = round(memory_stats["used_memory"]/(1024.0*1024.0), 2) - self.previousData["memoryUsed"]
+                #if self.pollCounter <= 1:
+                stats_dict["memoryUsed"] = round(memory_stats["used_memory"] / (1024.0 * 1024.0), 2)
+                #else:
+                    #stats_dict["memoryUsed"] = round(memory_stats["used_memory"]/(1024.0*1024.0), 2) - self.previousData["memoryUsed"]
                 stats_dict["used_memory_peak"] = round(memory_stats["used_memory_peak"] / (1024.0 * 1024.0), 2)
                 details_dict["totalSystemMemory"] = round(memory_stats["total_system_memory"] / (1024.0 * 1024.0), 2)
                 stats_dict["memFragmentationRatio"] = memory_stats["mem_fragmentation_ratio"]
                 details_dict["memoryAllocator"] = memory_stats["mem_allocator"]
-                self.previousData["memoryUsed"] = round(memory_stats["used_memory"] / (1024.0 * 1024.0), 2)
+                #self.previousData["memoryUsed"] = round(memory_stats["used_memory"] / (1024.0 * 1024.0), 2)
             else:
                 collectd.error("No memory stats found")
             persistence_stats = self.redis_client.info(section="persistence")

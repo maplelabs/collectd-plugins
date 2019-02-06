@@ -215,10 +215,13 @@ def parse_job_event(line, job_json, event_type):
             job_json[job_id]["uberized"] = event['uberized']
         elif event_type == 'finish':
             job_json[job_id]['finishTime'] = event['finishTime']
+            job_json[job_id]['endTime'] = event['finishTime']
             job_json[job_id]['mapsCompleted'] = event['finishedMaps']
             job_json[job_id]['reducesCompleted'] = event['finishedReduces']
             job_json[job_id]['state'] = "SUCCEEDED"
-
+            job_json[job_id]['runTime'] = job_json[job_id]['endTime'] - job_json[job_id]['startTime']
+            job_json[job_id]['elapsedTime'] = job_json[job_id]['endTime'] - job_json[job_id]['submitTime']
+            job_json[job_id]['schedulingDelay'] = job_json[job_id]['startTime'] - job_json[job_id]['submitTime']
             for ct in ['total', 'map', 'reduce']:
                 # counters = event[ct+'Counters']['groups']['counts']
                 if event[ct+'Counters']['groups']:
@@ -259,6 +262,9 @@ def parse_task_events(line, tasks_json, event_type):
             tasks_json[taskId]['state'] = event['status']
             tasks_json[taskId]['finishTime'] = int(event['finishTime']/1000)
             tasks_json[taskId]['endTime'] = int(event['finishTime'] / 1000)
+            tasks_json[taskId]['runTime'] = tasks_json[taskId]['endTime'] - tasks_json[taskId]['startTime']
+            tasks_json[taskId]['elapsedTime'] = tasks_json[taskId]['endTime'] - tasks_json[taskId]['submitTime']
+            tasks_json[taskId]['schedulingDelay'] = tasks_json[taskId]['startTime'] - tasks_json[taskId]['submitTime']
             tasks_json[taskId]['successfulAttempt'] = event['successfulAttemptId']['string']
             counters = event['counters']['groups']
             for group in counters:
@@ -270,6 +276,9 @@ def parse_task_events(line, tasks_json, event_type):
             tasks_json[taskId]['state'] = event['status']
             tasks_json[taskId]['finishTime'] = int(event['finishTime']/1000)
             tasks_json[taskId]['endTime'] = int(event['finishTime'] / 1000)
+            tasks_json[taskId]['runTime'] = tasks_json[taskId]['endTime'] - tasks_json[taskId]['startTime']
+            tasks_json[taskId]['elapsedTime'] = tasks_json[taskId]['endTime'] - tasks_json[taskId]['submitTime']
+            tasks_json[taskId]['schedulingDelay'] = tasks_json[taskId]['startTime'] - tasks_json[taskId]['submitTime']
             tasks_json[taskId]['error'] = event['error']
             tasks_json[taskId]['failedDueToAttempt'] = event['failedDueToAttempt']
             counters = event['counters']['groups']
@@ -305,6 +314,9 @@ def parse_task_attempt_events(line, attempts_json, event_type):
             attempts_json[taskAttemptId]['state'] = event['taskStatus']
             attempts_json[taskAttemptId]['finishTime'] = int(event['finishTime'] / 1000)
             attempts_json[taskAttemptId]['endTime'] = int(event['finishTime'] / 1000)
+            attempts_json[taskAttemptId]['runTime'] = attempts_json[taskAttemptId]['endTime'] - attempts_json[taskAttemptId]['startTime']
+            attempts_json[taskAttemptId]['elapsedTime'] = attempts_json[taskAttemptId]['endTime'] - attempts_json[taskAttemptId]['submitTime']
+            attempts_json[taskAttemptId]['schedulingDelay'] = attempts_json[taskAttemptId]['startTime'] - attempts_json[taskAttemptId]['submitTime']
             attempts_json[taskAttemptId]['nodeHttpAddress'] = event['hostname']
             attempts_json[taskAttemptId]['rackname'] = event['rackname']
             attempts_json[taskAttemptId]['elapsedTime'] = attempts_json[taskAttemptId]['finishTime'] - \
@@ -527,10 +539,7 @@ def process_jhist(fl, job_id, wfId, wfName, wfaId, wfaName):
         'tasksReduce': reduce_attempt_json,
         'jobInfo': job_json
     }
-    # print(json.dumps(map_attempt_json))
-    # print(json.dumps(reduce_attempt_json))
-    # print(json.dumps(tasks_json))
-    # print(json.dumps(job_json))
+
 
 if __name__ == "__main__":
     #process_jhist(r"c:\var\log\job_1535683071103_15998-1536895804131-pnda-oozie%3Alauncher%3AT%3Dhive%3AW%3Dmap%2Dreduce%2Dw-1536895893037-1-0-SUCCEEDED-default-1536895809710.jhist", "job_1535683071103_15998")

@@ -44,7 +44,7 @@ def read_from_redis(key):
 
 
 def handle_redis_error():
-    global redis_error
+    global redis_error, redis_connection
     if redis_error:
         redis_connection = get_redis_conn()
 
