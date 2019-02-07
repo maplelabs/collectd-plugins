@@ -1,10 +1,3 @@
-"""
-*******************
-*Copyright 2017, MapleLabs, All Rights Reserved.
-*
-********************
-"""
-
 #!/usr/bin/python
 """Python plugin for collectd to get static CPU information."""
 
