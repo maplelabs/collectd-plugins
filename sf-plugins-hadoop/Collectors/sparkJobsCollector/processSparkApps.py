@@ -1,3 +1,10 @@
+"""
+*******************
+*Copyright 2017, MapleLabs, All Rights Reserved.
+*
+********************
+"""
+
 from library.rest_api import *
 from library.elastic import *
 from library.kerberos_utils import *

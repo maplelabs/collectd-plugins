@@ -1,3 +1,10 @@
+"""
+*******************
+*Copyright 2017, MapleLabs, All Rights Reserved.
+*
+********************
+"""
+
 confluent_kafka_rest_server = {
     "scheme": "http",
     "hosts": ["datanode-0", "datanode-1", "datanode-2"],

@@ -1,3 +1,10 @@
+"""
+*******************
+*Copyright 2017, MapleLabs, All Rights Reserved.
+*
+********************
+"""
+
 from name_node import collect_name_node_metrics
 from yarn_stats import collect_yarn_metrics
 from containers import get_containers_node

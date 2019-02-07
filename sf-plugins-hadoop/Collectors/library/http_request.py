@@ -1,3 +1,10 @@
+"""
+*******************
+*Copyright 2017, MapleLabs, All Rights Reserved.
+*
+********************
+"""
+
 import requests
 import json
 from requests_kerberos import MutualAuthenticationError

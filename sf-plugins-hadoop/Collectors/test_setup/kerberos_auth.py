@@ -1,3 +1,10 @@
+"""
+*******************
+*Copyright 2017, MapleLabs, All Rights Reserved.
+*
+********************
+"""
+
 import requests
 from requests_kerberos import HTTPKerberosAuth, DISABLED
 import sys

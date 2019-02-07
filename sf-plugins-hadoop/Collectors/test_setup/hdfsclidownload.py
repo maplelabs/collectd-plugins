@@ -1,3 +1,10 @@
+"""
+*******************
+*Copyright 2017, MapleLabs, All Rights Reserved.
+*
+********************
+"""
+
 import sys
 from hdfs.ext.kerberos import KerberosClient
 from hdfs.client import InsecureClient

@@ -1,3 +1,10 @@
+"""
+*******************
+*Copyright 2017, MapleLabs, All Rights Reserved.
+*
+********************
+"""
+
 from subprocess import check_call, CalledProcessError
 from requests_kerberos import HTTPKerberosAuth, DISABLED
 from configuration import *
