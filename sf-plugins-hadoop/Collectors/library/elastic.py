@@ -113,8 +113,10 @@ def bulk_write_to_elastic(document_list, index = indices['workflow']):
 def send_bulk_docs_to_elastic(data, index):
     location = "/{0}/_doc/_bulk".format(index)
     headers = {'content-type': 'application/json'}
-    return http_post(elastic['host'], elastic['port'], data=data, path=location, headers=headers,
+    result =  http_post(elastic['host'], elastic['port'], data=data, path=location, headers=headers,
                     scheme=elastic['scheme'])
+    logger.debug("The bulk update status:{0}".format(result))
+    return result
 
 
 def build_and_send_bulk_docs_to_elastic(docs, type, index):

@@ -7,7 +7,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 def prepare_workflow(workflow):
-    return {
+    result = {
         "wfName": workflow['appName'] if 'appName' in workflow else workflow['wfName'],
         "wfId": workflow['id'] if 'id' in workflow else workflow['wfId'] ,
         "id": workflow['id'] if 'id' in workflow else workflow['wfId'] ,
@@ -39,6 +39,12 @@ def prepare_workflow(workflow):
         "nodeLocalHdfsBytesReadTotal": workflow['nodeLocalHdfsBytesReadTotal'] if "nodeLocalHdfsBytesReadTotal" in workflow else None,
         "workflowMonitorStatus": "init"
     }
+
+    result['elapsedTime'] = result['endTime'] - result['submitTime'] if result['endTime'] and result['submitTime'] else None
+    result['runTime'] = result['endTime'] - result['startTime'] if result['endTime'] and result['startTime'] else None
+    result['schedulingDelay'] = result['startTime'] - result['submitTime'] if result['startTime'] and result['submitTime'] else None
+
+    return result
 
 def build_spark_apps_status(last_processed_app_id,
                             last_processed_end_time,
@@ -85,7 +91,7 @@ def generate_bulk_data(document_list, type):
 
     return document_str
 
-def build_bulk_spark_attempt_data(attempt, stages, executors):
+def build_bulk_spark_attempt_data(attempt, stages, executors, jobs):
     result = ""
     if attempt:
         result += generate_bulk_data(attempt, "spark")
@@ -93,6 +99,8 @@ def build_bulk_spark_attempt_data(attempt, stages, executors):
         result += generate_bulk_data(stages, "spark")
     if executors:
         result += generate_bulk_data(executors, "spark")
+    if jobs:
+        result += generate_bulk_data(jobs, "spark")
     return result
 
 def build_spark_task_data(tasks):
@@ -108,7 +116,7 @@ def build_spark_taskpoints(taskpoints):
     return result
 
 def prepare_workflow_action_data(action, workflowId, workflowName):
-    return {
+    result =  {
         "wfId": workflowId,
         "id": action['id'],
         "wfName": workflowName,
@@ -144,6 +152,12 @@ def prepare_workflow_action_data(action, workflowId, workflowName):
         "_documentType": "oozieWorkflowActions",
         "_tag_appName": tag_app_name['oozie']
     }
+
+    result['elapsedTime'] = result['endTime'] - result['submitTime'] if result['endTime'] > 0 and result['submitTime'] > 0 else None
+    result['runTime'] = result['endTime'] - result['startTime'] if result['endTime'] > 0 and result['startTime'] > 0 else None
+    result['schedulingDelay'] = result['startTime'] - result['submitTime'] if result['startTime'] > 0 and result['submitTime']  > 0 else None
+
+    return result
 
 def build_bulk_data_for_workflow(workflowData, post_data):
     document_str = ""

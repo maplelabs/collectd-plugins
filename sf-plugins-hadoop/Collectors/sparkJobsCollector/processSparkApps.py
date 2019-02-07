@@ -3,6 +3,7 @@ from library.elastic import *
 from library.kerberos_utils import *
 from library.log import configure_logger
 import time
+import argparse
 from library import graceful_exit
 from spark_metrics import *
 from library.redis_utils import *
@@ -44,6 +45,12 @@ def get_app_list(last_processed_end_time, pending_apps):
 
     return app_list
 
+def parse_args_for_config():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--config", help="config file")
+    args = parser.parse_args()
+    return args
+
 def get_spark_apps_processing_status():
     if app_status['use_redis']:
         return read_from_redis(app_status['spark-key'])
@@ -51,7 +58,10 @@ def get_spark_apps_processing_status():
         return get_processing_status(app_status['spark-key'])
 
 def initialize_app():
-    log_config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "loggingspark.conf")
+    args = parse_args_for_config()
+    print("args to the process:{0}".format(args.config))
+    initialize_configuration(args.config)
+    log_config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'loggingspark.conf')
     configure_logger(log_config_file, logging_config['sparkJobs'])
 
     if kerberos["enabled"]:
@@ -103,6 +113,7 @@ def run_application(index):
                     for app_attempt in reversed(app_details):  # app attempt are listed in descending order of endtime
                         app_attempt_processing_status = False
                         app_attempts = []
+                        jobs = []
                         executors = []
                         stages = []
                         completed_stages = []
@@ -123,6 +134,9 @@ def run_application(index):
                         app_name = app_attempt['appName']
                         app_attempt_end_time_in_ms = app_attempt['endTimeEpoch']
                         app_attempts.append(app_attempt)
+                        job = get_job_details(app_id, app_name, app_attempt_id)
+                        if job is not None:
+                            jobs.extend(job)
                         executor = get_executors(app_id, app_name, app_attempt_id)
                         if executor is not None:
                             executors.extend(executor)
@@ -149,7 +163,7 @@ def run_application(index):
                                 aggregate_stages_metrics(a, completed_stages)
                                 get_app_stage_scheduling_delay(a, completed_stages)
 
-                            attempt_post_data = build_bulk_spark_attempt_data(app_attempts, stages, executors)
+                            attempt_post_data = build_bulk_spark_attempt_data(app_attempts, stages, executors, jobs)
                             logger.debug("POST Data length:{0}".format(len(attempt_post_data)))
                             post_status = send_bulk_docs_to_elastic(attempt_post_data, indices['spark'])
                         if post_status and len(tasks) > 0:
@@ -193,6 +207,7 @@ def run_application(index):
     logger.debug("Iteration {0} end Time is :{1} ".format(index, time.time()))
     iteration_end_time = time.time()
     logger.debug("Time Taken for iteration is {0} seconds".format(iteration_end_time - iteration_start_time))
+    
 
 def main():
     initialize_app()
@@ -200,6 +215,8 @@ def main():
     while True:
         try:
             run_application(index)
+            handle_kerberos_error()
+            handle_redis_error()
         except Exception as e:
             logger.exception("Iteration Failed")
         finally:
@@ -248,12 +265,9 @@ def send_sparkTaskCounts_for_stages(task_points_list,  app_id):
                 stat_post_status = send_bulk_docs_to_elastic(post_data_taskpoints,
                                                              indices['spark'])
                 if stat_post_status:
-                    logger.debug(
-                        "Successfully posted sparkTaskCounts for application:{0}",
-                        app_id)
+                    logger.debug("Successfully posted sparkTaskCounts for application:{0}".format(app_id))
                 else:
-                    logger.error(
-                        "Failed to post sparkTaskCounts for application:{0}", app_id)
+                    logger.error("Failed to post sparkTaskCounts for application:{0}".format(app_id))
                 stat_count = 0
                 post_data_taskpoints = ""
             index = index + 1
