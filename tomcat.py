@@ -42,7 +42,7 @@ class TomcatStat(object):
         self.prev_context_data = {}
         self.prev_data = {}
         self.port = None
-        self.java_path = None
+        self.java_path = ''
         self.documentsTypes = []
         self.jclient = None
 
@@ -58,13 +58,17 @@ class TomcatStat(object):
             #if children.key == "java_path":
             #    self.java_path = children.values[0]
 
-        if os.path.isfile("/tmp/jdkPath.txt"):
-            path_file = open("/tmp/jdkPath.txt", "r")
-            path_string = path_file.readline().strip("\n")
-            self.java_path = path_string
+        try:
+            if os.path.isfile("/tmp/jdkPath"):
+                path_file = open("/tmp/jdkPath", "r")
+                path_string = path_file.readline().strip("\n")
+                self.java_path = path_string
 
-        else:
-            self.java_path = "/usr/bin"
+            else:
+                self.java_path = "/usr/bin"
+            #collectd.info("Java Path: %s" % self.java_path)
+        except Exception as e:
+            collectd.error("Plugin tomcat: Error in getting java path due to %s" % e)
 
         self.jclient = JolokiaClient(os.path.basename(__file__)[:-3], self.process, self.java_path)
 
