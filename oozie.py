@@ -1,3 +1,9 @@
+"""
+*******************
+*Copyright 2017, MapleLabs, All Rights Reserved.
+*
+********************
+"""
 """Python plugin for collectd to fetch oozie workflow statistics information."""
 
 #!/usr/bin/python

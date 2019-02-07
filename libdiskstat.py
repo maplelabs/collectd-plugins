@@ -1,4 +1,10 @@
 """
+*******************
+*Copyright 2017, MapleLabs, All Rights Reserved.
+*
+********************
+"""
+"""
 python script to return disk I/O statistics as a dict of raw tuples
 """
 

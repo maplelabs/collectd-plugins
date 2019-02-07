@@ -1,4 +1,10 @@
 """
+*******************
+*Copyright 2017, MapleLabs, All Rights Reserved.
+*
+********************
+"""
+"""
 Collectd Python plugin to get JVM stats [pid, classes, threads, cpu usage, ram usage,
 heap size, heap usage, Process state]
 """

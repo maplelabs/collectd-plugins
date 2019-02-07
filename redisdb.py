@@ -1,3 +1,9 @@
+"""
+*******************
+*Copyright 2017, MapleLabs, All Rights Reserved.
+*
+********************
+"""
 """ A collectd-python plugin for retrieving
     metrics from Redis Database server.
     """

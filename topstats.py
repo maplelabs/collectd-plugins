@@ -1,3 +1,9 @@
+"""
+*******************
+*Copyright 2017, MapleLabs, All Rights Reserved.
+*
+********************
+"""
 """Python plugin for collectd to get highest CPU/Memory usage process using top command"""
 
 

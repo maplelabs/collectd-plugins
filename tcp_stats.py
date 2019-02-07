@@ -1,4 +1,10 @@
 """
+*******************
+*Copyright 2017, MapleLabs, All Rights Reserved.
+*
+********************
+"""
+"""
 Python plugin for collectd to fetch hostname, tcpWin, tcpReset, tcpRetrans and timestamp
 in one single document.
 """

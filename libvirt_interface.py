@@ -1,8 +1,10 @@
+"""
+*******************
+*Copyright 2017, MapleLabs, All Rights Reserved.
+*
+********************
+"""
 #!/usr/bin/python
-#
-# Copyright (c) 2017 Maplelabs
-# All Rights Reserved.
-#
 #
 # Collectd libvirt interface / network python plugin
 #

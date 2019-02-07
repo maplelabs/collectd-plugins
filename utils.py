@@ -1,3 +1,9 @@
+"""
+*******************
+*Copyright 2017, MapleLabs, All Rights Reserved.
+*
+********************
+"""
 """Python scripts contains function for adding hostname to dictionary,
    dispatch to collectd and rate calculation."""
 

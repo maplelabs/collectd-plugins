@@ -1,3 +1,9 @@
+"""
+*******************
+*Copyright 2017, MapleLabs, All Rights Reserved.
+*
+********************
+"""
 """ A collectd-python plugin for retrieving
     metrics from MYSQL Database server.
     Plugin is valid for mysql version 5.7.6 onwards

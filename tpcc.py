@@ -1,4 +1,10 @@
 """
+*******************
+*Copyright 2017, MapleLabs, All Rights Reserved.
+*
+********************
+"""
+"""
 A collectd plugin for analysing tpcc
 test results
 """
