@@ -41,7 +41,6 @@ class TomcatStat(object):
         self.prev_req_data = {}
         self.prev_context_data = {}
         self.prev_data = {}
-        self.port = None
         self.java_path = ''
         self.documentsTypes = []
         self.jclient = None
@@ -51,12 +50,8 @@ class TomcatStat(object):
         for children in cfg.children:
             if children.key == INTERVAL:
                 self.interval = children.values[0]
-            if children.key == PORT:
-                self.port = children.values[0]
             if children.key == DOCUMENTSTYPES:
                 self.documentsTypes = children.values[0]
-            #if children.key == "java_path":
-            #    self.java_path = children.values[0]
 
         try:
             if os.path.isfile("/tmp/jdkPath"):
