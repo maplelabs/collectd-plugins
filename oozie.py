@@ -202,7 +202,7 @@ class Oozie:
                 else:
                     hdfs["url"] = "http://{0}:{1}" .format(self.hdfs_hosts[0], self.hdfs_port)
                 hdfs['timezone'] = timezone
-                hdfs["user"] = "mapred"
+                hdfs["user"] = "hdfs"
             else:
                 collectd.error("Unable to get hdfs ips")
             if job_history_host and timeline_host and oozie_host and self.hdfs_hosts:
