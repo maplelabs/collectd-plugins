@@ -179,16 +179,28 @@ def send_bulk_workflow_to_elastic(workflowData, post_data, index = indices['work
 
 def search_workflows_in_elastic(index=indices['workflow']):
     url = "http://%s:%s/%s/_doc/%s"
-    params = {"q" : "workflowMonitorStatus:init",
-              "sort": "createdTime:asc",
-              "from": 0,
-              "size": 500}
+
+    params =  {
+      "query": {
+        "bool": {
+          "must": {
+            "bool" : {
+              "must": [{ "term": { "_plugin.keyword": "oozie" }},  {"term": { "_documentType.keyword": "oozieWorkflows" }}, {"term":{"workflowMonitorStatus.keyword": "init"}}, {"term": {"_tag_appName.keyword": tag_app_name["oozie"]}}]
+            }
+           }
+        }
+      },
+     "sort": {"createdTime": {"order": "asc"}},
+     "from": 0,
+     "size": 500
+    }
     timeout = 30
+    headers = {'content-type': 'application/json'}
     res_json = None
     try:
         es_url = url % (elastic['host'], elastic['port'], index, '_search')
         logger.debug("Reading from Elastic Search %s" % elastic['host'])
-        res = requests.get(es_url, params=params, timeout=timeout)
+        res = requests.post(es_url, data=json.dumps(params), headers=headers, timeout=timeout)
         if res.status_code >= 200 and res.status_code <= 300:
             logger.debug("Reading from Elastic Search %s is successful" % elastic['host'])
             res_json = res.json()
