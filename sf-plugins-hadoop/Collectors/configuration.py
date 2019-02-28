@@ -117,6 +117,8 @@ hdfs_spark2history_directory = "/spark2-history/"
 sparkhistory_copy_dir = "/tmp"
 spark_job_history = True
 
+update_old_wf_status = 0
+
 def initialize_configuration(file):
     if file:
         if not os.path.isfile(file):

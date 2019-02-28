@@ -24,6 +24,7 @@ from utils import *
 import write_json
 from constants import * # pylint: disable=W
 sys.path.append(path.dirname(path.abspath("/opt/collectd/plugins/sf-plugins-hadoop/Collectors/configuration.py")))
+sys.path.append(path.dirname(path.abspath("/opt/collectd/plugins/sf-plugins-hadoop/Collectors/library/elastic.py")))
 sys.path.append(path.dirname(path.abspath("/opt/collectd/plugins/sf-plugins-hadoop/Collectors/OozieJobsCollector/processOzzieWorkflows.py")))
 sys.path.append(path.dirname(path.abspath("/opt/collectd/plugins/sf-plugins-hadoop/Collectors/OozieJobsCollector/processElasticWorkflows.py")))
 sys.path.append(path.dirname(path.abspath("/opt/collectd/plugins/sf-plugins-hadoop/Collectors/requirements.txt")))
@@ -32,19 +33,19 @@ from configuration import *
 from processOzzieWorkflows import run_application, initialize_app
 from processElasticWorkflows import run_application as run_application_elastic
 from processElasticWorkflows import initialize_app as initialize_app_elastic
+from elastic import update_document_in_elastic, search_workflows_in_elastic
 
 
 class Oozie:
     """Plugin object will be created only once and collects oozie statistics info every interval."""
     def __init__(self):
         """Initializes interval, oozie server, Job history and Timeline server details"""
-        self.retries = 3
 #        self.url_knox = "https://localhost:8443/gateway/default/ambari/api/v1/clusters"
         self.url_knox = "http://localhost:8080/api/v1/clusters"
         self.cluster_name = None
         self.is_config_updated = 0
-        self.username = "admin"
-        self.password = "MapleAdmin123$"
+        self.username = ""
+        self.password = ""
 
     def check_fields(self, line, dic_fields):
         for field in dic_fields:
@@ -52,7 +53,7 @@ class Oozie:
                 return field
         return None
 
-    def update_config_file(self, use_rest_api, jobhistory_copy_dir):
+    def update_config_file(self, use_rest_api, jobhistory_copy_dir, update_old_wf_status=0):
         file_name = "/opt/collectd/plugins/sf-plugins-hadoop/Collectors/configuration.py"
         lines = []
         flag = 0
@@ -208,6 +209,14 @@ class Oozie:
             if job_history_host and timeline_host and oozie_host and self.hdfs_hosts:
                 self.update_config_file(use_rest_api, jobhistory_copy_dir)
                 self.is_config_updated = 1
+                if not update_old_wf_status:
+                    wfs = search_workflows_in_elastic()
+                    for wf in wfs["hits"]["hits"]:
+                        wf["_source"]["workflowMonitorStatus"] = "processed"
+                        doc_data = {"doc": wf["_source"]}
+                        update_old_wf_status = 1
+                        update_document_in_elastic(doc_data, wf["_id"])
+                        self.update_config_file(use_rest_api, jobhistory_copy_dir, update_old_wf_status)
                 initialize_app()
                 initialize_app_elastic()
         else:
