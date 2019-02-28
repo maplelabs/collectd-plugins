@@ -209,7 +209,7 @@ class Oozie:
             if job_history_host and timeline_host and oozie_host and self.hdfs_hosts:
                 self.update_config_file(use_rest_api, jobhistory_copy_dir)
                 self.is_config_updated = 1
-                if not update_old_wf_status:
+                if not update_old_wf_status: #Change ths wf status to processed, If last app with same name has init status in elastic
                     wfs = search_workflows_in_elastic()
                     for wf in wfs["hits"]["hits"]:
                         wf["_source"]["workflowMonitorStatus"] = "processed"
