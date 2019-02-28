@@ -82,16 +82,34 @@ class Nginx(object):
             raise ex
         # Get the uptime of the NGINX Plus server
         try:
-            uptime_v = 0
-            t =0
+            uptime_v = 0.0
+            #t =0
             stdout, stder = get_cmd_output('ps -eo comm,etime,user | grep nginx | grep root')
+
+            if re.search("-", stdout):
+                data = re.findall('([0-9]+\-[0-9]+\:[^-].[^\s]*)', stdout)
+                if data:
+                    d = data[0].split('-')
+                    d_to_m = 1440 * int(d[0])
+                    t = d[1].split(':')
+            else:
+                data = re.findall('([0-9]+\:[^-].[^\s]*)', stdout)
+                d_to_m = 0
+                t = data
+
+            if data:
+                h_to_m = 60 * int(t[0])
+                m = int(t[1])
+                s_to_m = round(float(t[2]) / 60, 4)
+                uptime_v = d_to_m + h_to_m + m + s_to_m
+
             #for val in stdout.split():
             #    print(val)
-            data = re.findall('([0-9\:][^-].[^\s]*)', stdout)
-            if data:
-                for u in data[0].split(':'):
-                    t = 60 * t + int(u)
-                uptime_v = t #uptime value in 'seconds'
+            #data = re.findall('([0-9\:][^-].[^\s]*)', stdout)
+            #if data:
+            #    for u in data[0].split(':'):
+            #        t = 60 * t + int(u)
+            #    uptime_v = t #uptime value in 'seconds'
         except Exception as err:
             raise err
         server_details.update({'processRunning': running, 'upTime': uptime_v, 'nginxOS' : platform.dist()[0]})
