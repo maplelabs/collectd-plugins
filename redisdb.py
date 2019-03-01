@@ -79,39 +79,39 @@ class RedisStats:
         try:
             server_details = self.redis_client.info(section="server")
             if server_details:
-                details_dict["version"] = server_details["redis_version"]
-                details_dict["buildId"] = server_details["redis_build_id"]
-                details_dict["mode"] = server_details["redis_mode"]
-                details_dict["os"] = server_details["os"]
-                details_dict["upTime"] = server_details["uptime_in_seconds"]
+                details_dict["version"] = server_details.get("redis_version",None)
+                details_dict["buildId"] = server_details.get("redis_build_id",None)
+                details_dict["mode"] = server_details.get("redis_mode",None)
+                details_dict["os"] = server_details.get("os")
+                details_dict["upTime"] = server_details.get("uptime_in_seconds",None)
             server_conn_details = self.redis_client.info("clients")
             if server_conn_details:
-                stats_dict["blockedClients"] = server_conn_details["blocked_clients"]
-                stats_dict["connectedClients"] = server_conn_details["connected_clients"]
+                stats_dict["blockedClients"] = server_conn_details.get("blocked_clients",0)
+                stats_dict["connectedClients"] = server_conn_details.get("connected_clients",0)
             server_stats = self.redis_client.info(section="stats")
             if server_stats:
                 input_bytes = None
                 try:
-                    input_bytes = round(server_stats["total_net_input_bytes"] / (1024.0 * 1024.0), 2)
+                    input_bytes = round(server_stats.get("total_net_input_bytes",0) / (1024.0 * 1024.0), 2)
                 except Exception as e:
                     collectd.error("Error in getting total input bytes due to %s" % str(e))
                 output_bytes = None
                 try:
-                    output_bytes = round(server_stats["total_net_output_bytes"] / (1024.0 * 1024.0), 2)
+                    output_bytes = round(server_stats.get("total_net_output_bytes",0) / (1024.0 * 1024.0), 2)
                 except Exception as e:
                     collectd.error("Error in getting total input bytes due to %s" % str(e))
 
-                stats_dict["instantaneousopspersec"] = server_stats["instantaneous_ops_per_sec"]
+                stats_dict["instantaneousopspersec"] = server_stats.get("instantaneous_ops_per_sec",0)
                 if self.pollCounter <= 1:
-                    self.previousData["totalConnReceived"] = server_stats["total_connections_received"]
-                    self.previousData["totalCommandsProcessed"] = server_stats["total_commands_processed"]
+                    self.previousData["totalConnReceived"] = server_stats.get("total_connections_received",0)
+                    self.previousData["totalCommandsProcessed"] = server_stats.get("total_commands_processed",0)
                     self.previousData["totalNetInputBytes"] = input_bytes
                     self.previousData["totalNetOuputBytes"] = output_bytes
-                    self.previousData["keyspaceHits"] = server_stats["keyspace_hits"]
-                    self.previousData["keyspaceMisses"] = server_stats["keyspace_misses"]
-                    self.previousData["expiredKeys"] = server_stats["expired_keys"]
-                    self.previousData["evictedKeys"] = server_stats["evicted_keys"]
-                    self.previousData["rejectedConn"] = server_stats["rejected_connections"]
+                    self.previousData["keyspaceHits"] = server_stats.get("keyspace_hits",0)
+                    self.previousData["keyspaceMisses"] = server_stats.get("keyspace_misses",0)
+                    self.previousData["expiredKeys"] = server_stats.get("expired_keys",0)
+                    self.previousData["evictedKeys"] = server_stats.get("evicted_keys",0)
+                    self.previousData["rejectedConn"] = server_stats.get("rejected_connections",0)
                     stats_dict["totalConnReceived"] = 0
                     stats_dict["totalCommandsProcessed"] = 0
                     stats_dict["totalNetInputBytes"] = 0
@@ -123,15 +123,15 @@ class RedisStats:
                     stats_dict["writeThroughput"] = 0.0
                     stats_dict["readThroughput"] = 0.0
                 else:
-                    stats_dict["rejectedConn"] = server_stats["rejected_connections"] - self.previousData["rejectedConn"]
-                    stats_dict["expiredKeys"] = server_stats["expired_keys"] - self.previousData["expiredKeys"]
-                    stats_dict["evictedKeys"] = server_stats["evicted_keys"] - self.previousData["evictedKeys"]
-                    stats_dict["totalConnReceived"] = server_stats["total_connections_received"] - self.previousData["totalConnReceived"]
-                    stats_dict["totalCommandsProcessed"] = server_stats["total_commands_processed"] - self.previousData["totalCommandsProcessed"]
+                    stats_dict["rejectedConn"] = server_stats.get("rejected_connections",0) - self.previousData["rejectedConn"]
+                    stats_dict["expiredKeys"] = server_stats.get("expired_keys",0) - self.previousData["expiredKeys"]
+                    stats_dict["evictedKeys"] = server_stats.get("evicted_keys",0) - self.previousData["evictedKeys"]
+                    stats_dict["totalConnReceived"] = server_stats.get("total_connections_received",0) - self.previousData["totalConnReceived"]
+                    stats_dict["totalCommandsProcessed"] = server_stats.get("total_commands_processed",0) - self.previousData["totalCommandsProcessed"]
                     stats_dict["totalNetInputBytes"] = input_bytes - self.previousData["totalNetInputBytes"]
                     stats_dict["totalNetOutputBytes"] = output_bytes - self.previousData["totalNetOuputBytes"]
-                    stats_dict["keyspaceHits"] = server_stats["keyspace_hits"] - self.previousData["keyspaceHits"]
-                    stats_dict["keyspaceMisses"] = server_stats["keyspace_misses"] - self.previousData["keyspaceMisses"]
+                    stats_dict["keyspaceHits"] = server_stats.get("keyspace_hits",0) - self.previousData["keyspaceHits"]
+                    stats_dict["keyspaceMisses"] = server_stats.get("keyspace_misses",0) - self.previousData["keyspaceMisses"]
                     if ((stats_dict["keyspaceHits"] > 0) or (stats_dict["keyspaceMisses"] > 0)):
                         stats_dict["keyspaceHitRate"] = round(float(stats_dict["keyspaceHits"] / (stats_dict["keyspaceHits"] + stats_dict["keyspaceMisses"])), 2)
                         stats_dict["keyspaceMissRate"] = round(float(stats_dict["keyspaceMisses"] / (stats_dict["keyspaceHits"] + stats_dict["keyspaceMisses"])), 2)
@@ -140,15 +140,15 @@ class RedisStats:
                         stats_dict["keyspaceMissRate"] = 0
                     stats_dict["readThroughput"] = round(float(float(stats_dict["totalNetInputBytes"]) / int(self.interval)), 2)
                     stats_dict["writeThroughput"] = round(float(float(stats_dict["totalNetOutputBytes"]) / int(self.interval)), 2)
-                    self.previousData["totalConnReceived"] = server_stats["total_connections_received"]
-                    self.previousData["totalCommandsProcessed"] = server_stats["total_commands_processed"]
+                    self.previousData["totalConnReceived"] = server_stats.get("total_connections_received",0)
+                    self.previousData["totalCommandsProcessed"] = server_stats.get("total_commands_processed",0)
                     self.previousData["totalNetInputBytes"] = input_bytes
                     self.previousData["totalNetOuputBytes"] = output_bytes
-                    self.previousData["keyspaceHits"] = server_stats["keyspace_hits"]
-                    self.previousData["keyspaceMisses"] = server_stats["keyspace_misses"]
-                    self.previousData["expiredKeys"] = server_stats["expired_keys"]
-                    self.previousData["evictedKeys"] = server_stats["evicted_keys"]
-                    self.previousData["rejectedConn"] = server_stats["rejected_connections"]
+                    self.previousData["keyspaceHits"] = server_stats.get("keyspace_hits",0)
+                    self.previousData["keyspaceMisses"] = server_stats.get("keyspace_misses",0)
+                    self.previousData["expiredKeys"] = server_stats.get("expired_keys",0)
+                    self.previousData["evictedKeys"] = server_stats.get("evicted_keys",0)
+                    self.previousData["rejectedConn"] = server_stats.get("rejected_connections",0)
                 keyspace_details = self.redis_client.info("keyspace")
                 if keyspace_details:
                     totalk = 0
@@ -172,24 +172,24 @@ class RedisStats:
             memory_stats = self.redis_client.info(section="memory")
             if memory_stats:
                 #if self.pollCounter <= 1:
-                stats_dict["memoryUsed"] = round(memory_stats["used_memory"] / (1024.0 * 1024.0), 2)
+                stats_dict["memoryUsed"] = round(memory_stats.get("used_memory",0) / (1024.0 * 1024.0), 2)
                 #else:
-                    #stats_dict["memoryUsed"] = round(memory_stats["used_memory"]/(1024.0*1024.0), 2) - self.previousData["memoryUsed"]
-                stats_dict["used_memory_peak"] = round(memory_stats["used_memory_peak"] / (1024.0 * 1024.0), 2)
-                details_dict["totalSystemMemory"] = round(memory_stats["total_system_memory"] / (1024.0 * 1024.0), 2)
-                stats_dict["memFragmentationRatio"] = memory_stats["mem_fragmentation_ratio"]
-                details_dict["memoryAllocator"] = memory_stats["mem_allocator"]
-                #self.previousData["memoryUsed"] = round(memory_stats["used_memory"] / (1024.0 * 1024.0), 2)
+                    #stats_dict["memoryUsed"] = round(memory_stats.get("used_memory",0)/(1024.0*1024.0), 2) - self.previousData["memoryUsed"]
+                stats_dict["used_memory_peak"] = round(memory_stats.get("used_memory_peak",0) / (1024.0 * 1024.0), 2)
+                details_dict["totalSystemMemory"] = round(memory_stats.get("total_system_memory",0) / (1024.0 * 1024.0), 2)
+                stats_dict["memFragmentationRatio"] = memory_stats.get("mem_fragmentation_ratio",0)
+                details_dict["memoryAllocator"] = memory_stats.get("mem_allocator",None)
+                #self.previousData["memoryUsed"] = round(memory_stats.get("used_memory",0) / (1024.0 * 1024.0), 2)
             else:
                 collectd.error("No memory stats found")
             persistence_stats = self.redis_client.info(section="persistence")
             if persistence_stats:
-                stats_dict["lastSaveTime"] = persistence_stats["rdb_last_save_time"]
-                stats_dict["lastSaveChanges"] = persistence_stats["rdb_changes_since_last_save"]
+                stats_dict["lastSaveTime"] = persistence_stats.get("rdb_last_save_time",0)
+                stats_dict["lastSaveChanges"] = persistence_stats.get("rdb_changes_since_last_save",0)
             rep_stats = self.redis_client.info(section="replication")
             if rep_stats:
-                details_dict["role"] = rep_stats["role"]
-                stats_dict["connectedSlaves"] = rep_stats["connected_slaves"]
+                details_dict["role"] = rep_stats.get("role",None)
+                stats_dict["connectedSlaves"] = rep_stats.get("connected_slaves",0)
                 details_dict["masterLinkStatus"] = rep_stats.get("master_link_status", None)
                 stats_dict["masterLastIOSecsAgo"] = rep_stats.get("master_last_io_seconds_ago", None)
                 details_dict["masterLinkDownSinceSecs"] = rep_stats.get("master_link_down_since_seconds", None)
