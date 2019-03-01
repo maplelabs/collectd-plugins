@@ -147,6 +147,7 @@ class Oozie:
 
     def read_config(self, cfg):
         """Initializes variables from conf files."""
+        global update_old_wf_status
         for children in cfg.children:
             if children.key == INTERVAL:
                 self.interval = children.values[0]
@@ -214,9 +215,9 @@ class Oozie:
                     for wf in wfs["hits"]["hits"]:
                         wf["_source"]["workflowMonitorStatus"] = "processed"
                         doc_data = {"doc": wf["_source"]}
-                        update_old_wf_status = 1
                         update_document_in_elastic(doc_data, wf["_id"])
-                        self.update_config_file(use_rest_api, jobhistory_copy_dir, update_old_wf_status)
+                    update_old_wf_status = 1
+                    self.update_config_file(use_rest_api, jobhistory_copy_dir, update_old_wf_status)
                 initialize_app()
                 initialize_app_elastic()
         else:
