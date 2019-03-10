@@ -61,7 +61,7 @@ class Oozie:
         logging_config["ozzieWorkflows"] = logging_config["ozzieWorkflows"].strip(".")
         logging_config["elasticWorkflows"] = logging_config["elasticWorkflows"].strip(".")
         logging_config["hadoopCluster"] = logging_config["hadoopCluster"].strip(".")
-        dic_fields = {"oozie": oozie, "job_history_server": job_history_server, "timeline_server": timeline_server, "elastic": elastic, "indices": indices, "use_rest_api": use_rest_api, "hdfs": hdfs, "jobhistory_copy_dir": jobhistory_copy_dir, "tag_app_name": tag_app_name, "logging_config": logging_config}
+        dic_fields = {"oozie": oozie, "job_history_server": job_history_server, "timeline_server": timeline_server, "elastic": elastic, "indices": indices, "use_rest_api": use_rest_api, "hdfs": hdfs, "jobhistory_copy_dir": jobhistory_copy_dir, "tag_app_name": tag_app_name, "logging_config": logging_config, "update_old_wf_status": update_old_wf_status}
         with open(file_name, "r") as read_config_file:
             for line in read_config_file.readlines():
                 field = self.check_fields(line, dic_fields)
