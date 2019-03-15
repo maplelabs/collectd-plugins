@@ -22,4 +22,3 @@ six==1.11.0
 urllib3==1.23	
 virtualenv==16.0.0	
 pykerberos==1.2.1
-lxml==4.3.2
