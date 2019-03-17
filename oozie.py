@@ -53,7 +53,7 @@ class Oozie:
                 return field
         return None
 
-    def update_config_file(self, use_rest_api, jobhistory_copy_dir):
+    def update_config_file(self, use_rest_api, jobhistory_copy_dir, update_status):
         file_name = "/opt/collectd/plugins/sf-plugins-hadoop/Collectors/configuration.py"
         lines = []
         flag = 0
@@ -61,7 +61,7 @@ class Oozie:
         logging_config["ozzieWorkflows"] = logging_config["ozzieWorkflows"].strip(".")
         logging_config["elasticWorkflows"] = logging_config["elasticWorkflows"].strip(".")
         logging_config["hadoopCluster"] = logging_config["hadoopCluster"].strip(".")
-        dic_fields = {"oozie": oozie, "job_history_server": job_history_server, "timeline_server": timeline_server, "elastic": elastic, "indices": indices, "use_rest_api": use_rest_api, "hdfs": hdfs, "jobhistory_copy_dir": jobhistory_copy_dir, "tag_app_name": tag_app_name, "logging_config": logging_config, "update_old_wf_status": update_old_wf_status}
+        dic_fields = {"oozie": oozie, "job_history_server": job_history_server, "timeline_server": timeline_server, "elastic": elastic, "indices": indices, "use_rest_api": use_rest_api, "hdfs": hdfs, "jobhistory_copy_dir": jobhistory_copy_dir, "tag_app_name": tag_app_name, "logging_config": logging_config}
         with open(file_name, "r") as read_config_file:
             for line in read_config_file.readlines():
                 field = self.check_fields(line, dic_fields)
@@ -80,6 +80,8 @@ class Oozie:
                 else:
                     lines.append(line)
         read_config_file.close()
+        if update_status:
+            lines.append("update_old_wf_status = 1")
         with open(file_name, "w") as write_config:
             for line in lines:
                 write_config.write(line)
@@ -207,17 +209,18 @@ class Oozie:
             else:
                 collectd.error("Unable to get hdfs ips")
             if job_history_host and timeline_host and oozie_host and self.hdfs_hosts:
-                self.update_config_file(use_rest_api, jobhistory_copy_dir)
+                self.update_config_file(use_rest_api, jobhistory_copy_dir, 0)
                 self.is_config_updated = 1
-                if not update_old_wf_status["update"]: #Change ths wf status to processed, If last app with same name has init status in elastic
+                try:
+                    update_old_wf_status
+                except NameError:
                     wfs = search_workflows_in_elastic()
                     collectd.info("WFS unprocessed %s" %wfs["hits"]["hits"])
                     for wf in wfs["hits"]["hits"]:
                         wf["_source"]["workflowMonitorStatus"] = "processed"
                         doc_data = {"doc": wf["_source"]}
                         update_document_in_elastic(doc_data, wf["_id"])            
-                    update_old_wf_status["update"] = 1
-                    self.update_config_file(use_rest_api, jobhistory_copy_dir)
+                    self.update_config_file(use_rest_api, jobhistory_copy_dir, 1)
                 initialize_app()
                 initialize_app_elastic()
         else:
