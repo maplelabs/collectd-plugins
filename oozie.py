@@ -53,7 +53,7 @@ class Oozie:
                 return field
         return None
 
-    def update_config_file(self, use_rest_api, jobhistory_copy_dir, update_old_wf_status=0):
+    def update_config_file(self, use_rest_api, jobhistory_copy_dir):
         file_name = "/opt/collectd/plugins/sf-plugins-hadoop/Collectors/configuration.py"
         lines = []
         flag = 0
@@ -147,7 +147,6 @@ class Oozie:
 
     def read_config(self, cfg):
         """Initializes variables from conf files."""
-        global update_old_wf_status
         for children in cfg.children:
             if children.key == INTERVAL:
                 self.interval = children.values[0]
@@ -163,7 +162,7 @@ class Oozie:
         elastic["port"] = port
         indices["workflow"] = index
         appname = self.get_app_name()
-        tag_app_name['oozie'] = appname
+        tag_app_name['oozie'] = appname.strip("\n").strip('"')
         self.cluster_name = self.get_cluster()
 
         job_history_server["port"] = "19888"
@@ -210,14 +209,15 @@ class Oozie:
             if job_history_host and timeline_host and oozie_host and self.hdfs_hosts:
                 self.update_config_file(use_rest_api, jobhistory_copy_dir)
                 self.is_config_updated = 1
-                if not update_old_wf_status: #Change ths wf status to processed, If last app with same name has init status in elastic
+                if not update_old_wf_status["update"]: #Change ths wf status to processed, If last app with same name has init status in elastic
                     wfs = search_workflows_in_elastic()
+                    collectd.info("WFS unprocessed %s" %wfs["hits"]["hits"])
                     for wf in wfs["hits"]["hits"]:
                         wf["_source"]["workflowMonitorStatus"] = "processed"
                         doc_data = {"doc": wf["_source"]}
-                        update_document_in_elastic(doc_data, wf["_id"])
-                    update_old_wf_status = 1
-                    self.update_config_file(use_rest_api, jobhistory_copy_dir, update_old_wf_status)
+                        update_document_in_elastic(doc_data, wf["_id"])            
+                    update_old_wf_status["update"] = 1
+                    self.update_config_file(use_rest_api, jobhistory_copy_dir)
                 initialize_app()
                 initialize_app_elastic()
         else:
