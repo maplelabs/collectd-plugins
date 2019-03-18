@@ -53,7 +53,7 @@ class Oozie:
                 return field
         return None
 
-    def update_config_file(self, use_rest_api, jobhistory_copy_dir, update_status):
+    def update_config_file(self, use_rest_api, jobhistory_copy_dir):
         file_name = "/opt/collectd/plugins/sf-plugins-hadoop/Collectors/configuration.py"
         lines = []
         flag = 0
@@ -65,9 +65,9 @@ class Oozie:
         with open(file_name, "r") as read_config_file:
             for line in read_config_file.readlines():
                 field = self.check_fields(line, dic_fields)
-                if field and ("{" in line and "}" in line):
+                if field and ("{" in line and "}" in line) and ("global" not in line and "config" not in line):
                     lines.append("%s = %s\n" %(field, dic_fields[field]))
-                elif field or flag:
+                elif (field or flag) and ("global" not in line and "config" not in line):
                     if field:
                         if field == "jobhistory_copy_dir":
                             lines.append('%s = "%s"\n' %(field, dic_fields[field]))
@@ -80,8 +80,6 @@ class Oozie:
                 else:
                     lines.append(line)
         read_config_file.close()
-        if update_status:
-            lines.append("update_old_wf_status = 1")
         with open(file_name, "w") as write_config:
             for line in lines:
                 write_config.write(line)
@@ -147,6 +145,17 @@ class Oozie:
                 return False
         return True
 
+    def read_from_json(self, filename):
+        with open(filename) as json_file:
+            data = json.load(json_file)
+        json_file.close()
+        return data
+
+    def write_to_json(self, filename, data):
+        with open(filename, 'w') as json_file:
+            data = json.dump(data, json_file)
+        json_file.close()
+
     def read_config(self, cfg):
         """Initializes variables from conf files."""
         for children in cfg.children:
@@ -209,18 +218,18 @@ class Oozie:
             else:
                 collectd.error("Unable to get hdfs ips")
             if job_history_host and timeline_host and oozie_host and self.hdfs_hosts:
-                self.update_config_file(use_rest_api, jobhistory_copy_dir, 0)
+                self.update_config_file(use_rest_api, jobhistory_copy_dir)
                 self.is_config_updated = 1
-                try:
-                    update_old_wf_status
-                except NameError:
+                oozie_data = self.read_from_json("/opt/collectd/plugins/oozie_wf_status.json")
+                if not oozie_data['update_old_wf_status']:
                     wfs = search_workflows_in_elastic()
                     collectd.info("WFS unprocessed %s" %wfs["hits"]["hits"])
                     for wf in wfs["hits"]["hits"]:
                         wf["_source"]["workflowMonitorStatus"] = "processed"
                         doc_data = {"doc": wf["_source"]}
-                        update_document_in_elastic(doc_data, wf["_id"])            
-                    self.update_config_file(use_rest_api, jobhistory_copy_dir, 1)
+                        update_document_in_elastic(doc_data, wf["_id"])
+                        oozie_data["update_old_wf_status"] = 1
+                        self.write_to_json("/opt/collectd/plugins/oozie_wf_status.json", oozie_data)
                 initialize_app()
                 initialize_app_elastic()
         else:
