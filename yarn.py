@@ -54,9 +54,9 @@ class YarnStats:
         with open(file_name, "r") as read_config_file:
             for line in read_config_file.readlines():
                 field = self.check_fields(line, dic_fields)
-                if field and ("{" in line and "}" in line):
+                if field and ("{" in line and "}" in line) and ("global" not in line and "config" not in line):
                     lines.append("%s = %s\n" %(field, dic_fields[field]))
-                elif field or flag:
+                elif (field or flag) and ("global" not in line and "config" not in line):
                     if field:
                         if field == "previous_json_yarn":
                             lines.append('%s = "%s"\n' %(field, dic_fields[field]))

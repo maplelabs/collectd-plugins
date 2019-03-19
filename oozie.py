@@ -24,6 +24,7 @@ from utils import *
 import write_json
 from constants import * # pylint: disable=W
 sys.path.append(path.dirname(path.abspath("/opt/collectd/plugins/sf-plugins-hadoop/Collectors/configuration.py")))
+sys.path.append(path.dirname(path.abspath("/opt/collectd/plugins/sf-plugins-hadoop/Collectors/library/elastic.py")))
 sys.path.append(path.dirname(path.abspath("/opt/collectd/plugins/sf-plugins-hadoop/Collectors/OozieJobsCollector/processOzzieWorkflows.py")))
 sys.path.append(path.dirname(path.abspath("/opt/collectd/plugins/sf-plugins-hadoop/Collectors/OozieJobsCollector/processElasticWorkflows.py")))
 sys.path.append(path.dirname(path.abspath("/opt/collectd/plugins/sf-plugins-hadoop/Collectors/requirements.txt")))
@@ -32,19 +33,19 @@ from configuration import *
 from processOzzieWorkflows import run_application, initialize_app
 from processElasticWorkflows import run_application as run_application_elastic
 from processElasticWorkflows import initialize_app as initialize_app_elastic
+from elastic import update_document_in_elastic, search_workflows_in_elastic
 
 
 class Oozie:
     """Plugin object will be created only once and collects oozie statistics info every interval."""
     def __init__(self):
         """Initializes interval, oozie server, Job history and Timeline server details"""
-        self.retries = 3
 #        self.url_knox = "https://localhost:8443/gateway/default/ambari/api/v1/clusters"
         self.url_knox = "http://localhost:8080/api/v1/clusters"
         self.cluster_name = None
         self.is_config_updated = 0
-        self.username = "admin"
-        self.password = "MapleAdmin123$"
+        self.username = ""
+        self.password = ""
 
     def check_fields(self, line, dic_fields):
         for field in dic_fields:
@@ -64,9 +65,9 @@ class Oozie:
         with open(file_name, "r") as read_config_file:
             for line in read_config_file.readlines():
                 field = self.check_fields(line, dic_fields)
-                if field and ("{" in line and "}" in line):
+                if field and ("{" in line and "}" in line) and ("global" not in line and "config" not in line):
                     lines.append("%s = %s\n" %(field, dic_fields[field]))
-                elif field or flag:
+                elif (field or flag) and ("global" not in line and "config" not in line):
                     if field:
                         if field == "jobhistory_copy_dir":
                             lines.append('%s = "%s"\n' %(field, dic_fields[field]))
