@@ -145,17 +145,6 @@ class Oozie:
                 return False
         return True
 
-    def read_from_json(self, filename):
-        with open(filename) as json_file:
-            data = json.load(json_file)
-        json_file.close()
-        return data
-
-    def write_to_json(self, filename, data):
-        with open(filename, 'w') as json_file:
-            data = json.dump(data, json_file)
-        json_file.close()
-
     def read_config(self, cfg):
         """Initializes variables from conf files."""
         for children in cfg.children:
@@ -173,7 +162,7 @@ class Oozie:
         elastic["port"] = port
         indices["workflow"] = index
         appname = self.get_app_name()
-        tag_app_name['oozie'] = appname.strip("\n").strip('"')
+        tag_app_name['oozie'] = appname
         self.cluster_name = self.get_cluster()
 
         job_history_server["port"] = "19888"
@@ -220,16 +209,6 @@ class Oozie:
             if job_history_host and timeline_host and oozie_host and self.hdfs_hosts:
                 self.update_config_file(use_rest_api, jobhistory_copy_dir)
                 self.is_config_updated = 1
-                oozie_data = self.read_from_json("/opt/collectd/plugins/oozie_wf_status.json")
-                if not oozie_data['update_old_wf_status']:
-                    wfs = search_workflows_in_elastic()
-                    collectd.info("WFS unprocessed %s" %wfs["hits"]["hits"])
-                    for wf in wfs["hits"]["hits"]:
-                        wf["_source"]["workflowMonitorStatus"] = "processed"
-                        doc_data = {"doc": wf["_source"]}
-                        update_document_in_elastic(doc_data, wf["_id"])
-                        oozie_data["update_old_wf_status"] = 1
-                        self.write_to_json("/opt/collectd/plugins/oozie_wf_status.json", oozie_data)
                 initialize_app()
                 initialize_app_elastic()
         else:
