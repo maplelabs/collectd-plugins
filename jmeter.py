@@ -66,6 +66,7 @@ class jmeterStats(object):
             sample['threadName'] = elem.get('tn', '')
             sample['timestamp'] = int(elem.get('ts', 0))
             sample['url'] = elem.findtext('java.net.URL', '')
+            sample['api'] = sample['method'] + " " + sample['url']
             return sample
 
         except Exception as err:
@@ -94,7 +95,7 @@ class jmeterStats(object):
                     sample_started = False
                     return sample
 
-            self.buf = ''
+
 
         except Exception as err:
             collectd.error("Plugin jmeter: Exception in get_jmeter_data due to %s" % err)
@@ -130,6 +131,7 @@ class jmeterStats(object):
                     jmeter_stats = self.get_jmeter_data()
                     #collectd.info("Plugin jmeter: Stats are = %s" % str(jmeter_stats))
                     self.add_common_params(jmeter_stats)
+                    self.buf = ''
 
                     if not jmeter_stats:
                         collectd.error("Plugin jmeter: Unable to fetch data for jmeter")
