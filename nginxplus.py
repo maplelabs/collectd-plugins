@@ -1,9 +1,3 @@
-"""
-*******************
-*Copyright 2017, MapleLabs, All Rights Reserved.
-*
-********************
-"""
 """ A collectd-python plugin for retrieving
     metrics from nginx status module. """
 
@@ -32,6 +26,7 @@ class Nginx(object):
         self.pollCounter = 0
         self.previousData = {'previousTotal':0}
         self.api = self.get_api_version()
+        self.prev_req = 0
 
     def read_config(self, cfg):
         for children in cfg.children:
@@ -85,7 +80,8 @@ class Nginx(object):
             uptime_v = 0.0
             #t =0
             stdout, stder = get_cmd_output('ps -eo comm,etime,user | grep nginx | grep root')
-
+            #for val in stdout.split():
+            #    print(val)
             if re.search("-", stdout):
                 data = re.findall('([0-9]+\-[0-9]+\:[^-].[^\s]*)', stdout)
                 if data:
@@ -95,26 +91,33 @@ class Nginx(object):
             else:
                 data = re.findall('([0-9]+\:[^-].[^\s]*)', stdout)
                 d_to_m = 0
-                t = data
+                t = data[0].split(':')
 
             if data:
-                h_to_m = 60 * int(t[0])
-                m = int(t[1])
-                s_to_m = round(float(t[2]) / 60, 4)
-                uptime_v = d_to_m + h_to_m + m + s_to_m
+                if len(t) == 2:
+                    m = int(t[0])
+                    s_to_m = round(float(t[1]) / 60, 4)
+                    uptime_v = m + s_to_m
+                else:
+                    h_to_m = 60 * int(t[0])
+                    m = int(t[1])
+                    s_to_m = round(float(t[2]) / 60, 4)
+                    uptime_v = d_to_m + h_to_m + m + s_to_m
 
-            #for val in stdout.split():
-            #    print(val)
-            #data = re.findall('([0-9\:][^-].[^\s]*)', stdout)
-            #if data:
-            #    for u in data[0].split(':'):
-            #        t = 60 * t + int(u)
-            #    uptime_v = t #uptime value in 'seconds'
         except Exception as err:
             raise err
         server_details.update({'processRunning': running, 'upTime': uptime_v, 'nginxOS' : platform.dist()[0]})
         return server_details
 
+    def get_rps_diff(self, total):
+        if self.pollCounter == 1:
+            self.prev_req = total
+            return 0.0
+        else:
+            diff_total = total - self.prev_req
+            rps = round(diff_total / float(self.interval), 2)
+            self.prev_req = total
+            return rps
 
     def get_server_stats(self):
         data_dict={}
@@ -134,7 +137,8 @@ class Nginx(object):
                 content = json.loads(resp.content)
                 data_dict['currentRequests'] = content['current']
                 data_dict['totalRequests'] = content['total']
-                data_dict["requestsPerSecond"] = round(content['total'] / float(self.interval), 2)
+                #data_dict["requestsPerSecond"] = round(content['total'] / float(self.interval), 2)
+                data_dict['requestsPerSecond'] = self.get_rps_diff(content['total'])
                 #self.previousData['previousTotal'] = content['total']
             con_url='ssl'
             resp = requests.get(url+con_url, verify=False)
