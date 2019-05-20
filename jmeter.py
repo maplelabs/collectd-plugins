@@ -38,9 +38,6 @@ class jmeterStats(object):
             if children.key == "listener_path":
                 self.path = children.values[0]
 
-            if not os.path.exists(self.path):
-                collectd.error("Plugin jmeter: The listener file path does not exist")
-
     def get_sample(self, elem, children=()):
         try:
             sample = {}
@@ -64,9 +61,16 @@ class jmeterStats(object):
             #sample['sampleCount'] = int(elem.get('sc', 0))
             sample['success'] = bool(elem.get('s') == 'true')
             sample['threadName'] = elem.get('tn', '')
-            sample['timestamp'] = int(elem.get('ts', 0))
+            sample['time_stamp'] = int(elem.get('ts', 0))
             sample['url'] = elem.findtext('java.net.URL', '')
-            sample['api'] = sample['method'] + " " + sample['url']
+
+            if re.match("http:\/\/[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+[: ][0-9]*\/opportunity\/[0-9]+", sample['url']):
+                url_id = re.sub("/opportunity/[0-9]+", "/opportunity/[id]", sample['url'])
+                sample['api'] = url_id
+
+            else:
+                sample['api'] = sample['url']
+
             return sample
 
         except Exception as err:
@@ -95,8 +99,6 @@ class jmeterStats(object):
                     sample_started = False
                     return sample
 
-
-
         except Exception as err:
             collectd.error("Plugin jmeter: Exception in get_jmeter_data due to %s" % err)
 
@@ -113,37 +115,54 @@ class jmeterStats(object):
     def collect_dispatch_data(self):
         """Collect data for jmeter"""
         try:
-            if not os.path.exists(self.path):
-                return
+            while(1):
+                if not os.path.exists(self.path):
+                    collectd.info("Plugin jmeter: Waiting for log file")
+                    time.sleep(5)
+                else:
+                    break
 
             fp = open(self.path, "r")
             while True:
                 if os.path.getsize(self.path) < self.length:
                     fp.seek(0)
                 self.length = os.path.getsize(self.path)
-                
+
                 line = fp.readline()
                 if line:
-                    self.buf = self.buf + line
+                    # collectd.info("Plugin jmeter: Line is -- %s" % line)
+
+                    if "</testResults>" in line:
+                        collectd.info("Plugin jmeter: Reached EOF")
+                        fp.close()
+                        os.remove(self.path)
+                        return
+
+                    if not re.search("xml version", line) and not re.search("testResults version", line):
+                        self.buf = self.buf + line
+
+                    else:
+                        continue
+
                     if not re.search("</httpSample>", line):
                         continue
 
                     jmeter_stats = self.get_jmeter_data()
-                    #collectd.info("Plugin jmeter: Stats are = %s" % str(jmeter_stats))
-                    self.add_common_params(jmeter_stats)
+                    # collectd.info("Plugin jmeter: Stats are = %s" % str(jmeter_stats))
+                    # self.add_common_params(jmeter_stats)
                     self.buf = ''
 
                     if not jmeter_stats:
                         collectd.error("Plugin jmeter: Unable to fetch data for jmeter")
                         return
                     else:
+                        self.add_common_params(jmeter_stats)
                         self.dispatch_data(jmeter_stats)
-
-                    if re.search("</testResults>", line):
-                        return
+                        #time.sleep(1)
 
                 else:
                     time.sleep(1)
+                    #collectd.info("Plugin jmeter: waiting for line")
                     continue
 
         except Exception as err:
@@ -168,7 +187,6 @@ class jmeterStats(object):
         and read() is called again with interval obtained from conf by register_config callback."""
         collectd.unregister_read(self.read_temp)
         collectd.register_read(self.read, interval=int(self.interval))
-
 
 def init():
     """When new process is formed, action to SIGCHLD is reset to default behavior."""
