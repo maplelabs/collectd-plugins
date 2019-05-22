@@ -29,7 +29,7 @@ class WriteJson:
             return None
         # path = os.path.join(self.path, DATADIR, data[PLUGIN])
 
-        if(data[PLUGIN] not in ["mysql", "postgres", "tpcc", "jmeter"]):
+        if(data[PLUGIN] not in ["mysql", "postgres", "tpcc", "jmeter", "jvm"]):
             path = os.path.join(self.path, DATADIR, data[PLUGIN] + "/" + data[PLUGINTYPE])
         else:
             path = os.path.join(self.path, DATADIR, data[PLUGIN])
