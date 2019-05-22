@@ -85,10 +85,10 @@ class JVM(object):
             cpuval = cpu[2]
             return cpuval, utime, stime, clk_tick[1]
 
-    def get_pid(self):
+    def get_pid(self, process_name):
         """Returns pid for JVM process"""
-        call = subprocess.Popen("jcmd | grep %s" % (
-            self.process), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        call = subprocess.Popen("sudo jcmd | grep %s" % (
+            process_name), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         (pids, err) = call.communicate()
         if err:
             collectd.debug("Error: %s" % err)
@@ -101,7 +101,7 @@ class JVM(object):
                 pid_list.append(pidval[0])
         return pid_list
 
-    def get_jvmstatistics(self, pid, state):
+    def get_jvmstatistics(self, pid, state, process_name):
         """Returns a list containg JVM stats no.of threads, class, heap usage, ram usage"""
         jvm_res = {}
         fileobj = open('/proc/%d/status' % (int(pid)))
@@ -230,10 +230,10 @@ class JVM(object):
         jvm_res["clockTick"] = int(clk_tick)
         jvm_res["gct"] = gct
         jvm_res["gc"] = tgc
-        self.add_common_params(jvm_res, state, pid)
+        self.add_common_params(jvm_res, state, pid, process_name)
         self.dispatch_data(jvm_res)
 
-    def add_common_params(self,  jvm_dict, state, pid):
+    def add_common_params(self,  jvm_dict, state, pid, process_name):
         hostname = gethostname()
         timestamp = int(round(time.time()))
         jvm_dict[HOSTNAME] = hostname
@@ -245,7 +245,7 @@ class JVM(object):
         #jvm_dict[TYPE] = "jvmStatic"
         jvm_dict[INTERVAL] = int(self.interval)
         jvm_dict[PROCESS_STATE] = state
-        jvm_dict["_processName"] = self.process
+        jvm_dict["_processName"] = process_name
 
     @staticmethod
     def dispatch_data(jvm_dict):
@@ -253,23 +253,24 @@ class JVM(object):
 
     def get_jvmstate(self):
         """Get the state of jvm process"""
-        pids = self.get_pid()
-        if not pids:
-            collectd.debug("No JAVA process are running")
-            return
-        for pid in pids:
-            fileobj = open('/proc/%d/status' % (int(pid)))
-            if fileobj is None:
-                collectd.debug(
-                    "Error: Unable to open /proc/%d/status" % (int(pid)))
+        for process_name in self.process.split(','):
+            pids = self.get_pid(process_name)
+            if not pids:
+                collectd.debug("No JAVA process are running")
                 return
-            lines = fileobj.readlines()
-            for line in lines:
-                if line.startswith("State:"):
-                    state = (line.split())[2]
-                    state = state.strip("()")
-                    self.get_jvmstatistics(pid, state)
-                    break
+            for pid in pids:
+                fileobj = open('/proc/%d/status' % (int(pid)))
+                if fileobj is None:
+                    collectd.debug(
+                        "Error: Unable to open /proc/%d/status" % (int(pid)))
+                    return
+                lines = fileobj.readlines()
+                for line in lines:
+                    if line.startswith("State:"):
+                        state = (line.split())[2]
+                        state = state.strip("()")
+                        self.get_jvmstatistics(pid, state, process_name)
+                        break
 
     def read_temp(self):
         """Collectd first calls register_read. At that time default interval is taken,
