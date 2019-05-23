@@ -129,10 +129,12 @@ class JVM(object):
         call = subprocess.Popen("%s" % heapsize, shell=True,
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         (heapsize, err) = call.communicate()
-        heapsize = heapsize.split("\n")
-        heapsize = heapsize[0].split(":=")
-        heapsize = heapsize[1].split(" ")
-        heapsize = (float(heapsize[1])) / (1024 * 1024)
+        #heapsize = heapsize.split("\n")
+        #heapsize = heapsize[0].split(":=")
+        #heapsize = heapsize[1].split(" ")
+        #heapsize = (float(heapsize[1])) / (1024 * 1024)
+        heapsize = heapsize.split()
+        heapsize = (float(heapsize[3])) / (1024 * 1024)
 
         call = subprocess.Popen("jstat -gc %s" % int(pid), shell=True,
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
