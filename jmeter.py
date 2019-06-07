@@ -68,6 +68,10 @@ class jmeterStats(object):
                 url_id = re.sub("/opportunity/[0-9]+", "/opportunity/[id]", sample['url'])
                 sample['api'] = url_id
 
+            elif re.match("http:\/\/[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+[: ][0-9]*\/userDetails\/[0-9]+", sample['url']):
+                url_id = re.sub("/userDetails/[0-9]+", "/userDetails/[id]", sample['url'])
+                sample['api'] = url_id
+
             else:
                 sample['api'] = sample['url']
 
