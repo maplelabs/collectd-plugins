@@ -28,7 +28,8 @@ class WriteJson:
             collectd.error("Plugin values not set")
             return None
         # path = os.path.join(self.path, DATADIR, data[PLUGIN])
-
+        if data[PLUGIN].startswith('prometheus'):
+            path = os.path.join(self.path, DATADIR, data[PLUGIN])
         if(data[PLUGIN] not in ["mysql", "postgres", "tpcc", "jmeter", "jvm"]):
             path = os.path.join(self.path, DATADIR, data[PLUGIN] + "/" + data[PLUGINTYPE])
         else:
