@@ -14,7 +14,7 @@ import collectd
 from constants import *
 from utils import *
 import time
-
+import os
 
 class JVM(object):
     """Plugin object will be created only once and collects jvm statistics info every interval."""
@@ -34,7 +34,7 @@ class JVM(object):
 
     def get_ramusage(self, pid):
         """Returns RAM usage in MB"""
-        call = subprocess.Popen("ps aux | grep %s" % pid, shell=True,
+        call = subprocess.Popen("ps aux | grep '%s'" % pid, shell=True,
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         (ramusage, err) = call.communicate()
         if err:
@@ -87,22 +87,30 @@ class JVM(object):
 
     def get_pid(self, process_name):
         """Returns pid for JVM process"""
-        call = subprocess.Popen("sudo jcmd | grep %s" % (
+	collectd.info("jvm: getting pids")
+        call = subprocess.Popen("sudo jcmd | grep -E '%s'|grep -v JCmd " % (
             process_name), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         (pids, err) = call.communicate()
         if err:
-            collectd.debug("Error: %s" % err)
+            collectd.info("jvm Error: %s" % err)
             return None
         pids = pids.split("\n")
         pid_list = []
+        pName_list = []
         for pid in pids:
+            collectd.info("pids value : %s" % pid)
             if pid is not "":
+                collectd.info("pids value indside: %s" % pid)
                 pidval = pid.split()
+                collectd.info("pidxs value indside: %s" % pidval[0])
+                collectd.info("pid names value indside: %s" % pidval[1])
                 pid_list.append(pidval[0])
-        return pid_list
+                pName_list.append(pidval[1])
+        return pid_list,pName_list
 
     def get_jvmstatistics(self, pid, state, process_name):
         """Returns a list containg JVM stats no.of threads, class, heap usage, ram usage"""
+	collectd.info("jvm: Getting jvm statistics")
         jvm_res = {}
         fileobj = open('/proc/%d/status' % (int(pid)))
         if fileobj is None:
@@ -121,7 +129,7 @@ class JVM(object):
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         (classes, err) = call.communicate()
         if err:
-            collectd.debug("Error: %s" % err)
+            collectd.info("Error: %s" % err)
             return
         classes = classes.split()
 
@@ -135,9 +143,11 @@ class JVM(object):
         #heapsize = (float(heapsize[1])) / (1024 * 1024)
         heapsize = heapsize.split()
         heapsize = (float(heapsize[3])) / (1024 * 1024)
-
+        
         call = subprocess.Popen("jstat -gc %s" % int(pid), shell=True,
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+
         (heapusage, err) = call.communicate()
         if err:
             collectd.debug("Error: Jstat does not give correct output :" % heapusage)
@@ -170,11 +180,11 @@ class JVM(object):
         except:
             collectd.debug("Error calculating heapUsage by evaluating OU.")
 
-        try:
-            collectd.debug("Calculating heapUsage by evaluating MU.")
-            heapusageValue += float(heapusage[9])
-        except:
-            collectd.debug("Error calculating heapUsage by evaluating MU.")
+        #try:
+        #    collectd.debug("Calculating heapUsage by evaluating MU.")
+        #    heapusageValue += float(heapusage[9])
+        #except:
+        #    collectd.debug("Error calculating heapUsage by evaluating MU.")
 
         try:
             collectd.debug("Calculating heapUsage by evaluating CCSU.")
@@ -221,7 +231,8 @@ class JVM(object):
             return
 
         jvm_res["numThreads"] = int(num_threads)
-        jvm_res["numClasses"] = int(classes[5])
+        jvm_res["numLoadedClasses"] = int(classes[5])
+        jvm_res["numUnloadedClasses"] = int(classes[7])
         jvm_res["heapSize"] = float(heapsize)
         jvm_res["heapUsage"] = float(heapusageValue)/1024
         jvm_res["ramUsage"] = float(ram_usage)
@@ -231,7 +242,13 @@ class JVM(object):
         jvm_res["utime"] = float(utime)
         jvm_res["clockTick"] = int(clk_tick)
         jvm_res["gct"] = gct
-        jvm_res["gc"] = tgc
+        jvm_res["survivor_0"] = float(heapusage[2])
+        jvm_res["survivor_1"] = float(heapusage[3])
+        jvm_res["eden"] = float(heapusage[5])
+        jvm_res["old"] = float(heapusage[7])
+        jvm_res["permanent"] = float(heapusage[9])
+        jvm_res["gc"] = heapusage[14]
+      
         self.add_common_params(jvm_res, state, pid, process_name)
         self.dispatch_data(jvm_res)
 
@@ -251,19 +268,29 @@ class JVM(object):
 
     @staticmethod
     def dispatch_data(jvm_dict):
+	collectd.info("jvm: Values dispatched: %s" % str(jvm_dict))
         dispatch(jvm_dict)
 
     def get_jvmstate(self):
         """Get the state of jvm process"""
+	collectd.info("jvm: get the state of jvm")
         for process_name in self.process.split(','):
-            pids = self.get_pid(process_name)
+            pids,pNames = self.get_pid(process_name)
+            collectd.info( "pids +++ : %s" % pids)
+            collectd.info( "pNames +++ : %s" % pNames)
+            
             if not pids:
-                collectd.debug("No JAVA process are running")
+                collectd.info("No JAVA process are running")
                 return
-            for pid in pids:
+            #for pid in pids:
+            for (pid,pname) in zip(pids,pNames):
+                collectd.info(pid)
+                process_name = pname
+                collectd.info(pname)
+                #process_name = os.system("ps -p ",int(15903), "-o comm=")
                 fileobj = open('/proc/%d/status' % (int(pid)))
                 if fileobj is None:
-                    collectd.debug(
+                    collectd.info(
                         "Error: Unable to open /proc/%d/status" % (int(pid)))
                     return
                 lines = fileobj.readlines()
