@@ -14,6 +14,7 @@ import signal
 import time
 import json
 import MySQLdb
+import subprocess
 
 # user imports
 from constants import *
@@ -29,6 +30,7 @@ class MysqlStats:
         self.user = None
         self.password = None
         self.cur = None
+        self.db_type = "mysql"
         self.pollCounter = 0
         self.documentsTypes = []
         self.previousData = {"numCreatedTempFiles": 0, "numCreatedTempTables": 0, "numQueries": 0,
@@ -68,40 +70,71 @@ class MysqlStats:
             collectd.error("Exception in the connect_mysql due to %s" % e)
             return
 
+    def exec_subprocess(self, cmd):
+        """ execute subprocess cmd """
+        cmd_output = subprocess.Popen(
+            cmd,
+            shell=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE)
+        res, err = cmd_output.communicate()
+        return res
+
+    def get_db_type(self):
+        out = self.exec_subprocess("lsb_release -d")
+        for line in out.splitlines():
+            if "Ubuntu" in line:
+                db = self.exec_subprocess("dpkg -l | grep -e mariadb")
+            else:
+                db = self.exec_subprocess("rpm -qa | grep -e mariadb")
+            if db:
+                collectd.info("Plugin MySQL: Mariadb detected")
+                return "mariadb"
+        return ""
+
     def get_sql_server_data(self):
         final_server_dict = {}
         server_dict = {}
         try:
+            self.db_type = self.get_db_type()
             self.cur.execute(server_query)
             num_databases = int(self.cur.fetchall()[0][0])
-            self.cur.execute(server_details_query)
+            if self.db_type == "mariadb":
+                self.cur.execute(server_details_mariadb_query)
+            else:
+                self.cur.execute(server_details_query)
             server_details = dict(self.cur.fetchall())
+
             if server_details:
+                for key in server_details:
+                    server_details[key.upper()] = server_details.pop(key)
+
                 server_dict['numDatabases'] = num_databases
-                # server_dict['numConnections'] = long(server_details['Connections'])
-                # server_dict['numAbortedConnects'] = long(server_details['Aborted_connects'])
-                server_dict['threadsConnected'] = long(server_details['Threads_connected'])
-                server_dict['threadsCached'] = long(server_details['Threads_cached'])
-                # server_dict['threadsCreated'] = long(server_details['Threads_created'])
-                server_dict['threadsRunning'] = long(server_details['Threads_running'])
-                server_dict['upTime'] = round(float(server_details['Uptime'])/(60*60),2)
-                if(self.pollCounter <= 1 or not "bytesReceivedMB" in self.previousData.keys()):
-                    self.previousData["bytesReceivedMB"] = long(server_details['Bytes_received'])/(1024*1024)
-                    self.previousData["bytesSentMB"] = long(server_details['Bytes_sent']) / (1024 * 1024)
-                    self.previousData["numConnections"] = long(server_details['Connections'])
-                    self.previousData["numAbortedConnects"] = long(server_details['Aborted_connects'])
-                    self.previousData["threadsCreated"] = long(server_details['Threads_created'])
+                # server_dict['numConnections'] = long(server_details['CONNECTIONS'])
+                # server_dict['numAbortedConnects'] = long(server_details['ABORTED_CONNECTS'])
+                server_dict['threadsConnected'] = long(server_details['THREADS_CONNECTED'])
+                server_dict['threadsCached'] = long(server_details['THREADS_CACHED'])
+                # server_dict['threadsCreated'] = long(server_details['THREADS_CREATED'])
+                server_dict['threadsRunning'] = long(server_details['THREADS_RUNNING'])
+                server_dict['upTime'] = round(float(server_details['UPTIME'])/(60*60),2)
+                if self.pollCounter <= 1 or not "bytesReceivedMB" in self.previousData.keys():
+                    self.previousData["bytesReceivedMB"] = long(server_details['BYTES_RECEIVED'])/(1024*1024)
+                    self.previousData["bytesSentMB"] = long(server_details['BYTES_SENT']) / (1024 * 1024)
+                    self.previousData["numConnections"] = long(server_details['CONNECTIONS'])
+                    self.previousData["numAbortedConnects"] = long(server_details['ABORTED_CONNECTS'])
+                    self.previousData["threadsCreated"] = long(server_details['THREADS_CREATED'])
                 else:
-                    server_dict['bytesReceivedMB'] = (long(server_details['Bytes_received'])/(1024*1024) - self.previousData["bytesReceivedMB"]) / int(self.interval)
-                    server_dict['bytesSentMB'] = (long(server_details['Bytes_sent'])/(1024*1024) - self.previousData["bytesSentMB"]) / int(self.interval)
-                    server_dict['numConnections'] = long(server_details['Connections']) - self.previousData["numConnections"]
-                    server_dict['numAbortedConnects'] = long(server_details['Aborted_connects']) - self.previousData["numAbortedConnects"]
-                    server_dict['threadsCreated'] = long(server_details['Threads_created']) - self.previousData["threadsCreated"]
-                    self.previousData["bytesReceivedMB"] = long(server_details['Bytes_received']) / (1024 * 1024)
-                    self.previousData["bytesSentMB"] = long(server_details['Bytes_sent']) / (1024 * 1024)
-                    self.previousData["numConnections"] = long(server_details['Connections'])
-                    self.previousData["numAbortedConnects"] = long(server_details['Aborted_connects'])
-                    self.previousData["threadsCreated"] = long(server_details['Threads_created'])
+                    server_dict['bytesReceivedMB'] = (long(server_details['BYTES_RECEIVED'])/(1024*1024) - self.previousData["bytesReceivedMB"]) / int(self.interval)
+                    server_dict['bytesSentMB'] = (long(server_details['BYTES_SENT'])/(1024*1024) - self.previousData["bytesSentMB"]) / int(self.interval)
+                    server_dict['numConnections'] = long(server_details['CONNECTIONS']) - self.previousData["numConnections"]
+                    server_dict['numAbortedConnects'] = long(server_details['ABORTED_CONNECTS']) - self.previousData["numAbortedConnects"]
+                    server_dict['threadsCreated'] = long(server_details['THREADS_CREATED']) - self.previousData["threadsCreated"]
+                    self.previousData["bytesReceivedMB"] = long(server_details['BYTES_RECEIVED']) / (1024 * 1024)
+                    self.previousData["bytesSentMB"] = long(server_details['BYTES_SENT']) / (1024 * 1024)
+                    self.previousData["numConnections"] = long(server_details['CONNECTIONS'])
+                    self.previousData["numAbortedConnects"] = long(server_details['ABORTED_CONNECTS'])
+                    self.previousData["threadsCreated"] = long(server_details['THREADS_CREATED'])
+
                 server_dict[PLUGINTYPE] = "serverDetails"
             else:
                 return
