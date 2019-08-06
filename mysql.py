@@ -14,7 +14,6 @@ import signal
 import time
 import json
 import MySQLdb
-import subprocess
 
 # user imports
 from constants import *
@@ -30,7 +29,6 @@ class MysqlStats:
         self.user = None
         self.password = None
         self.cur = None
-        self.db_type = "mysql"
         self.pollCounter = 0
         self.documentsTypes = []
         self.previousData = {"numCreatedTempFiles": 0, "numCreatedTempTables": 0, "numQueries": 0,
@@ -70,37 +68,27 @@ class MysqlStats:
             collectd.error("Exception in the connect_mysql due to %s" % e)
             return
 
-    def exec_subprocess(self, cmd):
-        """ execute subprocess cmd """
-        cmd_output = subprocess.Popen(
-            cmd,
-            shell=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE)
-        res, err = cmd_output.communicate()
-        return res
+    def get_global_status_schema(self):
+        try:
+            get_status_schema = "select table_name from information_schema.tables where table_name like 'global_status'"
+            self.cur.execute(get_status_schema)
 
-    def get_db_type(self):
-        out = self.exec_subprocess("lsb_release -d")
-        for line in out.splitlines():
-            if "Ubuntu" in line:
-                db = self.exec_subprocess("dpkg -l | grep -e mariadb")
-            else:
-                db = self.exec_subprocess("rpm -qa | grep -e mariadb")
-            if db:
-                collectd.info("Plugin MySQL: Mariadb detected")
-                return "mariadb"
-        return ""
+            if self.cur.fetchall():
+                collectd.info("Plugin MySQL: global_status table in information_schema")
+                return "information_schema"
+
+        except Exception as err:
+            collectd.error("Plugin MySQL: Error in getting schema of global_status table - %s" % str(err))
 
     def get_sql_server_data(self):
         final_server_dict = {}
         server_dict = {}
         try:
-            self.db_type = self.get_db_type()
+            global_status_schema = self.get_global_status_schema()
             self.cur.execute(server_query)
             num_databases = int(self.cur.fetchall()[0][0])
-            if self.db_type == "mariadb":
-                self.cur.execute(server_details_mariadb_query)
+            if global_status_schema == "information_schema":
+                self.cur.execute(server_details_is_query)
             else:
                 self.cur.execute(server_details_query)
             server_details = dict(self.cur.fetchall())

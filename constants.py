@@ -151,7 +151,7 @@ server_details_query = "select * from performance_schema.global_status where VAR
 			or VARIABLE_NAME like 'bytes_sent'"
 table_query = "select table_name as '_tableName' ,table_schema as '_dbName', ENGINE as '_engine', TABLE_Rows as 'tableRows', DATA_LENGTH as 'dataLen',\
                INDEX_LENGTH as 'indexSize', DATA_FREE as 'dataFree' from information_schema.tables where table_schema='%s'"
-server_details_mariadb_query = "select * from information_schema.global_status where VARIABLE_NAME like 'connections' or VARIABLE_NAME like 'aborted_connects'\
+server_details_is_query = "select * from information_schema.global_status where VARIABLE_NAME like 'connections' or VARIABLE_NAME like 'aborted_connects'\
                         or VARIABLE_NAME like 'threads_connected' or VARIABLE_NAME like 'threads_cached' or VARIABLE_NAME like 'threads_created'\
                         or VARIABLE_NAME like 'threads_running' or VARIABLE_NAME like 'uptime' or VARIABLE_NAME like 'bytes_received'\
                         or VARIABLE_NAME like 'bytes_sent'"
