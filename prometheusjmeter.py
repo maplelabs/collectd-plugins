@@ -25,7 +25,7 @@ class PrometheusJmeter(prometheus_poller.PrometheusStat):
                 self.interval = children.values[0]
             if children.key == PORT:
                 self.port = children.values[0]
-        self.conf.update({'interval': self.interval, 'port': self.port, 'name': 'prometheusnginx'})
+        self.conf.update({'interval': self.interval, 'port': self.port, 'name': 'prometheusjmeter'})
         super(PrometheusJmeter, self).__init__(self.conf)
 
     def read_temp(self):
