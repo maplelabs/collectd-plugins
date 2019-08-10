@@ -190,7 +190,7 @@ class PrometheusStat(object):
         if resp.status_code == 200:
             collectd.info("Successfully polled metrics for host %s for generating mapping of nested type" % (self.host))
         response = resp.content
-        es_url = "http://{}:{}/{}/_mapping".format(es_host, es_port, es_index)
+        es_url = "http://{}:{}/{}/_mapping".format(es_host, es_port, es_index+ "_read")
         try:
             es_resp = requests.get(es_url, headers=headers, timeout=60)
         except Exception as err:
@@ -200,8 +200,12 @@ class PrometheusStat(object):
         check = 0
 
         for line in response.splitlines():
-            if "{" in line:
-                metrickey = line.split('{', 1)[0]
+            if not line.startswith("#"):
+                if "{" in line:
+                    metrickey = line.split('{', 1)[0]
+                else:
+                    metrickey = line.split(" ")[0]
+
                 tempmap = {metrickey: {"properties": {"metrics": {"type": "nested"}}}}
                 if check == 0:
                     custommap["properties"] = tempmap
@@ -225,7 +229,7 @@ class PrometheusStat(object):
 
         if index_avail_check == 0:
             headers = {'content-type': 'application/json'}
-            es_url_doc = "http://{}:{}/{}/_mappings/_doc".format(es_host, es_port,es_index)
+            es_url_doc = "http://{}:{}/{}/_mappings/_doc".format(es_host, es_port,es_index+ "_write")
             resp = requests.post(es_url_doc, data=json.dumps(custommap), headers=headers, timeout=60)
             collectd.info("Nested Datatype Mapped to ES")
 
