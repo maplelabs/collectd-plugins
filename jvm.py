@@ -247,7 +247,7 @@ class JVM(object):
         jvm_res["eden"] = float(heapusage[5])
         jvm_res["old"] = float(heapusage[7])
         jvm_res["permanent"] = float(heapusage[9])
-        jvm_res["gc"] = heapusage[14]
+        jvm_res["gc"] = int(heapusage[14])
       
         self.add_common_params(jvm_res, state, pid, process_name)
         self.dispatch_data(jvm_res)
