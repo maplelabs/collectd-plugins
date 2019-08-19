@@ -111,6 +111,12 @@ class MysqlStats:
                     self.previousData["numConnections"] = long(server_details['CONNECTIONS'])
                     self.previousData["numAbortedConnects"] = long(server_details['ABORTED_CONNECTS'])
                     self.previousData["threadsCreated"] = long(server_details['THREADS_CREATED'])
+		    server_dict["bytesReceivedMB"] = 0
+                    server_dict["bytesSentMB"] = 0
+                    server_dict["numConnections"] = 0
+                    server_dict["numAbortedConnects"] = 0
+                    server_dict["threadsCreated"] = 0
+
                 else:
                     server_dict['bytesReceivedMB'] = (long(server_details['BYTES_RECEIVED'])/(1024*1024) - self.previousData["bytesReceivedMB"]) / int(self.interval)
                     server_dict['bytesSentMB'] = (long(server_details['BYTES_SENT'])/(1024*1024) - self.previousData["bytesSentMB"]) / int(self.interval)
@@ -129,6 +135,7 @@ class MysqlStats:
             self.cur.execute(db_query_5)
             server_details1 = dict(self.cur.fetchall())
             if server_details1:
+		server_dict["qhitRate"] = int(server_details1['Qcache_hits']) / (int(server_details1['Qcache_hits']) + int(server_details1['Com_select']))
                 if(self.pollCounter <= 1 or not "numSelect" in self.previousData.keys()):
                     self.previousData["numCreatedTempFiles"] = int(server_details1['Created_tmp_files'])
                     self.previousData["numCreatedTempTables"] = int(server_details1['Created_tmp_tables'])
@@ -140,6 +147,17 @@ class MysqlStats:
                     self.previousData["slowQueries"] = int(server_details1['Slow_queries'])
                     self.previousData["qcacheHits"] = int(server_details1['Qcache_hits'])
                     self.previousData["qcacheInserts"] = int(server_details1['Qcache_inserts'])
+		    server_dict["numCreatedTempFiles"] = 0
+                    server_dict["numCreatedTempTables"] = 0
+                    server_dict["numQueries"] = 0
+                    server_dict["numSelect"] = 0
+                    server_dict["numInsert"] = 0
+                    server_dict["numUpdate"] = 0
+                    server_dict["numDelete"] = 0
+                    server_dict["slowQueries"] = 0
+                    server_dict["qcacheHits"] = 0
+                    server_dict["qcacheInserts"] = 0
+
                 else:
                     server_dict['numCreatedTempFiles'] = int(server_details1['Created_tmp_files']) - self.previousData["numCreatedTempFiles"]
                     server_dict['numCreatedTempTables'] = int(server_details1['Created_tmp_tables']) - self.previousData["numCreatedTempTables"]
