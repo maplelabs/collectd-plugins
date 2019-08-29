@@ -180,7 +180,8 @@ class Nginx(object):
         if server_requests:
             if not 'requests' in self.previousData:
                 self.previousData.update({'requests': server_requests})
-                requests_in_interval = server_requests
+                #requests_in_interval = server_requests
+		requests_in_interval = 0
             else:
                 requests_in_interval = server_requests - self.previousData['requests']
                 if requests_in_interval < 0:
