@@ -152,7 +152,8 @@ class Nginx(object):
         if handled:
             if not 'handled' in self.previousData:
                 self.previousData.update({'handled': int(handled)})
-                handled_in_interval = handled
+                #handled_in_interval = handled
+		handled_in_interval = 0
             else: 
                 handled_in_interval = int(handled) - int(self.previousData['handled'])
                 if int(handled_in_interval) < 0:
@@ -166,7 +167,8 @@ class Nginx(object):
         if accepts:
             if not 'accepts' in self.previousData:
                 self.previousData.update({'accepts': accepts})
-                accepts_in_interval = accepts
+                #accepts_in_interval = accepts
+		accepts_in_interval = 0
             else: 
                 accepts_in_interval = accepts - self.previousData['accepts']
                 if accepts_in_interval < 0:
