@@ -46,9 +46,9 @@ class ElasticsearchStats(object):
         """Adds TIMESTAMP, PLUGIN, PLUGITYPE to dictionary."""
         timestamp = int(round(time.time()))
         data_dict[TIMESTAMP] = timestamp
-        data_dict[PLUGIN] = "elastic"
+        data_dict[PLUGIN] = "elasticsearch"
         data_dict[PLUGINTYPE] = doc
-        data_dict[ACTUALPLUGINTYPE] = "elastic"
+        data_dict[ACTUALPLUGINTYPE] = "elasticsearchagent"
         # dict_jmx[PLUGIN_INS] = doc
         collectd.info("Plugin elasticsearch: Added common parameters successfully for %s doctype" % doc)
 

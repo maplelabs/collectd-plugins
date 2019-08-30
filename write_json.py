@@ -32,6 +32,8 @@ class WriteJson:
             path = os.path.join(self.path, DATADIR, data[PLUGIN])
         if(data[PLUGIN] not in ["mysql", "postgres", "tpcc", "jmeter", "jvm"]):
             path = os.path.join(self.path, DATADIR, data[PLUGIN] + "/" + data[PLUGINTYPE])
+	if data[PLUGIN] == "elasticsearch":
+	    path = os.path.join(self.path, DATADIR, "elasticsearchagent"  + "/" + data[PLUGINTYPE])
         else:
             path = os.path.join(self.path, DATADIR, data[PLUGIN])
 
