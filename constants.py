@@ -171,6 +171,7 @@ db_query_5 = 'show global status where VARIABLE_NAME like "Created_tmp_files" or
 PROCESS = "process"
 PROCESS_STATE = "_processState"
 JVM_STATS = "jvm"
+JVM_DATA_PATH = "/opt/collectd/var/lib/data/jvm"
 
 # APACHE CONSTANTS
 DEFAULT_LOCATION = "server-status"

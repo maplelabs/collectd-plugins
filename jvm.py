@@ -15,7 +15,7 @@ from constants import *
 from utils import *
 import time
 import os
-
+import shutil
 class JVM(object):
     """Plugin object will be created only once and collects jvm statistics info every interval."""
 
@@ -84,7 +84,11 @@ class JVM(object):
             stime = line[14]
             cpuval = cpu[2]
             return cpuval, utime, stime, clk_tick[1]
-
+    def remove_inactive_pids(self,active_pids):
+        for root, dirs, files in os.walk(JVM_DATA_PATH):
+            for d in dirs:
+                if d not in active_pids:
+                    shutil.rmtree(JVM_DATA_PATH+ "/"+ d)
     def get_pid(self, process_name):
         """Returns pid for JVM process"""
 	collectd.info("jvm: getting pids")
@@ -278,7 +282,7 @@ class JVM(object):
             pids,pNames = self.get_pid(process_name)
             collectd.info( "pids +++ : %s" % pids)
             collectd.info( "pNames +++ : %s" % pNames)
-            
+            self.remove_inactive_pids(pids)   
             if not pids:
                 collectd.info("No JAVA process are running")
                 return
