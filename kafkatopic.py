@@ -417,30 +417,32 @@ class JmxStat(object):
 
                 collectd.info("Plugin kafkatopic: Added %s doctype information successfully for pid %s" % (doc, pid))
                 if doc in ["topicStats", "partitionStats", "consumerStats"]:
-                    output.put((pid, doc, dict_jmx))
+                    output.append((pid, doc, dict_jmx))
                     continue
 
                 self.add_common_params(doc, dict_jmx)
-                output.put((pid, doc, dict_jmx))
+                output.append((pid, doc, dict_jmx))
             except Exception as err:
                 collectd.error("Plugin kafkatopic: Error in collecting stats of %s doctype: %s" % (doc, str(err)))
 
     def run_pid_process(self, list_pid):
         """Spawn process for each pid"""
-        procs = []
-        output = multiprocessing.Queue()
+        #procs = []
+        #output = multiprocessing.Queue()
+        output = []
         for pid in list_pid:
             port = self.jclient.get_jolokia_port(pid)
             if port and self.jclient.connection_available(port):
-                proc = multiprocessing.Process(target=self.get_pid_jmx_stats, args=(pid, port, output))
-                procs.append(proc)
-                proc.start()
+                self.get_pid_jmx_stats(pid, port, output)
+                #proc = multiprocessing.Process(target=self.get_pid_jmx_stats, args=(pid, port, output))
+                #procs.append(proc)
+                #proc.start()
 
-        for proc in procs:
-            proc.join()
+        #for proc in procs:
+            #proc.join()
 #       for p in procs:
 #          collectd.debug("%s, %s" % (p, p.is_alive()))
-        return procs, output
+        return output
 
     def collect_jmx_data(self):
         """Collects stats and spawns process for each pids."""
@@ -449,6 +451,18 @@ class JmxStat(object):
             collectd.error("Plugin kafkatopic: No %s processes are running" % self.process)
             return
 
+        output = self.run_pid_process(list_pid)
+        for doc in output:
+            pid, doc_name, doc_result = doc
+            if doc_name in self.documentsTypes:
+                    if doc_name == "topicStats":
+                        self.add_rate_dispatch_topic(pid, doc_name, doc_result)
+                    elif doc_name == "kafkaStats":
+                        self.add_rate_dispatch_kafka(pid, doc_name, doc_result)
+                    else:
+                        self.dispatch_stats(doc_name, doc_result)
+        
+        '''
         procs, output = self.run_pid_process(list_pid)
         for _ in procs:
             for _ in KAFKA_DOCS:
@@ -466,6 +480,7 @@ class JmxStat(object):
                     else:
                         self.dispatch_stats(doc_name, doc_result)
         output.close()
+        '''
 
     def dispatch_data(self, doc_name, result):
         """Dispatch data to collectd."""

@@ -333,26 +333,28 @@ class JmxStat(object):
 
                 collectd.info("Plugin kafkajmx: Added %s doctype information successfully for pid %s" % (doc, pid))
                 self.add_common_params(doc, dict_jmx)
-                output.put((doc, dict_jmx))
+                output.append((doc, dict_jmx))
             except Exception as err:
                 collectd.error("Plugin kafkajmx: Error in collecting stats of %s doctype: %s" % (doc, str(err)))
 
     def run_pid_process(self, list_pid):
         """Spawn process for each pid"""
-        procs = []
-        output = multiprocessing.Queue()
+        #procs = []
+        #output = multiprocessing.Queue()
+        output = []
         for pid in list_pid:
             port = self.jclient.get_jolokia_port(pid)
             if port and self.jclient.connection_available(port):
-                proc = multiprocessing.Process(target=self.get_pid_jmx_stats, args=(pid, port, output))
-                procs.append(proc)
-                proc.start()
+                self.get_pid_jmx_stats(pid, port, output)
+                #proc = multiprocessing.Process(target=self.get_pid_jmx_stats, args=(pid, port, output))
+                #procs.append(proc)
+                #proc.start()
 
-        for proc in procs:
-            proc.join()
+        #for proc in procs:
+            #proc.join()
 #       for p in procs:
 #          collectd.debug("%s, %s" % (p, p.is_alive()))
-        return procs, output
+        return output
 
     def collect_jmx_data(self):
         """Collects stats and spawns process for each pids."""
@@ -360,7 +362,11 @@ class JmxStat(object):
         if not list_pid:
             collectd.error("Plugin kafkajmx: No %s processes are running" % self.process)
             return
-
+        output = self.run_pid_process(list_pid)
+        for doc in output:
+            doc_name, doc_result = doc
+            self.dispatch_data(doc_name, doc_result)
+        '''
         procs, output = self.run_pid_process(list_pid)
         for _ in procs:
             for _ in GENERIC_DOCS:
@@ -371,6 +377,7 @@ class JmxStat(object):
                     continue
                 self.dispatch_data(doc_name, doc_result)
         output.close()
+        '''
 
     def dispatch_data(self, doc_name, result):
         """Dispatch data to collectd."""
