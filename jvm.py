@@ -72,9 +72,9 @@ class JVM(object):
             collectd.debug("Error: %s" % err)
             return -1, -1, -1, -1
         clk_tick = clk_tick.split()
-
-        fileobj = open('/proc/%d/stat' % (int(pid)))
-        if fileobj is None:
+        try:
+            fileobj = open('/proc/%d/stat' % (int(pid)))
+        except:
             collectd.debug("Error: Unable to open /proc/%d/stat" % (int(pid)))
             return -1, -1, -1, -1
         lines = fileobj.readlines()
@@ -154,7 +154,8 @@ class JVM(object):
 
         (heapusage, err) = call.communicate()
         if err:
-            collectd.debug("Error: Jstat does not give correct output :" % heapusage)
+            collectd.debug("Error: Jstat does not give correct output ")
+            return
 
         heapusage = heapusage.split("\n")
         heapusage = str(heapusage[1]).split()
@@ -292,11 +293,11 @@ class JVM(object):
                 process_name = pname
                 collectd.info(pname)
                 #process_name = os.system("ps -p ",int(15903), "-o comm=")
-                fileobj = open('/proc/%d/status' % (int(pid)))
-                if fileobj is None:
-                    collectd.info(
-                        "Error: Unable to open /proc/%d/status" % (int(pid)))
-                    return
+                try:
+                    fileobj = open('/proc/%d/status' % (int(pid)))
+                except:
+                    collectd.info("PID got changed for the process")
+                    continue
                 lines = fileobj.readlines()
                 for line in lines:
                     if line.startswith("State:"):
