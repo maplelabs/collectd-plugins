@@ -12,6 +12,7 @@ import collectd
 import json
 import time
 import requests
+import subprocess
 from requests.packages.urllib3 import Retry
 
 # user imports
@@ -35,7 +36,6 @@ key_map = {
     "BusyWorkers": "activeWorkers",
     "IdleWorkers": "idleWorkers"
 }
-
 
 class ApachePerf:
     def __init__(self):
@@ -77,6 +77,8 @@ class ApachePerf:
             if data:
                 result = dict([(key_map[str((i.split(":", 1)[0]).strip())], str((i.split(":", 1)[1]).strip()))
                                for i in data if (i.split(":", 1)[0]).strip() in key_map.keys()])
+                serverDetails = subprocess.check_output(["httpd","-v"]).split()
+
             else:
                 collectd.info("Couldn't get the data")
                 return
@@ -125,10 +127,8 @@ class ApachePerf:
                 except ValueError:
                     continue
             try:
-                t_str = result["apacheVersion"]
-                t_str = [j.strip() for i in t_str.split("(") for j in i.split(")")]
-                data_dict["apacheVersion"] = t_str[0]
-                data_dict["apacheOS"] = t_str[1]
+                data_dict["apacheVersion"] = serverDetails[2].strip('Apache/')
+                data_dict["apacheOS"] = serverDetails[3][1:-1]
             except KeyError:
                 data_dict["apacheVersion"] = None
                 data_dict["apacheOS"] = None
@@ -166,6 +166,7 @@ class ApachePerf:
     def read(self):
         self.pollCounter += 1
         # collect data
+        collectd.info("iamin")
         result_dict = self.poll()
         if not result_dict:
             collectd.error("Plugin apache_perf: Unable to fetch information of apache")
