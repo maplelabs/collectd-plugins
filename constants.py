@@ -200,9 +200,13 @@ class Postgres(object):
 
     db_num_tables_query = "select count(*) from pg_stat_user_tables;"
 
-    server_log_size_query = "select CAST(sum((pg_stat_file('pg_xlog/' || pg_ls_dir)).size) AS BIGINT) " \
+    server_log_size_query_ver9 = "select CAST(sum((pg_stat_file('pg_xlog/' || pg_ls_dir)).size) AS BIGINT) " \
                     "from pg_ls_dir('pg_xlog') " \
                     "where (pg_stat_file('pg_xlog/' || pg_ls_dir)).isdir = false"
+
+    server_log_size_query_ver10 = "select CAST(sum((pg_stat_file('pg_wal/' || pg_ls_dir)).size) AS BIGINT) " \
+                            "from pg_ls_dir('pg_wal') " \
+                            "where (pg_stat_file('pg_wal/' || pg_ls_dir)).isdir = false"
 
     server_connections = "SELECT sum(numbackends) FROM pg_stat_database;"
 
@@ -212,9 +216,13 @@ class Postgres(object):
               "heap_blks_read as \"heapBlksRead\", heap_blks_hit as \"heapBlksHit\", " \
               "idx_blks_read as \"idxBlksRead\", idx_blks_hit as \"idxBlksHit\" FROM pg_catalog.pg_statio_user_tables ORDER BY pg_table_size(relid) DESC;"
 
-    long_runn_query = "SELECT now() - query_start as \"runtime\", usename as \"userName\", datname as \"_dbName\", waiting, " \
+    long_runn_query_ver9 = "SELECT now() - query_start as \"runtime\", usename as \"userName\", datname as \"_dbName\", waiting, " \
                   "state, query as \"_queryName\" FROM pg_stat_activity WHERE now() - query_start > '250 milliseconds'::interval and state='active'" \
                   "ORDER BY runtime DESC LIMIT 20;"
+
+    long_runn_query_ver10 = "SELECT now() - query_start as \"runtime\", usename as \"userName\", datname as \"_dbName\", wait_event, " \
+                      "state, query as \"_queryName\" FROM pg_stat_activity WHERE now() - query_start > '250 milliseconds'::interval and state='active'" \
+                      "ORDER BY runtime DESC LIMIT 20;"
 
     conn_str = "host=%s user=%s password=%s port=%s dbname=%s"
 
