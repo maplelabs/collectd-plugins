@@ -1176,7 +1176,11 @@ class ElasticsearchStats(object):
             cluster_name = str(stats['cluster_name'])
         except KeyError as kerr:
             collectd.error('Plugin elasticsearch: Error getting cluster name : %s' % kerr.message)
-
+        version = ''
+        try:
+            version = str(stats['nodes']['versions'][0])
+        except KeyError as kerr:
+            collectd.error('Plugin elasticsearch: Error getting current version: %s' % kerr.message)
         master_node_count = 0
         try:
             master_node_count = int(stats['nodes']['count']['master'])
@@ -1325,6 +1329,7 @@ class ElasticsearchStats(object):
             cluster_stats.update({'_documentType':'clusterStats',
                                   'totalNodes':node_count,
                                   '_clusterName':cluster_name,
+                                  'version':version,
                                   'masterNodes':master_node_count,
                                   'ingestNodes':data_node_count,
                                   'dataNodes':ingest_node_count,

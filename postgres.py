@@ -29,6 +29,7 @@ class PostgresStats:
         self.password = None
         self.cur = None
         self.port = None
+        self.version = None
         self.pollCounter = 0
         self.pollDiff = {}
         self.cacheHitRatio = 0
@@ -122,11 +123,15 @@ class PostgresStats:
             ser_version = self.cur.fetchall()
             if ser_version:
                 server_dict["version"] = ser_version[0][0]
+                self.version = ser_version[0][0]
             else:
                 collectd.debug("Unable to fetch server version")
 
             # Getting log size of the server
-            self.cur.execute(Postgres.server_log_size_query)
+            if self.version.startswith('10'):
+                self.cur.execute(Postgres.server_log_size_query_ver10)
+            else:
+                self.cur.execute(Postgres.server_log_size_query_ver9)
             log_size = self.cur.fetchall()
             if log_size:
                 server_dict["logSize"] = log_size[0][0]/(1024 * 1024)
@@ -207,7 +212,10 @@ class PostgresStats:
     # Get the TOP 20 longest running queries from the server
     def get_query_details(self, final_long_runn_dict):
         try:
-            self.cur.execute(Postgres.long_runn_query)
+            if self.version.startswith('10'):
+                self.cur.execute(Postgres.long_runn_query_ver10)
+            else:
+                self.cur.execute(Postgres.long_runn_query_ver9)
             long_runn_res = self.cur.fetchall()
             if long_runn_res:
                 columns = map(lambda x: x[0], self.cur.description)
@@ -215,6 +223,11 @@ class PostgresStats:
                 for query_dict in query_list:
                     if 'runtime' in query_dict.keys():
                         query_dict['runtime'] = query_dict['runtime'].seconds
+                    #In version 10, 'waiting' field is replaced with 'wait_event'
+                    #'waiting' filed is boolean type but 'wait_event' is text.
+                    #To avoid mapping error between two versions, have to convert 'wait_event' to boolean data type
+                    if 'wait_event' in query_dict.keys():
+                        query_dict['wait_event'] = True if query_dict['wait_event'] else False
                     query_dict["_documentType"] = "queryDetails"
                     final_long_runn_dict[query_dict["_queryName"] + query_dict["_dbName"]] = query_dict
             else:

@@ -75,7 +75,7 @@ class CpuUtil(object):
         dict_cpu_util = {CPU_UTIL: psutil.cpu_percent(
             interval=None, percpu=False)}
         scpu = psutil.cpu_times_percent(interval=None, percpu=False)
-        dict_cpu_util = {'CpuUser': scpu.user, 'CpuSystem' : scpu.system, 'CpuIdle': scpu.idle, 'CpuIoWait':scpu.iowait ,'CPUUtil':scpu.user+scpu.system}
+        dict_cpu_util = {'CpuMisc': scpu.nice+scpu.irq+scpu.guest+scpu.guest_nice+scpu.softirq, 'CpuUser': scpu.user, 'CpuSystem' : scpu.system, 'CpuIdle': scpu.idle, 'CpuIoWait':scpu.iowait ,'CPUUtil':scpu.user+scpu.system, 'CpuSteal': scpu.steal}
 
         per_cpu_util = psutil.cpu_percent(interval=None, percpu=True)
         no_of_cores = len(per_cpu_util)
