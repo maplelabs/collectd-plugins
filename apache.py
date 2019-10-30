@@ -37,6 +37,7 @@ key_map = {
     "IdleWorkers": "idleWorkers"
 }
 
+
 class ApachePerf:
     def __init__(self):
         self.interval = DEFAULT_INTERVAL
@@ -166,7 +167,6 @@ class ApachePerf:
     def read(self):
         self.pollCounter += 1
         # collect data
-        collectd.info("iamin")
         result_dict = self.poll()
         if not result_dict:
             collectd.error("Plugin apache_perf: Unable to fetch information of apache")
