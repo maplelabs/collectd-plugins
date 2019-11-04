@@ -1802,7 +1802,7 @@ class ElasticsearchStats(object):
                     total_refresh_count = total_refresh - self.previousData['indexStats'][index]['total_refresh_count']
                     if total_refresh_count < 0:
                         total_refresh_count = 0
-                    self.previousData['indexStats'][index]['total_refresh_count'] = total_refresh_count
+                    self.previousData['indexStats'][index]['total_refresh_count'] = total_refresh
 
                     total_indexed_count = total_indexed - self.previousData['indexStats'][index]['total_indexed_count']
                     if total_indexed_count < 0:
