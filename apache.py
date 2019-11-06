@@ -78,7 +78,12 @@ class ApachePerf:
             if data:
                 result = dict([(key_map[str((i.split(":", 1)[0]).strip())], str((i.split(":", 1)[1]).strip()))
                                for i in data if (i.split(":", 1)[0]).strip() in key_map.keys()])
-                serverDetails = subprocess.check_output(["httpd","-v"]).split()
+                OScheck = subprocess.check_output(["lsb_release", "-d"])
+                for line in OScheck.splitlines():
+                    if "Ubuntu" in line:
+                        serverDetails = subprocess.check_output(["apache2", "-v"]).split()
+                    elif ("CentOS" in line):
+                        serverDetails = subprocess.check_output(["httpd", "-v"]).split()
             else:
                 collectd.info("Couldn't get the data")
                 return
@@ -137,9 +142,9 @@ class ApachePerf:
             data_dict["activeWorkers"] = int(data_dict["activeWorkers"])
             data_dict["totalWorkers"] = int(data_dict["idleWorkers"]) + int(data_dict["activeWorkers"])
             if (self.pollCounter > 1):
-                data_dict["bytesPerSecond"] = round(data_dict["accessSize"] * (1024 * 1024) / float(self.interval), 2)
-                data_dict["requestsPerSecond"] = round(data_dict["accessCount"] / float(self.interval), 2)
-                data_dict["bytesPerRequest"] = round(data_dict["accessSize"] * (1024 * 1024) / data_dict["accessCount"], 2)
+                data_dict["bytesPerSecond"] = result["bytesPerSecond"]
+                data_dict["requestsPerSecond"] = result["requestsPerSecond"]
+                data_dict["bytesPerRequest"] = result["bytesPerRequest"]
             session.close()
         except requests.exceptions.RequestException as e:
             collectd.error("Plugin apache_perf : Couldn't connect to apache server")
