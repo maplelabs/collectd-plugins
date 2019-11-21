@@ -1,20 +1,13 @@
 import collectd
-import ast
 import pymongo
 from pymongo import MongoClient
 import json
-import sys
 import time
-import os
-import requests
-import traceback
-import logging
 from copy import deepcopy
 from constants import *
 from utils import *
 from libdiskstat import *
 from pymongo import MongoClient
-from os import path
 
 class MongoStats():
     def __init__(self):
@@ -69,9 +62,9 @@ class MongoStats():
                 for each_db in db_details['databases']:
                     db_name.append(each_db['name'])
             else:
-                logging.info("No databases present in the server: %s", self.host)
+                collectd.info("No databases present in the server: %s"% self.host)
         except Exception as e:
-            logging.error("Exception from the get_inventory due to %s in %s", e, traceback.format_exc())
+            collectd.error("Exception from the get_all_db")
         return db_name
 
     def connect_db(self, dbname):
@@ -80,7 +73,7 @@ class MongoStats():
             db = conn[dbname]
             conn_flag = True
         except Exception as e:
-            logging.error("Exception in the connect_db due to %s", e)
+            collectd.error("Exception in the connect_db due to %s" % e)
             conn_flag = False
             db = None
         return db, conn_flag
@@ -101,22 +94,22 @@ class MongoStats():
                     #self.aggr_server_data["indexSize"] = self.aggr_server_data["indexSize"]
                     final_dict[db_name]["numCollections"] = dbStatus['collections']
                 else:
-                    logging.debug("Unable to get database details of db %s in the host %s", db_name, self.host)
+                    logging.debug("Unable to get database details")
                 if final_dict[db_name]:
                     final_dict[db_name]['_documentType'] = 'databaseDetails'
                     final_dict[db_name]['_dbName'] = db_name
                 else:
-                    logging.info("Couldn't get any details for the given db %s from the server %s", db_name, self.host)
+                    collectd.info("Couldn't get any details for the given db ")
 
                     # To get table details for the given database
                 if final_dict[db_name]['numCollections'] != 0:
                     final_dict = self.get_table_details(final_dict, db_name)
                 else:
-                    logging.info("No tables found in the db %s from the db_details in host %s", db_name, self.host)
+                    collectd.info("No tables found ")
             else:
-                logging.error("Connection to this database %s is not successful to get table details from server %s" % (db_name, self.host))
+                collectd.error("Connection to this database is not successful to get table details ")
         except Exception as e:
-            logging.error("Exception from the db_details due to %s from the host %s in %s", e, self.host, traceback.format_exc())
+            collectd.error("Exception from the db_details")
             return
         return final_dict
 
@@ -257,7 +250,7 @@ class MongoStats():
                    server_dict["notimedoutcursors"],self.previous_data['notimedoutcursors'] =  int(server_stats['metrics']['cursor']['open']['noTimeout']) - self.previous_data['notimedoutcursors'],int(server_stats['metrics']['cursor']['open']['noTimeout']
 )
             else:
-                logging.info("Cannot connect to database")
+                collectd.info("Cannot connect to database")
             final_dict['server_details']=server_dict
         except Exception as err:
             collectd.error("Unable to execute the provided query:%s" % err)
