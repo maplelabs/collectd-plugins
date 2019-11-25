@@ -1,6 +1,7 @@
 import collectd
 import pymongo
 from pymongo import MongoClient
+import signal
 import json
 import time
 from copy import deepcopy
@@ -18,11 +19,11 @@ class MongoStats():
         self.list_dbs = None
         self.mong_data = None
         self.status = {}
-        self.enabled = True
-        self.poll_diff = {}
+        self.user = None
+        self.password = None 
         self.hosts = []
-        self.first_poll = {}
         self.interval = 0
+        self.prev_slowqueries = {}
         self.aggr_server_data = {'dbSize':0, 'indexSize': 0}
         self.previous_data = {"bytesReceived":0,"virtualmem":0,"residentmem":0,"bytesSent":0,"numdelete":0,"numinsert":0,"numselect":0,"numupdate":0,"readQueue":0,"writeQueue":0,"readThreadsrun":0,"writeThreadsrun":0,"readThreadsavl":0,"writeThreadsavl":0,"numAbortedclients":0,"cachesize":0,"cacheusedsize":0,"cachedirtysize":0,"readrequest_queue":0,"numqueries":0
 ,"writerequest_queue":0,"totalasserts":0,"warningasserts":0,"regularasserts":0,"userasserts":0,"totalcursors":0,"pinnedcursors":0,"notimedoutcursors":0}
@@ -35,6 +36,10 @@ class MongoStats():
                 self.port = children.values[0]
             if children.key == DOCUMENTSTYPES:
                 self.documentsTypes = children.values[0]
+            if children.key == USER:
+                self.user = children.values[0]
+            if children.key == PASSWORD:
+                self.password = children.values[0]
 
     def connect_mongo(self):
         try:
@@ -42,7 +47,7 @@ class MongoStats():
             retry_count = 0
             while retry_flag:
                 try:
-                    self.conn = MongoClient(self.host,int(self.port))
+                    self.conn = MongoClient(self.host+':'+self.port,username=self.user,password=self.password,authMechanism='SCRAM-SHA-1') 
                     self.db = self.conn.admin
                     retry_flag = False
                     collectd.info("Connection to Mongo successfull in attempt %s" % (retry_count))
@@ -61,6 +66,8 @@ class MongoStats():
             if db_details:
                 for each_db in db_details['databases']:
                     db_name.append(each_db['name'])
+                    if not each_db['name'] in self.prev_slowqueries:
+                        self.prev_slowqueries[each_db['name']] = 0 
             else:
                 collectd.info("No databases present in the server: %s"% self.host)
         except Exception as e:
@@ -69,7 +76,7 @@ class MongoStats():
 
     def connect_db(self, dbname):
         try:
-            conn = MongoClient(self.host, int(self.port))
+            conn = MongoClient(self.host+':'+self.port,username=self.user,password=self.password,authMechanism='SCRAM-SHA-1') 
             db = conn[dbname]
             conn_flag = True
         except Exception as e:
@@ -98,6 +105,8 @@ class MongoStats():
                 if final_dict[db_name]:
                     final_dict[db_name]['_documentType'] = 'databaseDetails'
                     final_dict[db_name]['_dbName'] = db_name
+                    col = db_cur['system.profile']
+                    final_dict[db_name]['slowqueries'] ,self.prev_slowqueries[db_name]= int(col.count_documents({})) - self.prev_slowqueries[db_name],int(col.count_documents({}))
                 else:
                     collectd.info("Couldn't get any details for the given db ")
 
