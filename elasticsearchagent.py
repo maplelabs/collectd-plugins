@@ -1384,7 +1384,7 @@ class ElasticsearchStats(object):
                 if index == "_all":
                     index_details = stats[index]['total']
                 else:
-                    index_details = stats['indices'][index]['primaries']
+                    index_details = stats['indices'][index]['total']
             except KeyError as err:
                 collectd.error('Plugin elasticsearch: Error getting index details: %s' % err.message)
                 continue
