@@ -26,7 +26,7 @@ class MongoStats():
         self.prev_slowqueries = {}
         self.aggr_server_data = {'dbSize':0, 'indexSize': 0}
         self.previous_data = {"bytesReceived":0,"virtualmem":0,"residentmem":0,"bytesSent":0,"numdelete":0,"numinsert":0,"numselect":0,"numupdate":0,"readQueue":0,"writeQueue":0,"readThreadsrun":0,"writeThreadsrun":0,"readThreadsavl":0,"writeThreadsavl":0,"numAbortedclients":0,"cachesize":0,"cacheusedsize":0,"cachedirtysize":0,"readrequest_queue":0,"numqueries":0
-,"writerequest_queue":0,"totalasserts":0,"warningasserts":0,"regularasserts":0,"userasserts":0,"totalcursors":0,"pinnedcursors":0,"notimedoutcursors":0}
+,"writerequest_queue":0,"msgasserts":0,"warningasserts":0,"regularasserts":0,"userasserts":0,"totalcursors":0,"pinnedcursors":0,"notimedoutcursors":0}
 
     def read_config(self, cfg):
         for children in cfg.children:
@@ -143,10 +143,10 @@ class MongoStats():
                 coll_dict["_totalindexsize"]= coll_stats["totalIndexSize"]
                 agg_db_data["indexSize"] += coll_dict["_totalindexsize"]
                 final_dict[coll_dict["_collname"]] = coll_dict
-            final_dict[db_name]["size"] = agg_db_data["size"]
-            final_dict[db_name]["indexSize"] = agg_db_data["indexSize"]
-            final_dict[db_name]["numdoc"] = agg_db_data["numdoc"]
-            final_dict[db_name]["storageSize"] = agg_db_data["storageSize"]
+            final_dict[db_name]["size"] = long(agg_db_data["size"])
+            final_dict[db_name]["indexSize"] = long(agg_db_data["indexSize"])
+            final_dict[db_name]["numdoc"] = long(agg_db_data["numdoc"])
+            final_dict[db_name]["storageSize"] = long(agg_db_data["storageSize"])
         except Exception as exe:
             collectd.error("Unable to execute the query under table:%s" % exe)
             return
@@ -194,7 +194,7 @@ class MongoStats():
                    #self.previous_data["cachedirtysize"] = int(server_stats['wiredTiger']['cache']['tracked dirty bytes in the cache'])
                    self.previous_data['readrequest_queue'] = int(server_stats['globalLock']["currentQueue"]["readers"])
                    self.previous_data['writerequest_queue'] = int(server_stats['globalLock']["currentQueue"]["writers"])
-                   self.previous_data['totalasserts'] = int(server_stats['asserts']['msg'])
+                   self.previous_data['msgasserts'] = int(server_stats['asserts']['msg'])
                    self.previous_data['warningasserts'] = int(server_stats['asserts']['warning'])
                    self.previous_data['regularasserts'] = int(server_stats['asserts']['regular'])
                    self.previous_data['userasserts'] = int(server_stats['asserts']['user'])
@@ -202,7 +202,7 @@ class MongoStats():
                    self.previous_data['pinnedcursors'] = int(server_stats['metrics']['cursor']['open']['pinned'])
                    self.previous_data['notimedoutcursors'] = int(server_stats['metrics']['cursor']['open']['noTimeout'])
                    server_dict["bytesReceived"] = 0
-                   server_dict["Sent"] = 0
+                   server_dict["bytesSent"] = 0
                    server_dict["numdelete"] = 0
                    server_dict["numinsert"] = 0
                    server_dict["numselect"] = 0
@@ -222,7 +222,7 @@ class MongoStats():
                    #server_dict["cachedirtysize"] = 0
                    server_dict["readrequest_queue"] = 0
                    server_dict["writerequest_queue"] = 0
-                   server_dict["totalasserts"] = 0
+                   server_dict["msgasserts"] = 0
                    server_dict["warningasserts"] = 0
                    server_dict["regularasserts"] = 0
                    server_dict["userasserts"] = 0
@@ -250,11 +250,11 @@ class MongoStats():
                    server_dict["numAbortedclients"],self.previous_data["numAbortedclients"] =  int(server_stats['connections']['totalCreated'] - server_stats['connections']['current']) - self.previous_data["numAbortedclients"],(int(server_stats['connections']['totalCreated'] - server_stats['connections']['current']))
                    server_dict["readrequest_queue"],self.previous_data['readrequest_queue'] = int(server_stats['globalLock']["currentQueue"]["readers"]) -  self.previous_data['readrequest_queue'],int(server_stats['globalLock']["currentQueue"]["readers"])
                    server_dict["writerequest_queue"],self.previous_data['writerequest_queue'] =  int(server_stats['globalLock']["currentQueue"]["writers"]) - self.previous_data['writerequest_queue'] ,int(server_stats['globalLock']["currentQueue"]["writers"])
-                   server_dict["totalasserts"],self.previous_data['totalasserts'] =  int(server_stats['asserts']['msg']) - self.previous_data['totalasserts'] ,int(server_stats['asserts']['msg'])
+                   server_dict["msgasserts"],self.previous_data['msgasserts'] =  int(server_stats['asserts']['msg']) - self.previous_data['msgasserts'] ,int(server_stats['asserts']['msg'])
                    server_dict["warningasserts"],self.previous_data['warningasserts'] =  int(server_stats['asserts']['warning']) - self.previous_data['warningasserts'] ,int(server_stats['asserts']['warning'])
                    server_dict["regularasserts"],self.previous_data['regularasserts'] =  int(server_stats['asserts']['regular']) - self.previous_data['regularasserts'] ,int(server_stats['asserts']['regular'])
                    server_dict["userasserts"],self.previous_data['userasserts'] =  int(server_stats['asserts']['user']) - self.previous_data['userasserts'] ,int(server_stats['asserts']['user'])
-                   server_dict["totalcursors"],self.previous_data['totalcursors'] =  int(server_stats['metrics']['cursor']['open']['total']) - self.previous_data['totalasserts'] ,int(server_stats['metrics']['cursor']['open']['total'])
+                   server_dict["totalcursors"],self.previous_data['totalcursors'] =  int(server_stats['metrics']['cursor']['open']['total']) - self.previous_data['totalcursors'] ,int(server_stats['metrics']['cursor']['open']['total'])
                    server_dict["pinnedcursors"],self.previous_data['pinnedcursors'] =int(server_stats['metrics']['cursor']['open']['pinned']) - self.previous_data['pinnedcursors'] ,int(server_stats['metrics']['cursor']['open']['pinned'])
                    server_dict["notimedoutcursors"],self.previous_data['notimedoutcursors'] =  int(server_stats['metrics']['cursor']['open']['noTimeout']) - self.previous_data['notimedoutcursors'],int(server_stats['metrics']['cursor']['open']['noTimeout']
 )
