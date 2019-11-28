@@ -1397,14 +1397,26 @@ class ElasticsearchStats(object):
             except KeyError as err:
                 collectd.error('Plugin elasticsearch: Error in getting index settings details: %s' % err.message)
                 continue
+            #setting every flag to default value used by es
+            #case 1:
+            #   if read_only_allow_delete  is true=>Index isn't writable and is read-only.Index can be deleted
+            #   This happens when disk usage is above threshold
+            # case 2:
+            #    If read_only is only set=> Data write is disabled,Index and meta data cant be deleted
+            #If both or set,read_only property is only reflecting
+            index_read_only_allow_delete = False
+            index_write = False
+            index_read_only = False
             if settings_details:
-                index_write = settings_details.get('write', True)
-                index_read_only = settings_details.get('read_only', True)
-                index_read_only_allow_delete = settings_details.get('read_only_allow_delete', False)
-            else:
-                index_write = True
-                index_read_only = True
-                index_read_only_allow_delete = False
+                index_write = settings_details.get('write', False)
+                if "read_only_allow_delete" in settings_details.keys() and str(settings_details["read_only_allow_delete"])=="true":
+                    index_read_only_allow_delete = True
+                    index_write = True
+                    index_read_only = True
+                if "read_only" in settings_details.keys() and str(settings_details["read_only"])=="true":
+                    index_read_only_allow_delete = False
+                    index_write = True
+                    index_read_only = True
 
 
             index_creation_date = None
