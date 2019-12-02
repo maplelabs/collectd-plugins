@@ -260,7 +260,7 @@ class MongoStats():
 )
             else:
                 collectd.info("Cannot connect to database")
-            final_dict['server_details']=server_dict
+            final_dict['serverDetails']=server_dict
         except Exception as err:
             collectd.error("Unable to execute the provided query:%s" % err)
             return
@@ -324,7 +324,8 @@ class MongoStats():
                     if dict_mongo[doc]['_documentType'] not in self.documentsTypes:
                         del dict_mongo[doc]
             # dispatch data to collectd, copying by value
-            self.dispatch_data(deepcopy(dict_mongo))
+            self.dispatch_data(dict_mongo)
+          
             collectd.error("Done Writing data to ES")
         except Exception as e:
             collectd.error("Couldn't read and gather the SQL metrics due to the exception :%s" % e)
