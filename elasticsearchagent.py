@@ -8,6 +8,7 @@ from os import path
 import requests
 import traceback
 import json
+import base64
 from elasticsearch import Elasticsearch as ESearch
 from elasticsearch import RequestsHttpConnection
 from elasticsearch import ElasticsearchException as ESException
@@ -27,6 +28,8 @@ class ElasticsearchStats(object):
         self.port = None
         self.clusters = None
         self.es_protocol = None
+        self.es_password = ''
+        self.es_username = ''
         self.documentsTypes = {}
         self.nodeStatsNodes = []
         self.previousData = {}
@@ -39,6 +42,10 @@ class ElasticsearchStats(object):
                 self.port = children.values[0]
             if children.key == "es_protocol":
                 self.es_protocol = children.values[0]
+            if children.key == "es_username":
+                self.es_username = children.values[0]
+            if children.key == "es_password":
+                self.es_password = base64.b64decode(children.values[0])
             if children.key == DOCUMENTSTYPES:
                 self.documentsTypes = children.values[0]
 
@@ -2064,7 +2071,7 @@ class ElasticsearchStats(object):
         try:
             self.pollCounter += 1
             connection = "{}://{}:{}".format(str(self.es_protocol), str(self.host), str(self.port))
-            self.es = ESearch([connection], verify_certs=False, connection_class=RequestsHttpConnection, timeout=90)
+            self.es = ESearch([connection], verify_certs=False, connection_class=RequestsHttpConnection, timeout=90, http_auth=(self.es_username, self.es_password))
 
             if self.ping_server():
                 es_stats = self.collect_es_data()
