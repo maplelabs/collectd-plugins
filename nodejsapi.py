@@ -67,7 +67,8 @@ class Nodejsapi():
         try:
             endTime = int(time.time() * 1000.0) #swagger-stats time is represented in nano seconds
             startTime = endTime - (int(self.interval)*1000)
-            # node_stats = self.get_node_http_stats()
+            error_response = False
+
             url_last_errors = "http://localhost:{}/swagger-stats/stats?fields=lasterrors".format(self.port)
             response = requests.get(url_last_errors)
             error_stats = list()
@@ -84,6 +85,8 @@ class Nodejsapi():
                         error_stat["method"] = error.get("method")
                         error_stat["error_code"] = ((error.get("http")).get("response")).get("code")
                         error_stats.append(error_stat)
+            else:
+                error_response = True
             node_stats[ERROR_STATS] = error_stats
 
             url_long_request = "http://localhost:{}/swagger-stats/stats?fields=longestreq".format(self.port)
@@ -102,6 +105,8 @@ class Nodejsapi():
                         long_req_stat["method"] = long_req.get("method")
                         long_req_stat["responsetime"] = long_req.get("responsetime")
                         long_req_stats.append(long_req_stat)
+            else:
+                error_response = True
             node_stats[LONG_REQUEST_STATS] = long_req_stats
 
             url_api_request = "http://localhost:{}/swagger-stats/stats?fields=apistats".format(self.port)
@@ -151,7 +156,7 @@ class Nodejsapi():
                                     api_stats = copy.deepcopy(method_details)
                                     api_stats["method"] = method
                                     api_stats["path"] = key_path
-                                if api_stats["requests"]!=0:
+                                if int(api_stats["requests"]) != 0:
                                     final_json_to_be_dispatched.append(api_stats)
 
                         else:
@@ -165,7 +170,20 @@ class Nodejsapi():
 
                 self.previous_data = copy.deepcopy(api_req_stats)
 
+            else:
+                error_response = True
             node_stats[API_STATS] = final_json_to_be_dispatched
+
+            #send empty value if no data present for given time interval
+            if not error_response and len(error_stats) == 0 and len(long_req_stats) == 0 and len(final_json_to_be_dispatched) == 0:
+                long_req_stats = list()
+                long_req_stat = {}
+                long_req_stat["path"] = None
+                long_req_stat["method"] = None
+                long_req_stat["responsetime"] = None
+                long_req_stats.append(long_req_stat)
+                node_stats[LONG_REQUEST_STATS] = long_req_stats
+
 
         except Exception as ex:
             collectd.error('Error collecting nodejs application stats : %s ' % ex.message)
