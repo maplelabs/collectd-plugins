@@ -100,6 +100,7 @@ class MongoStats():
                     self.aggr_server_data["indexSize"] += final_dict[db_name]["indexSize"]
                     #self.aggr_server_data["indexSize"] = self.aggr_server_data["indexSize"]
                     final_dict[db_name]["numCollections"] = dbStatus['collections']
+                    final_dict[db_name]["storageSize"] = dbStatus['storageSize']
                 else:
                     logging.debug("Unable to get database details")
                 if final_dict[db_name]:
@@ -144,9 +145,9 @@ class MongoStats():
                 agg_db_data["indexSize"] += coll_dict["_totalindexsize"]
                 final_dict[coll_dict["_collname"]] = coll_dict
             final_dict[db_name]["size"] = long(agg_db_data["size"])
-            final_dict[db_name]["indexSize"] = long(agg_db_data["indexSize"])
+            #final_dict[db_name]["indexSize"] = long(agg_db_data["indexSize"])
             final_dict[db_name]["numdoc"] = long(agg_db_data["numdoc"])
-            final_dict[db_name]["storageSize"] = long(agg_db_data["storageSize"])
+            #final_dict[db_name]["storageSize"] = long(agg_db_data["storageSize"])
         except Exception as exe:
             collectd.error("Unable to execute the query under table:%s" % exe)
             return
