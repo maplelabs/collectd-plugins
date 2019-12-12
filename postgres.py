@@ -212,7 +212,7 @@ class PostgresStats:
     # Get the TOP 20 longest running queries from the server
     def get_query_details(self, final_long_runn_dict):
         try:
-            if self.version.startswith('10'):
+            if self.version.startswith('10') or self.version.startswith('9.6'):
                 self.cur.execute(Postgres.long_runn_query_ver10)
             else:
                 self.cur.execute(Postgres.long_runn_query_ver9)
