@@ -284,7 +284,7 @@ class MysqlStats:
     @staticmethod
     def add_common_params(mysql_dict):
         hostname = gethostname()
-        timestamp = int(round(time.time() * 1000))
+        timestamp = int(round(time.time()))
 
         for details_type, details in mysql_dict.items():
             details[HOSTNAME] = hostname

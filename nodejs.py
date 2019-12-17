@@ -47,7 +47,7 @@ class Nodejs():
     @staticmethod
     def add_common_params(result_dict, doc_type):
         hostname = gethostname()
-        timestamp = int(round(time.time() * 1000))
+        timestamp = int(round(time.time()))
         result_dict[PLUGIN] = "nodejs"
         result_dict[HOSTNAME] = hostname
         result_dict[TIMESTAMP] = timestamp

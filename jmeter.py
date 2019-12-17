@@ -108,7 +108,7 @@ class jmeterStats(object):
 
     def add_common_params(self, jmeter_stats):
         """Adds TIMESTAMP, PLUGIN, PLUGITYPE to dictionary."""
-        timestamp = int(round(time.time() * 1000))
+        timestamp = int(round(time.time()))
         jmeter_stats[TIMESTAMP] = timestamp
         jmeter_stats[PLUGIN] = "jmeter"
         jmeter_stats[PLUGINTYPE] = "jmeter"

@@ -131,7 +131,7 @@ class ApacheLog:
 
     def add_common_params(self):
         hostname = gethostname()
-        timestamp = int(round(time.time() * 1000))
+        timestamp = time.time()
         self.values[PLUGIN] = APACHE_TRANS
         self.values[PLUGIN_INS] = P_INS_ALL
         self.values[HOSTNAME] = hostname

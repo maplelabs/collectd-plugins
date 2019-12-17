@@ -160,7 +160,7 @@ class Namenode:
     def add_common_params(namenode_dic, doc_type):
         """Adds TIMESTAMP, PLUGIN, PLUGIN_INS to dictionary."""
         hostname = gethostname()
-        timestamp = int(round(time.time() * 1000))
+        timestamp = int(round(time.time()))
 
         namenode_dic[HOSTNAME] = hostname
         namenode_dic[TIMESTAMP] = timestamp

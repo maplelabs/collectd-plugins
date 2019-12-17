@@ -577,7 +577,7 @@ class TpccResults:
     @staticmethod
     def add_common_params(tpcc_dict, doc_type):
         hostname = gethostname()
-        timestamp = int(round(time.time() * 1000))
+        timestamp = int(round(time.time()))
 
         tpcc_dict[HOSTNAME] = hostname
         tpcc_dict[TIMESTAMP] = timestamp

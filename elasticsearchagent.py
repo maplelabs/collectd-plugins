@@ -51,7 +51,7 @@ class ElasticsearchStats(object):
 
     def add_common_params(self, doc, data_dict):
         """Adds TIMESTAMP, PLUGIN, PLUGITYPE to dictionary."""
-        timestamp = int(round(time.time() * 1000))
+        timestamp = int(round(time.time()))
         data_dict[TIMESTAMP] = timestamp
         data_dict[PLUGIN] = "elasticsearch"
         data_dict[PLUGINTYPE] = doc

@@ -155,7 +155,7 @@ class Spark:
     def add_common_params(spark_dic, doc_type):
         """Adds TIMESTAMP, PLUGIN, PLUGIN_INS to dictionary."""
         hostname = gethostname()
-        timestamp = int(round(time.time() * 1000))
+        timestamp = int(round(time.time()))
 
         spark_dic[HOSTNAME] = hostname
         spark_dic[TIMESTAMP] = timestamp

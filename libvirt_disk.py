@@ -67,7 +67,7 @@ class LibvirtDisk:
         state, reason = domain.state()
         disk_agg[VM_STATE] = get_vm_state(state)
         disk_agg[VMNAME] = domain.name()
-        disk_agg[TIMESTAMP] = int(round(time.time() * 1000))
+        disk_agg[TIMESTAMP] = time.time()
 
         read_iops = get_rate(
             DISK_READ_REQ, disk_agg, self.prev_disk_agg.get(domain.name(), {}))
@@ -145,7 +145,7 @@ class LibvirtDisk:
             self.conn.close()
 
     def add_common(self, data):
-        data[TIMESTAMP] = int(round(time.time() * 1000))
+        data[TIMESTAMP] = time.time()
 
     def collect_disk_stats(self, domain, disk):
         """
@@ -165,7 +165,7 @@ class LibvirtDisk:
         data[VM_STATE] = get_vm_state(state)
         data[VMNAME] = domain.name()
         data[DISK_PATH] = disk
-        data[TIMESTAMP] = int(round(time.time() * 1000))
+        data[TIMESTAMP] = time.time()
         try:
             rd_req, rd_bytes, wr_req, wr_bytes, err = domain.blockStats(disk)
             data[DISK_READ_REQ] = int(rd_req)

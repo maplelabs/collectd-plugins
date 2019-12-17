@@ -98,7 +98,7 @@ class LibvirtCompute:
         state, reason = domain.state()
         data[VM_STATE] = get_vm_state(state)
         data[NO_OF_VCPU] = domain.maxVcpus()
-        data[TIMESTAMP] = int(round(time.time() * 1000))
+        data[TIMESTAMP] = time.time()
         try:
             memstat = domain.memoryStats()
             # Data is in KB so converting into MB

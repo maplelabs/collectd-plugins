@@ -59,7 +59,7 @@ class PrometheusStat(object):
 
     def add_common_params(self, prometheus_dict):
         """Adds TIMESTAMP, PLUGIN, PLUGITYPE to dictionary."""
-        timestamp = int(round(time.time() * 1000))
+        timestamp = int(round(time.time()))
         for details_type, details in prometheus_dict.items():
             details[TIMESTAMP] = timestamp
             details[PLUGIN] = self.plugin_name

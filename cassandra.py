@@ -405,7 +405,7 @@ class CassandraStats(object):
     @staticmethod
     def add_common_params(doc, cassandra_dict):
         hostname = gethostname()
-        timestamp = int(round(time.time()* 1000))
+        timestamp = int(round(time.time()))
         cassandra_dict[HOSTNAME] = hostname
         cassandra_dict[TIMESTAMP] = timestamp
         cassandra_dict[PLUGIN] = CASSANDRA
