@@ -110,7 +110,7 @@ class TopStats(object):
 
     def add_common_params(self, top_stats_res):
         """Adds TIMESTAMP, PLUGIN, PLUGIN_INS to dictionary."""
-        timestamp = int(round(time.time()))
+        timestamp = int(round(time.time() * 1000))
         for result in top_stats_res:
             result[TIMESTAMP] = timestamp
             result[PLUGIN] = "topstats"

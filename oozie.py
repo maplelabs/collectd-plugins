@@ -217,7 +217,7 @@ class Oozie:
     def add_common_params(self, oozie_dict, doc_type):
         """Adds TIMESTAMP, PLUGIN, PLUGIN_INS to dictionary."""
         hostname = gethostname()
-        timestamp = int(round(time.time()))
+        timestamp = int(round(time.time() * 1000))
 
         oozie_dict[HOSTNAME] = hostname
         oozie_dict[TIMESTAMP] = timestamp

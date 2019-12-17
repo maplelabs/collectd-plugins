@@ -133,7 +133,7 @@ class LibvirtInterface:
         state, reason = domain.state()
         iface[VM_STATE] = get_vm_state(state)
         iface[UTC] = str(datetime.datetime.utcnow())
-        iface[TIMESTAMP] = time.time()
+        iface[TIMESTAMP] = int(round(time.time() * 1000))
 
         rx_rate = get_rate(
             RX_BYTES, iface, self.prev_iface_agg.get(domain.name(), {}))
@@ -175,7 +175,7 @@ class LibvirtInterface:
             data[TX_ERR] = int(stats[6])
             data[TX_DROPS] = int(stats[7])
             data[UTC] = str(datetime.datetime.utcnow())
-            data[TIMESTAMP] = time.time()
+            data[TIMESTAMP] = int(round(time.time() * 1000))
             rx_rate = get_rate(
                 RX_BYTES, data, self.prev_iface_data.get(
                     data[IFACE_NAME], {}))

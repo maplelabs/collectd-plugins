@@ -428,7 +428,7 @@ class LinuxStats(object):
     def add_common_params(self, dict_linux_stats):
         """Adds TIMESTAMP, PLUGIN, PLUGIN_INS to dictionary."""
        
-        timestamp = int(round(time.time()))
+        timestamp = int(round(time.time() * 1000))
         dict_linux_stats[TIMESTAMP] = timestamp
         dict_linux_stats[PLUGIN] = "linux_stats"
         #dict_ram_util[PLUGINTYPE] = RAM

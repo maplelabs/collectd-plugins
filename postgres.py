@@ -593,7 +593,7 @@ class PostgresStats:
     @staticmethod
     def add_common_params(postgres_dict):
         hostname = gethostname()
-        timestamp = int(round(time.time()))
+        timestamp = int(round(time.time() * 1000))
 
         for details_type, details in postgres_dict.items():
             details[HOSTNAME] = hostname

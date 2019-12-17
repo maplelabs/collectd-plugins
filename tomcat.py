@@ -303,7 +303,7 @@ class TomcatStat(object):
 
     def add_common_params(self, doc, dict_jmx):
         """Adds TIMESTAMP, PLUGIN, PLUGITYPE to dictionary."""
-        timestamp = int(round(time.time()))
+        timestamp = int(round(time.time() * 1000))
         dict_jmx[TIMESTAMP] = timestamp
         dict_jmx[PLUGIN] = TOMCAT
         dict_jmx[PLUGINTYPE] = doc

@@ -278,7 +278,7 @@ class MongoStats():
     @staticmethod
     def add_common_params(mongo_dict):
         hostname = gethostname()
-        timestamp = int(round(time.time()))
+        timestamp = int(round(time.time() * 1000))
         for details_type, details in mongo_dict.items():
             details[HOSTNAME] = hostname
             details[TIMESTAMP] = timestamp
