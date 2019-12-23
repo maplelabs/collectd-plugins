@@ -78,7 +78,6 @@ class RedisStats:
         final_redis_dict={}
         try:
             server_details = self.redis_client.info(section="server")
-            #print(server_details)
             if server_details:
                 details_dict["version"] = server_details.get("redis_version",None)
                 details_dict["buildId"] = server_details.get("redis_build_id",None)
@@ -176,7 +175,7 @@ class RedisStats:
                         dbcount += 1
                     stats_dict["totKeys"] = totalk
                 else:
-                    print("No Key details found")
+                    collectd.error("No Key details found")
                     stats_dict["totKeys"] = 0
 
                 outlis = subprocess.check_output(["redis-cli", "--intrinsic-latency", "1"]).split()
