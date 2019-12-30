@@ -8,6 +8,7 @@ from os import path
 import requests
 import traceback
 import json
+import base64
 from elasticsearch import Elasticsearch as ESearch
 from elasticsearch import RequestsHttpConnection
 from elasticsearch import ElasticsearchException as ESException
@@ -27,6 +28,8 @@ class ElasticsearchStats(object):
         self.port = None
         self.clusters = None
         self.es_protocol = None
+        self.es_password = ''
+        self.es_username = ''
         self.documentsTypes = {}
         self.nodeStatsNodes = []
         self.previousData = {}
@@ -39,6 +42,10 @@ class ElasticsearchStats(object):
                 self.port = children.values[0]
             if children.key == "es_protocol":
                 self.es_protocol = children.values[0]
+            if children.key == "es_username":
+                self.es_username = children.values[0]
+            if children.key == "es_password":
+                self.es_password = base64.b64decode(children.values[0])
             if children.key == DOCUMENTSTYPES:
                 self.documentsTypes = children.values[0]
 
@@ -1384,7 +1391,7 @@ class ElasticsearchStats(object):
                 if index == "_all":
                     index_details = stats[index]['total']
                 else:
-                    index_details = stats['indices'][index]['primaries']
+                    index_details = stats['indices'][index]['total']
             except KeyError as err:
                 collectd.error('Plugin elasticsearch: Error getting index details: %s' % err.message)
                 continue
@@ -1397,14 +1404,26 @@ class ElasticsearchStats(object):
             except KeyError as err:
                 collectd.error('Plugin elasticsearch: Error in getting index settings details: %s' % err.message)
                 continue
+            #setting every flag to default value used by es
+            #case 1:
+            #   if read_only_allow_delete  is true=>Index isn't writable and is read-only.Index can be deleted
+            #   This happens when disk usage is above threshold
+            # case 2:
+            #    If read_only is only set=> Data write is disabled,Index and meta data cant be deleted
+            #If both or set,read_only property is only reflecting
+            index_read_only_allow_delete = False
+            index_write = False
+            index_read_only = False
             if settings_details:
-                index_write = settings_details.get('write', True)
-                index_read_only = settings_details.get('read_only', True)
-                index_read_only_allow_delete = settings_details.get('read_only_allow_delete', False)
-            else:
-                index_write = True
-                index_read_only = True
-                index_read_only_allow_delete = False
+                index_write = settings_details.get('write', False)
+                if "read_only_allow_delete" in settings_details.keys() and str(settings_details["read_only_allow_delete"])=="true":
+                    index_read_only_allow_delete = True
+                    index_write = True
+                    index_read_only = True
+                if "read_only" in settings_details.keys() and str(settings_details["read_only"])=="true":
+                    index_read_only_allow_delete = False
+                    index_write = True
+                    index_read_only = True
 
 
             index_creation_date = None
@@ -2052,7 +2071,7 @@ class ElasticsearchStats(object):
         try:
             self.pollCounter += 1
             connection = "{}://{}:{}".format(str(self.es_protocol), str(self.host), str(self.port))
-            self.es = ESearch([connection], verify_certs=False, connection_class=RequestsHttpConnection, timeout=90)
+            self.es = ESearch([connection], verify_certs=False, connection_class=RequestsHttpConnection, timeout=90, http_auth=(self.es_username, self.es_password))
 
             if self.ping_server():
                 es_stats = self.collect_es_data()
