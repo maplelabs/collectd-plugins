@@ -155,7 +155,7 @@ class ApachePerf:
     @staticmethod
     def add_common_params(result_dict):
         hostname = gethostname()
-        timestamp = int(round(time.time()))
+        timestamp = int(round(time.time() * 1000))
         result_dict[PLUGIN] = "apache"
         result_dict[HOSTNAME] = hostname
         result_dict[TIMESTAMP] = timestamp

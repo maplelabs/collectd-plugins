@@ -38,7 +38,7 @@ class Hx_controllerResults:
     @staticmethod
     def add_common_params(hx_cluster_data, doc_type):
         hostname = gethostname()
-        timestamp = int(round(time.time()))
+        timestamp = int(round(time.time() * 1000))
 
         hx_cluster_data[HOSTNAME] = hostname
         hx_cluster_data[TIMESTAMP] = timestamp

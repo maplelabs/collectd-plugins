@@ -50,7 +50,7 @@ def get_yarn_stats():
     if json_yarn_node is not None:
         json_yarn_node = json_yarn_node['beans']
         if json_yarn_node:
-            json_yarn_node[0]['time'] = int(time.time())
+            json_yarn_node[0]['time'] = int(time.time() * 1000)
             json_yarn_node[0]['_plugin'] = plugin_name['yarn']
             json_yarn_node[0]['_documentType'] = "yarnStats" + 'JvmMetrics'
             json_yarn_node[0]['_tag_appName'] = tag_app_name['yarn']
@@ -81,7 +81,7 @@ def get_yarn_stats():
             logger.exception("Exception: ")
             return None
 
-        doc['time'] = int(time.time())
+        doc['time'] = int(time.time() * 1000)
         doc['_plugin'] = plugin_name['yarn']
         doc['_tag_appName'] = tag_app_name['yarn']
 

@@ -349,7 +349,7 @@ class haproxyStats(object):
 
     def add_common_params(self, dict_stats, doc):
         """Adds TIMESTAMP, PLUGIN, PLUGITYPE to dictionary."""
-        timestamp = int(round(time.time()))
+        timestamp = int(round(time.time() * 1000))
         dict_stats[TIMESTAMP] = timestamp
         dict_stats[PLUGIN] = HAPROXY
         dict_stats[PLUGINTYPE] = doc

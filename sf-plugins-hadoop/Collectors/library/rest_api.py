@@ -27,7 +27,7 @@ def get_job_info(job_id, wfName, wfId, wfaId, wfaName):
     job_info['_plugin'] = plugin_name['oozie']
     job_info['_documentType'] = "jobStats"
     job_info['_tag_appName'] = tag_app_name['oozie']
-    job_info['time'] = int(time.time())
+    job_info['time'] = int(time.time() * 1000)
     job_info['startTime'] = int(job_info['startTime'] / 1000) if job_info['startTime'] else -1
     job_info['finishTime'] = int(job_info['finishTime'] / 1000) if job_info['finishTime'] else -1
     job_info['endTime'] = job_info['finishTime']
@@ -77,7 +77,7 @@ def get_job_counters(job_id):
     job_counters_json['_plugin'] = plugin_name['oozie']
     job_counters_json['_documentType'] = "jobStats"
     job_counters_json['_tag_appName'] = tag_app_name['oozie']
-    job_counters_json['time'] = int(time.time())
+    job_counters_json['time'] = int(time.time() * 1000)
 
     for jc in job_counters:
         counter_list = jc["counter"]
@@ -114,7 +114,7 @@ def get_task_info(job_id, wfName, wfId, wfaId, wfaName):
         task['name'] = json_resp_ts['job']['name']
         task['_tag_appName'] = tag_app_name['oozie']
         task['taskId'] = task['id']
-        task['time'] = int(time.time())
+        task['time'] = int(time.time() * 1000)
         task['submitTime'] = int(task['startTime'] / 1000)
         task['startTime'] = int(task['startTime'] / 1000)
         task['finishTime'] = int(task['finishTime'] / 1000)
@@ -142,7 +142,7 @@ def get_app_info(app_id, wfName, wfId, wfaId, wfaName):
     app_info['_plugin'] = plugin_name['oozie']
     app_info['_documentType'] = "appStats"
     app_info['_tag_appName'] = tag_app_name['oozie']
-    app_info['time'] = int(time.time())
+    app_info['time'] = int(time.time() * 1000)
     # Convert times to epoch seconds from ms
     app_info['startedTime'] = int(app_info['startedTime'] / 1000)
     app_info['finishedTime'] = int(app_info['finishedTime'] / 1000)
@@ -224,7 +224,7 @@ def get_taskattempt_container_info(job_id, task_ids, wfName, wfId, wfaId, wfaNam
                 task_attempt['jobId'] = job_id
                 task_attempt['taskId'] = task
 
-                task_attempt['time'] = int(time.time())
+                task_attempt['time'] = int(time.time() * 1000)
                 task_attempt['submitTime'] = int(task_attempt['startTime'] / 1000) if task_attempt['startTime'] else -1
                 task_attempt['startTime'] = int(task_attempt['startTime'] / 1000) if task_attempt['startTime'] else -1
                 task_attempt['finishTime'] = int(task_attempt['finishTime'] / 1000) if task_attempt['finishTime'] else -1
@@ -354,7 +354,7 @@ def get_app_details(app_details):
         attempt['_documentType'] = 'sparkApp'
         attempt['_tag_appName'] = tag_app_name['spark']
         attempt['_plugin'] = plugin_name['spark']
-        attempt['time'] = int(time.time())
+        attempt['time'] = int(time.time() * 1000)
         app_doc.append(attempt)
 
     return app_doc
@@ -386,7 +386,7 @@ def get_job_details(app, name, attempt_id):
         job['elapsedTime'] = job['endTime'] - job['submitTime']
         job['runTime'] = job['endTime'] - job['startTime']
         job['schedulingDelay'] = job['startTime'] - job['submitTime']
-        job['time'] = int(time.time())
+        job['time'] = int(time.time() * 1000)
 
     return job_details
 
@@ -424,7 +424,7 @@ def get_executors(app, name, attempt_id):
         e['_plugin'] = plugin_name['spark']
         if 'addTime' in e:
             e['addTime'] = convert_to_epoch(e['addTime'])
-        e['time'] = int(time.time())
+        e['time'] = int(time.time() * 1000)
         e['appName'] = name
         e['totalDuration'] = e['totalDuration']
         e['totalGCTime'] = e['totalGCTime']
@@ -456,7 +456,7 @@ def get_stages(app, name, attempt_id):
         d['_documentType'] = 'sparkStages'
         d['_tag_appName'] = tag_app_name['spark']
         d['_plugin'] = plugin_name['spark']
-        d['time'] = int(time.time())
+        d['time'] = int(time.time() * 1000)
         metrics = d['accumulatorUpdates']
         for m in metrics:
             old_name = m['name']
@@ -564,7 +564,7 @@ def get_tasks_per_stage(app, name, attempt_id):
             task['runTime'] = task['endTime'] - task['launchTime']
             task['elapsedTime'] = task['endTime'] - task['launchTime']
             task['schedulingDelay'] = 0
-            task['time'] = int(time.time())
+            task['time'] = int(time.time() * 1000)
 
         [updates(t) for t in tasks_json]
         result += tasks_json

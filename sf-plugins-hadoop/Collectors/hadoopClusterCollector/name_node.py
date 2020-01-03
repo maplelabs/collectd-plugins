@@ -46,7 +46,7 @@ def get_name_node_stats():
     if json_name_node is not None:
         json_name_node = json_name_node['beans']
         if json_name_node:
-            json_name_node[0]['time'] = int(time.time())
+            json_name_node[0]['time'] = int(time.time() * 1000)
             json_name_node[0]['_plugin'] = plugin_name['namenode']
             json_name_node[0]['_documentType'] = "nameNodeStats" + 'JvmMetrics'
             json_name_node[0]['_tag_appName'] = tag_app_name['namenode']
@@ -74,7 +74,7 @@ def get_name_node_stats():
             doc.pop('TopUserOpCounts')
         if 'tag.Hostname' not in doc:
             doc['tag.Hostname'] = hostname
-        doc['time'] = int(time.time())
+        doc['time'] = int(time.time() * 1000)
         doc['_plugin'] = plugin_name['namenode']
 
         if 'RpcActivity' in a:

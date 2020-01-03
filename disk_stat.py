@@ -203,7 +203,7 @@ class DiskStats(object):
 
     def add_common_params(self, dict_disks):
         """Adds TIMESTAMP, PLUGIN, PLUGIN_INS to dictionary."""
-        timestamp = int(round(time.time()))
+        timestamp = int(round(time.time() * 1000))
 
         for disk_name, disk_info in dict_disks.items():
             disk_info[TIMESTAMP] = timestamp
