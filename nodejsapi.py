@@ -59,7 +59,6 @@ class Nodejsapi():
 
     @staticmethod
     def dispatch_data(result_dict):
-        #collectd.info("Plugin nodejsapi: Values dispatched = " + json.dumps(result_dict))
         dispatch(result_dict)
 
     def poll(self):
@@ -73,7 +72,7 @@ class Nodejsapi():
             response = requests.get(url_last_errors)
             error_stats = list()
             if response.status_code == 200:
-                collectd.info('Response code 200 received for lasterrors')
+                collectd.info('Plugin nodejsapi: Response code 200 received for lasterrors')
                 content = response.content
                 #response_json = json.loads(content)
                 response_json = ast.literal_eval(content)
@@ -93,7 +92,7 @@ class Nodejsapi():
             response = requests.get(url_long_request)
             long_req_stats = list()
             if response.status_code == 200:
-                collectd.info('Response code 200 received for longestreq')
+                collectd.info('Plugin nodejsapi: Response code 200 received for longestreq')
                 content = response.content
                 #response_json = json.loads(content)
                 response_json = ast.literal_eval(content)
@@ -113,7 +112,7 @@ class Nodejsapi():
             response = requests.get(url_api_request)
             final_json_to_be_dispatched = list()
             if response.status_code == 200:
-                collectd.info('Response code 200 received for apistats')
+                collectd.info('Plugin nodejsapi: Response code 200 received for apistats')
                 content = response.content
                 #response_json = json.loads(content)
                 response_json = ast.literal_eval(content)
@@ -129,6 +128,7 @@ class Nodejsapi():
                         api_req = {}
                         api_req["requests"] = req_method_details.get("requests")
                         api_req["responses"] = req_method_details.get("responses")
+                        api_req["redirect"] = req_method_details.get("redirect")
                         api_req["total_time"] = req_method_details.get("total_time")
                         api_req["success"] = req_method_details.get("success")
                         api_req["errors"] = req_method_details.get("errors")
@@ -146,6 +146,7 @@ class Nodejsapi():
                                 if method in self.previous_data[key_path].keys():
                                     api_stats["requests"] = method_details.get("requests") - self.previous_data[key_path][method]["requests"]
                                     api_stats["responses"] = method_details.get("responses") - self.previous_data[key_path][method]["responses"]
+                                    api_stats["redirect"] = method_details.get("redirect") - self.previous_data[key_path][method]["redirect"]
                                     api_stats["total_time"] = method_details.get("total_time") - self.previous_data[key_path][method]["total_time"]
                                     api_stats["success"] = method_details.get("success") - self.previous_data[key_path][method]["success"]
                                     api_stats["errors"] = method_details.get("errors") - self.previous_data[key_path][method]["errors"]
@@ -186,7 +187,7 @@ class Nodejsapi():
 
 
         except Exception as ex:
-            collectd.error('Error collecting nodejs application stats : %s ' % ex.message)
+            collectd.error('Error collecting nodejsapi application stats : %s ' % ex.message)
         return node_stats
 
     def read(self):
@@ -204,10 +205,6 @@ class Nodejsapi():
     def read_temp(self):
         collectd.unregister_read(self.read_temp)
         collectd.register_read(self.read, interval=int(self.interval))
-
-    def init(self):
-        signal.signal(signal.SIGCHLD, signal.SIG_DFL)
-
 
 obj = Nodejsapi()
 collectd.register_config(obj.read_config)
