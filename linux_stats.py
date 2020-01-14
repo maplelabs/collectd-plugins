@@ -428,7 +428,7 @@ class LinuxStats(object):
     def add_common_params(self, dict_linux_stats):
         """Adds TIMESTAMP, PLUGIN, PLUGIN_INS to dictionary."""
        
-        timestamp = int(round(time.time()))
+        timestamp = int(round(time.time() * 1000))
         dict_linux_stats[TIMESTAMP] = timestamp
         dict_linux_stats[PLUGIN] = "linux_stats"
         #dict_ram_util[PLUGINTYPE] = RAM
@@ -628,7 +628,7 @@ class LinuxStats(object):
         dict_final = self.disk_join_dicts(disk_static_data, disk_dynamic_data)
 
         # get aggregated disk data
-        timestamp = int(round(time.time()))
+        timestamp = int(round(time.time() * 1000))
         dict_disk_stats = self.add_disk_aggregate(dict_final)
         dict_disk_stats[TIMESTAMP] = timestamp
 

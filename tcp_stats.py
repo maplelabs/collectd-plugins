@@ -155,7 +155,7 @@ class TcpStats(object):
 
     def add_common_params(self, dict_tcp):
         """Adds TIMESTAMP, PLUGIN, PLUGIN_INS to dictionary."""
-        timestamp = int(round(time.time()))
+        timestamp = int(round(time.time() * 1000))
         dict_tcp[TIMESTAMP] = timestamp
         dict_tcp[PLUGINTYPE] = TCP
         dict_tcp[ACTUALPLUGINTYPE] = TCP

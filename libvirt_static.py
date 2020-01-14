@@ -101,7 +101,7 @@ class LibvirtStatic:
         data_dict[PLUGIN] = LIBVIRT
         data_dict[UTC] = str(datetime.datetime.utcnow())
         data_dict[INTERVAL] = self.interval
-        data_dict[TIMESTAMP] = time.time()
+        data_dict[TIMESTAMP] = int(round(time.time() * 1000))
         return data_dict
 
     def collect_vm_data(self, domain):

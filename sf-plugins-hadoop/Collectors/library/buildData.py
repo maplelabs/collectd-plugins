@@ -24,7 +24,7 @@ def prepare_workflow(workflow):
         "startTime": get_unix_timestamp(workflow['startTime']) if workflow['startTime'] is not None else None,
         "endTime": get_unix_timestamp(workflow['endTime']) if workflow['endTime'] is not None else None,
         "status": workflow['status'],
-        "time": int(math.floor(time.time())),
+        "time": int(math.floor(time.time() * 1000)),
         "_plugin": plugin_name['oozie'],
         "_documentType": "oozieWorkflows",
         "_tag_appName": tag_app_name['oozie'],
@@ -61,13 +61,13 @@ def build_spark_apps_status(last_processed_app_id,
             "lastProcessedApplicationId": last_processed_app_id,
             "lastProcessedEndTime": last_processed_end_time,
             "pendingApps": json.dumps(pending_apps) if pending_apps else "",
-            "time": int(math.floor(time.time())),
+            "time": int(math.floor(time.time() * 1000)),
             "type": "sparkStatus"
         }
     else:
         return {
             "pendingApps": json.dumps(pending_apps) if pending_apps else "",
-            "time": int(math.floor(time.time())),
+            "time": int(math.floor(time.time() * 1000)),
         }
 
 def prepare_workflow_monitor(success, document=None):
@@ -140,7 +140,7 @@ def prepare_workflow_action_data(action, workflowId, workflowName):
         "externalStatus": action['externalStatus'],
         "errorCode": action["errorCode"],
         "type": action['type'],
-        "time": int(math.floor(time.time())),
+        "time": int(math.floor(time.time() * 1000)),
         "retries": action['retries'],
         "waitTimeTotal": action['waitTimeTotal'] if "waitTimeTotal" in action else None,
         "cpuMillisecondsTotal": action['cpuMillisecondsTotal'] if "cpuMillisecondsTotal" in action else None,
@@ -193,7 +193,7 @@ def prepare_task_stats_by_timepoint(tp_start, tp_end, map_count, reduce_count, j
         "wfaId": wfaId,
         "wfName": wfName,
         "wfaName": wfaName,
-        "time": int(math.floor(time.time())),
+        "time": int(math.floor(time.time() * 1000)),
         "jobId": job_id,
         'timePeriodStart': tp_start,
         'timePeriodEnd': tp_end,
@@ -213,7 +213,7 @@ def prepare_spark_task_stats_by_timepoint(tp_start, tp_end, task_count, appId, a
         "stageId": stageId,
         "stageAttemptId": stageAttemptId,
         "appName": appName,
-        "time": int(math.floor(time.time())),
+        "time": int(math.floor(time.time() * 1000)),
         'timePeriodStart': tp_start,
         'timePeriodEnd': tp_end,
         "taskCount": task_count,

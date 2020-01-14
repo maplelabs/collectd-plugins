@@ -212,7 +212,7 @@ class PostgresStats:
     # Get the TOP 20 longest running queries from the server
     def get_query_details(self, final_long_runn_dict):
         try:
-            if self.version.startswith('10'):
+            if self.version.startswith('10') or self.version.startswith('9.6'):
                 self.cur.execute(Postgres.long_runn_query_ver10)
             else:
                 self.cur.execute(Postgres.long_runn_query_ver9)
@@ -593,7 +593,7 @@ class PostgresStats:
     @staticmethod
     def add_common_params(postgres_dict):
         hostname = gethostname()
-        timestamp = int(round(time.time()))
+        timestamp = int(round(time.time() * 1000))
 
         for details_type, details in postgres_dict.items():
             details[HOSTNAME] = hostname

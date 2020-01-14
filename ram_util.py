@@ -55,7 +55,7 @@ class RamUtil(object):
 
     def add_common_params(self, dict_ram_util):
         """Adds TIMESTAMP, PLUGIN, PLUGIN_INS to dictionary."""
-        timestamp = int(round(time.time()))
+        timestamp = int(round(time.time() * 1000))
         dict_ram_util[TIMESTAMP] = timestamp
         dict_ram_util[PLUGIN] = LINUX
         dict_ram_util[PLUGINTYPE] = RAM

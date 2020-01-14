@@ -259,7 +259,7 @@ class JVM(object):
 
     def add_common_params(self,  jvm_dict, state, pid, process_name):
         hostname = gethostname()
-        timestamp = int(round(time.time()))
+        timestamp = int(round(time.time() * 1000))
         jvm_dict[HOSTNAME] = hostname
         jvm_dict[TIMESTAMP] = timestamp
         jvm_dict[PLUGIN] = "jvm"

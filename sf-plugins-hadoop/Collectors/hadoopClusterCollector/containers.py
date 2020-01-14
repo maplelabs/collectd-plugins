@@ -28,7 +28,7 @@ def get_containers_node():
     logger.debug("Node JSON:{0}".format(json.dumps(nodes_json)))
     nodes_list = nodes_json["nodes"]["node"]
     for node in nodes_list:
-        node['time'] = int(round(time.time()))
+        node['time'] = int(round(time.time() * 1000))
         node['_plugin'] = plugin_name['yarn']
         node['_documentType'] = "containerStats"
         node['_tag_appName'] = tag_app_name['yarn']
@@ -44,7 +44,7 @@ def get_cluster_metrics():
     if metrics_json is None:
         return None
 
-    metrics_json['time'] = int(round(time.time()))
+    metrics_json['time'] = int(round(time.time() * 1000))
     metrics_json['_plugin'] = plugin_name['yarn']
     metrics_json['_documentType'] = "clusterMetrics"
     metrics_json['_tag_appName'] = tag_app_name['yarn']

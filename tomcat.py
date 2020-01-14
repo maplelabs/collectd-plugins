@@ -85,7 +85,7 @@ class TomcatStat(object):
             for key in keylist:
                 dict_jmx[key] = 0
         elif doctype == "requestProcessorStats":
-            keylist = ["bReceived", "bSent"]
+            keylist = ["bReceived", "bSent","requestCount","errorCount","processingTime"]
             for key in keylist:
                 dict_jmx[key] = 0.0
 
@@ -121,6 +121,7 @@ class TomcatStat(object):
 
     def add_diff(self, pid, dict_info, doc, context):
         """diff tomcatStats and requestProcessorStats"""
+        _dict_ = dict_info.copy()
         if doc == "contextStats":
             diff = self.get_diff('hitCount', dict_info, self.prev_context_data[pid][context])
             if diff != NAN:
@@ -128,6 +129,7 @@ class TomcatStat(object):
             diff = self.get_diff('lookupCount', dict_info, self.prev_context_data[pid][context])
             if diff != NAN:
                 dict_info['lookupCount'] = round(diff, FLOATING_FACTOR)
+            self.prev_context_data[pid][context] = _dict_ 
         elif doc == "requestProcessorStats":
             diff = self.get_diff('bReceived', dict_info, self.prev_req_data[pid])
             if diff != NAN:
@@ -135,6 +137,17 @@ class TomcatStat(object):
             diff = self.get_diff('bSent', dict_info, self.prev_req_data[pid])
             if diff != NAN:
                 dict_info['bSent'] = round(diff, FLOATING_FACTOR)
+            diff = self.get_diff('requestCount', dict_info, self.prev_req_data[pid])
+            if diff != NAN:
+                dict_info['requestCount'] = round(diff, FLOATING_FACTOR)
+            diff = self.get_diff('errorCount', dict_info, self.prev_req_data[pid])
+            if diff != NAN:
+                dict_info['errorCount'] = round(diff, FLOATING_FACTOR)
+            diff = self.get_diff('processingTime', dict_info, self.prev_req_data[pid])
+            if diff != NAN:
+                dict_info['processingTime'] = round(diff, FLOATING_FACTOR)
+            self.prev_req_data[pid] = _dict_
+
 
     def add_request_proc_parameters(self, jolokiaclient, dict_jmx):
         """Add jmx stats specific to tomcat metrics"""
@@ -153,7 +166,7 @@ class TomcatStat(object):
         dict_jmx['requestCount'] = bulkdata[2].get('value', 0)
         dict_jmx['errorCount'] = bulkdata[3].get('value', 0)
         dict_jmx['maxTime'] = bulkdata[4].get('value', 0)
-        dict_jmx['processingTime'] = bulkdata[4].get('value', 0)
+        dict_jmx['processingTime'] = bulkdata[5].get('value', 0)
 
     def add_tomcat_parameters(self, jolokiaclient, dict_jmx):
         """Add jmx stats specific to tomcat metrics"""
@@ -303,7 +316,7 @@ class TomcatStat(object):
 
     def add_common_params(self, doc, dict_jmx):
         """Adds TIMESTAMP, PLUGIN, PLUGITYPE to dictionary."""
-        timestamp = int(round(time.time()))
+        timestamp = int(round(time.time() * 1000))
         dict_jmx[TIMESTAMP] = timestamp
         dict_jmx[PLUGIN] = TOMCAT
         dict_jmx[PLUGINTYPE] = doc
@@ -322,12 +335,11 @@ class TomcatStat(object):
                         self.add_diff(pid, contextinfo, doc, context)
                     else:
                         self.add_default_diff_value(contextinfo, doc)
+                        self.prev_context_data[pid][context] = contextinfo
                 else:
                     self.prev_context_data[pid] = {}
                     self.add_default_diff_value(contextinfo, doc)
-
                 collectd.info("Plugin tomcat: Added %s doctype information for %s context successfully for pid %s" % (doc, context, pid))
-                self.prev_context_data[pid][context] = contextinfo
                 self.dispatch_data(doc, deepcopy(contextinfo))
 
         elif doc == "requestProcessorStats":
@@ -335,7 +347,7 @@ class TomcatStat(object):
                 self.add_diff(pid, dict_jmx, doc, "requestProcessor")
             else:
                 self.add_default_diff_value(dict_jmx, doc)
-            self.prev_req_data[pid] = dict_jmx
+                self.prev_req_data[pid] = dict_jmx
             self.dispatch_data(doc, deepcopy(dict_jmx))
 
     def get_pid_jmx_stats(self, pid, port, output):
