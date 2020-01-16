@@ -48,7 +48,7 @@ class Nodejsapi():
     @staticmethod
     def add_common_params(result_dict, doc_type):
         hostname = gethostname()
-        timestamp = int(round(time.time() * 1000))
+        timestamp = int(round(time.time())*1000)
         result_dict[PLUGIN] = "nodejsapi"
         result_dict[HOSTNAME] = hostname
         result_dict[TIMESTAMP] = timestamp
@@ -64,50 +64,10 @@ class Nodejsapi():
     def poll(self):
         node_stats = dict()
         try:
-            endTime = int(time.time() * 1000.0) #swagger-stats time is represented in nano seconds
+            endTime = int(time.time() * 1000) #swagger-stats time is represented in nano seconds
             startTime = endTime - (int(self.interval)*1000)
             error_response = False
-
-            url_last_errors = "http://localhost:{}/swagger-stats/stats?fields=lasterrors".format(self.port)
-            response = requests.get(url_last_errors)
-            error_stats = list()
-            if response.status_code == 200:
-                collectd.info('Plugin nodejsapi: Response code 200 received for lasterrors')
-                content = response.content
-                #response_json = json.loads(content)
-                response_json = ast.literal_eval(content)
-                swagger_error_stats = response_json.get("lasterrors")
-                for error in swagger_error_stats:
-                    if (error.get("startts") <= endTime and error.get("startts") >= startTime):
-                        error_stat = {}
-                        error_stat["path"] = error.get("path")
-                        error_stat["method"] = error.get("method")
-                        error_stat["error_code"] = ((error.get("http")).get("response")).get("code")
-                        error_stats.append(error_stat)
-            else:
-                error_response = True
-            node_stats[ERROR_STATS] = error_stats
-
-            url_long_request = "http://localhost:{}/swagger-stats/stats?fields=longestreq".format(self.port)
-            response = requests.get(url_long_request)
-            long_req_stats = list()
-            if response.status_code == 200:
-                collectd.info('Plugin nodejsapi: Response code 200 received for longestreq')
-                content = response.content
-                #response_json = json.loads(content)
-                response_json = ast.literal_eval(content)
-                swagger_long_req_stats = response_json.get("longestreq")
-                for long_req in swagger_long_req_stats:
-                    if (long_req.get("startts") <= endTime and long_req.get("startts") >= startTime):
-                        long_req_stat = {}
-                        long_req_stat["path"] = long_req.get("path")
-                        long_req_stat["method"] = long_req.get("method")
-                        long_req_stat["responsetime"] = long_req.get("responsetime")
-                        long_req_stats.append(long_req_stat)
-            else:
-                error_response = True
-            node_stats[LONG_REQUEST_STATS] = long_req_stats
-
+            log_stats = True
             url_api_request = "http://localhost:{}/swagger-stats/stats?fields=apistats".format(self.port)
             response = requests.get(url_api_request)
             final_json_to_be_dispatched = list()
@@ -144,6 +104,10 @@ class Nodejsapi():
                             method_info = api_req_stats[key_path]
                             for method, method_details in method_info.items():
                                 if method in self.previous_data[key_path].keys():
+                                    if (method_details.get("requests") - self.previous_data[key_path][method]["requests"]) < 0:
+                                        log_stats = False #dont log long request and errors when app server is restarted
+                                        final_json_to_be_dispatched = list()
+                                        break
                                     api_stats["requests"] = method_details.get("requests") - self.previous_data[key_path][method]["requests"]
                                     api_stats["responses"] = method_details.get("responses") - self.previous_data[key_path][method]["responses"]
                                     api_stats["redirect"] = method_details.get("redirect") - self.previous_data[key_path][method]["redirect"]
@@ -167,7 +131,8 @@ class Nodejsapi():
                                 api_stats["method"] = method
                                 api_stats["path"] = key_path
                             final_json_to_be_dispatched.append(api_stats)
-
+                else:
+                    log_stats = False #dont log long request and errors in first poll
 
                 self.previous_data = copy.deepcopy(api_req_stats)
 
@@ -175,17 +140,55 @@ class Nodejsapi():
                 error_response = True
             node_stats[API_STATS] = final_json_to_be_dispatched
 
+            url_last_errors = "http://localhost:{}/swagger-stats/stats?fields=lasterrors".format(self.port)
+            response = requests.get(url_last_errors)
+            error_stats = list()
+            if response.status_code == 200 and log_stats:  # don't log data for first interval
+                collectd.info('Plugin nodejsapi: Response code 200 received for lasterrors')
+                content = response.content
+                # response_json = json.loads(content)
+                response_json = ast.literal_eval(content)
+                swagger_error_stats = response_json.get("lasterrors")
+                for error in swagger_error_stats:
+                    if (error.get("startts") <= endTime and error.get("startts") >= startTime):
+                        error_stat = {}
+                        error_stat["path"] = error.get("api").get("path")
+                        error_stat["method"] = error.get("method")
+                        error_stat["error_code"] = ((error.get("http")).get("response")).get("code")
+                        error_stats.append(error_stat)
+            else:
+                error_response = True
+            node_stats[ERROR_STATS] = error_stats
+
+            url_long_request = "http://localhost:{}/swagger-stats/stats?fields=longestreq".format(self.port)
+            response = requests.get(url_long_request)
+            long_req_stats = list()
+            if response.status_code == 200 and log_stats:  # don't log data for first interval
+                collectd.info('Plugin nodejsapi: Response code 200 received for longestreq')
+                content = response.content
+                # response_json = json.loads(content)
+                response_json = ast.literal_eval(content)
+                swagger_long_req_stats = response_json.get("longestreq")
+                for long_req in swagger_long_req_stats:
+                    if (long_req.get("startts") <= endTime and long_req.get("startts") >= startTime):
+                        long_req_stat = {}
+                        long_req_stat["path"] = long_req.get("api").get("path")
+                        long_req_stat["method"] = long_req.get("method")
+                        long_req_stat["responsetime"] = long_req.get("responsetime")
+                        long_req_stats.append(long_req_stat)
+            else:
+                error_response = True
+            node_stats[LONG_REQUEST_STATS] = long_req_stats
+
             #send empty value if no data present for given time interval
             if not error_response and len(error_stats) == 0 and len(long_req_stats) == 0 and len(final_json_to_be_dispatched) == 0:
-                long_req_stats = list()
                 long_req_stat = {}
                 long_req_stat["path"] = None
                 long_req_stat["method"] = None
                 long_req_stat["responsetime"] = None
                 long_req_stats.append(long_req_stat)
                 node_stats[LONG_REQUEST_STATS] = long_req_stats
-
-
+                
         except Exception as ex:
             collectd.error('Error collecting nodejsapi application stats : %s ' % ex.message)
         return node_stats
