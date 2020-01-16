@@ -762,10 +762,6 @@ class ElasticsearchStats(object):
                            (node_id, kerr.message))
 
             # update older stats dictionary as we'd need it for our next poll
-        if hits or misses:
-            hit_ratio = (hits * 100) / (hits + misses)
-        else:
-            hit_ratio = 0
 
         loaded_classes = None
         try:
@@ -963,7 +959,10 @@ class ElasticsearchStats(object):
             io_stats_tot_write_op = 0
             io_stats_total_read = 0.0
             io_stats_total_write = 0.0
-
+        if hit_count or miss_count:
+            hit_ratio = (hit_count * 100)/(hit_count + miss_count)
+        else:
+            hit_ratio = 0
         node_stats.update({"node_id": node_id, "_documentType": "nodeStats",
                                                      'nodeName': str(self.node_name),
                                                      'roles': roles,
@@ -1042,7 +1041,7 @@ class ElasticsearchStats(object):
                                                      'threadPoolSearchCompleted': search_thrd_pool_completed,
                                                      'cacheHits': hit_count,
                                                      'cacheMisses': miss_count,
-                                                     'cacheHitRatio': hit_ratio,
+                                                     'cacheHitRatio': int(hit_ratio),
                                                      })
             #node_stats.update(single_node_stats)
         return node_stats
@@ -1251,12 +1250,10 @@ class ElasticsearchStats(object):
             self.previousData['clusterStats']['cluster_hit_count'] = hits
             self.previousData['clusterStats']['cluster_miss_count'] = misses
 
-        hit_ratio = 0
-        try:
-            if hits or misses:
-                hit_ratio = (hits * 100)/(hits + misses)
-        except Exception as e:
-            collectd.error('Plugin elasticsearch: Error in calculating hit_ratio : %s' % e.message)
+        if hit_count or miss_count:
+            hit_ratio = (hit_count * 100)/(hit_count + miss_count)
+        else:
+            hit_ratio = 0
 
         cache_size = 0
         try:
@@ -1356,7 +1353,7 @@ class ElasticsearchStats(object):
                                   'pendingTasksCount':number_of_pending_tasks,
                                   'inflightFetchCount':number_of_in_flight_fetch,
                                   'queryCacheSize': cache_size,
-                                  'queryCacheHitRatio': hit_ratio,
+                                  'queryCacheHitRatio': int(hit_ratio),
                                   'storeSize': store_size_in_bytes
                                  })
             return cluster_stats
