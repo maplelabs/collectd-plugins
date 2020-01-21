@@ -2067,8 +2067,9 @@ class ElasticsearchStats(object):
     def read(self):
         try:
             self.pollCounter += 1
-            connection = "{}://{}:{}".format(str(self.es_protocol), str(self.host), str(self.port))
-            self.es = ESearch([connection], verify_certs=False, connection_class=RequestsHttpConnection, timeout=90, http_auth=(self.es_username, self.es_password))
+            if self.pollCounter <= 1:
+                connection = "{}://{}:{}".format(str(self.es_protocol), str(self.host), str(self.port))
+                self.es = ESearch([connection], verify_certs=False, connection_class=RequestsHttpConnection, timeout=90, http_auth=(self.es_username, self.es_password))
 
             if self.ping_server():
                 es_stats = self.collect_es_data()
