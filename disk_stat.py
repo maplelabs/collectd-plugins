@@ -106,8 +106,8 @@ class DiskStats(object):
                avgqusizedata = float(avgqusizedata)
             else:
                avgqusizedata = 0.0
-            disk = {READBYTE: float(disk_ioinfo.read_bytes) / (FACTOR * FACTOR), WRITEBYTE: float(
-                disk_ioinfo.write_bytes) / (FACTOR * FACTOR), READCOUNT: disk_ioinfo.read_count,
+            disk = {READBYTE: float(disk_ioinfo.read_bytes) / (FACTOR), WRITEBYTE: float(
+                disk_ioinfo.write_bytes) / (FACTOR), READCOUNT: disk_ioinfo.read_count,
                     WRITECOUNT: disk_ioinfo.write_count, READTIME: disk_ioinfo.read_time,
                     WRITETIME: disk_ioinfo.write_time,USAGE: 0,AVGQUEUESIZE: avgqusizedata}
             dict_disk[name] = disk
