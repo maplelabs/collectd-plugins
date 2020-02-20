@@ -257,6 +257,14 @@ class DiskStats(object):
                         disk_info[AGG +
                                   WRITEIOPS] = round(rate, FLOATING_FACTOR)
 
+    def add_differential_value(self, dict_disks):
+        for disk_name, disk_info in dict_disks.items():
+            if self.prev_data and disk_name in self.prev_data:
+                disk_info[READDATA] = disk_info[READBYTE] - self.prev_data[disk_name][READBYTE]
+                disk_info[WRITEDATA] = disk_info[WRITEBYTE] - self.prev_data[disk_name][WRITEBYTE]
+                disk_info[READIOCOUNT] = disk_info[READCOUNT] - self.prev_data[disk_name][READCOUNT]
+                disk_info[WRITEIOCOUNT] = disk_info[WRITECOUNT] - self.prev_data[disk_name][WRITECOUNT]
+
     def add_latency(self, dict_disks):
         for disk_name, disk_info in dict_disks.items():
             if self.prev_data and disk_name in self.prev_data:
@@ -300,6 +308,8 @@ class DiskStats(object):
             "Plugin disk_stat: Added common parameters successfully.")
         # calculate rate
         self.add_rate(dict_disks)
+        #calculate differential values READDATA, WRITEDATA, READIOCOUNT, WRITEIOCOUNT
+        self.add_differential_value(dict_disks)
         # calculate latency
         self.add_latency(dict_disks)
         collectd.info(
