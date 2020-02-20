@@ -81,9 +81,9 @@ class ApachePerf:
                 OScheck = subprocess.check_output(["lsb_release", "-d"])
                 for line in OScheck.splitlines():
                     if "Ubuntu" in line:
-                        serverDetails = subprocess.check_output(["apache2", "-v"]).split()
+                        serverDetails = subprocess.check_output(["apache2", "-V"]).split("\n")
                     elif ("CentOS" in line):
-                        serverDetails = subprocess.check_output(["httpd", "-v"]).split()
+                        serverDetails = subprocess.check_output(["httpd", "-V"]).split("\n")
             else:
                 collectd.info("Couldn't get the data")
                 return
@@ -132,9 +132,12 @@ class ApachePerf:
                 except ValueError:
                     continue
             try:
-                data_dict["apacheVersion"] = serverDetails[2].strip('Apache/')
-                data_dict["apacheOS"] = serverDetails[3][1:-1]
+                data_dict["serverMPM"] = (serverDetails[6].split(":", 1)[1]).strip()
+                serverVersion = (serverDetails[0].split(":", 1)[1]).strip()
+                data_dict["serverVersion"] = serverVersion.split()[0].strip('Apache/')
+                data_dict["apacheOS"] =  serverVersion.split()[1][1:-1]
             except KeyError:
+                data_dict["serverMPM"] = NOne
                 data_dict["apacheVersion"] = None
                 data_dict["apacheOS"] = None
 
