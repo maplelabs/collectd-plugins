@@ -85,9 +85,9 @@ def get_rate(key, curr_data, prev_data):
     if TIMESTAMP not in curr_data or TIMESTAMP not in prev_data:
         collectd.error("%s key not in previous data. Shouldn't happen." % key)
         return rate
-
-    curr_time = curr_data[TIMESTAMP]
-    prev_time = prev_data[TIMESTAMP]
+    # TIMESTAMP is in epoch milliseconds, converting back into seconds
+    curr_time = curr_data[TIMESTAMP]/1000
+    prev_time = prev_data[TIMESTAMP]/1000
 
     if curr_time <= prev_time:
         collectd.error("Current data time: %s is less than previous data time: %s. "
