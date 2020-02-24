@@ -635,8 +635,7 @@ class PostgresStats:
     @staticmethod
     def dispatch_data(dict_disks_copy):
         for details_type, details in dict_disks_copy.items():
-            collectd.info("Plugin Postgres: Values: " + json.dumps(details))
-            collectd.info("final details are : %s" % details)
+            collectd.info("Plugin Postgres: Added Postgres data Successfully ")
             dispatch(details)
 
     def get_size(self, data):
