@@ -88,53 +88,16 @@ class TcpStats(object):
         read_low, read_medium, read_high = rmem_lines.split("\t")
         write_low, write_medium, write_high = wmem_lines.split("\t")
 
-        if self.pollCounter <= 1:
-            self.previousData["readTcpWinLow"] = round(
-                float(read_low) / FACTOR, FLOATING_FACTOR)
-            self.previousData["readTcpWinMedium"] = round(
-                float(read_medium) / FACTOR, FLOATING_FACTOR)
-            self.previousData["readTcpWinHigh"] = round(
-                float(read_high) / FACTOR, FLOATING_FACTOR)
-            collectd.info("Plugin tcp_stats: TCP read buffer size got successfully")
+        dict_tcp[READ_TCPWIN_LOW] = round( float(read_low) / (FACTOR * FACTOR), FLOATING_FACTOR)
+        dict_tcp[READ_TCPWIN_MEDIUM] = round( float(read_medium) / (FACTOR * FACTOR), FLOATING_FACTOR)
+        dict_tcp[READ_TCPWIN_HIGH] = round( float(read_high) / (FACTOR * FACTOR), FLOATING_FACTOR)
+        collectd.info("Plugin tcp_stats: TCP read buffer size got successfully")
+        collectd.info("Plugin tcp_stats: TCP read buffer size got successfully")
 
-            self.previousData["writeTcpWinLow"] = round(
-                float(write_low) / FACTOR, FLOATING_FACTOR)
-            self.previousData["writeTcpWinMedium"] = round(
-                float(write_medium) / FACTOR, FLOATING_FACTOR)
-            self.previousData["writeTcpWinHigh"] = round(
-                float(write_high) / FACTOR, FLOATING_FACTOR)
-            collectd.info("Plugin tcp_stats: TCP write buffer size got successfully")
-        else:
-            # Finding the difference from previous poll value and updating previous poll values
-            dict_tcp[READ_TCPWIN_LOW] = round(
-                float(read_low) / FACTOR, FLOATING_FACTOR) - self.previousData["readTcpWinLow"]
-            dict_tcp[READ_TCPWIN_MEDIUM] = round(
-                float(read_medium) / FACTOR, FLOATING_FACTOR) - self.previousData["readTcpWinMedium"]
-            dict_tcp[READ_TCPWIN_HIGH] = round(
-                float(read_high) / FACTOR, FLOATING_FACTOR) - self.previousData["readTcpWinHigh"]
-            collectd.info("Plugin tcp_stats: TCP read buffer size got successfully")
-
-            dict_tcp[WRITE_TCPWIN_LOW] = round(
-                float(write_low) / FACTOR, FLOATING_FACTOR) - self.previousData["writeTcpWinLow"]
-            dict_tcp[WRITE_TCPWIN_MEDIUM] = round(
-                float(write_medium) / FACTOR, FLOATING_FACTOR) - self.previousData["writeTcpWinMedium"]
-            dict_tcp[WRITE_TCPWIN_HIGH] = round(
-                float(write_high) / FACTOR, FLOATING_FACTOR) - self.previousData["writeTcpWinHigh"]
-            collectd.info("Plugin tcp_stats: TCP write buffer size got successfully")
-
-            self.previousData["readTcpWinLow"] = round(
-                float(read_low) / FACTOR, FLOATING_FACTOR)
-            self.previousData["readTcpWinMedium"] = round(
-                float(read_medium) / FACTOR, FLOATING_FACTOR)
-            self.previousData["readTcpWinHigh"] = round(
-                float(read_high) / FACTOR, FLOATING_FACTOR)
-
-            self.previousData["writeTcpWinLow"] = round(
-                float(write_low) / FACTOR, FLOATING_FACTOR)
-            self.previousData["writeTcpWinMedium"] = round(
-                float(write_medium) / FACTOR, FLOATING_FACTOR)
-            self.previousData["writeTcpWinHigh"] = round(
-                float(write_high) / FACTOR, FLOATING_FACTOR)
+        dict_tcp[WRITE_TCPWIN_LOW] = round( float(write_low) / (FACTOR * FACTOR), FLOATING_FACTOR)
+        dict_tcp[WRITE_TCPWIN_MEDIUM] = round( float(write_medium) / (FACTOR * FACTOR), FLOATING_FACTOR)
+        dict_tcp[WRITE_TCPWIN_HIGH] = round( float(write_high) / (FACTOR * FACTOR), FLOATING_FACTOR)
+        collectd.info("Plugin tcp_stats: TCP write buffer size got successfully")
 
         (status, val_list) = self.get_retransmit_and_reset()
         if status == SUCCESS:
