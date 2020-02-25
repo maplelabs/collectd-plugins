@@ -106,8 +106,8 @@ class DiskStats(object):
                avgqusizedata = float(avgqusizedata)
             else:
                avgqusizedata = 0.0
-            disk = {READBYTE: float(disk_ioinfo.read_bytes) / (FACTOR * FACTOR), WRITEBYTE: float(
-                disk_ioinfo.write_bytes) / (FACTOR * FACTOR), READCOUNT: disk_ioinfo.read_count,
+            disk = {READBYTE: float(disk_ioinfo.read_bytes) / (FACTOR), WRITEBYTE: float(
+                disk_ioinfo.write_bytes) / (FACTOR), READCOUNT: disk_ioinfo.read_count,
                     WRITECOUNT: disk_ioinfo.write_count, READTIME: disk_ioinfo.read_time,
                     WRITETIME: disk_ioinfo.write_time,USAGE: 0,AVGQUEUESIZE: avgqusizedata}
             dict_disk[name] = disk
@@ -221,12 +221,12 @@ class DiskStats(object):
                         READBYTE, disk_info, self.prev_data[disk_name])
                     if rate != NAN:
                         disk_info[READTHROUGHPUT] = round(
-                            rate, FLOATING_FACTOR)
+                            (rate/FACTOR), FLOATING_FACTOR)
                     rate = utils.get_rate(WRITEBYTE, disk_info,
                                           self.prev_data[disk_name])
                     if rate != NAN:
                         disk_info[WRITETHROUGHPUT] = round(
-                            rate, FLOATING_FACTOR)
+                            (rate/FACTOR), FLOATING_FACTOR)
                     rate = utils.get_rate(READCOUNT, disk_info,
                                           self.prev_data[disk_name])
                     if rate != NAN:
@@ -240,12 +240,12 @@ class DiskStats(object):
                         READBYTE, disk_info, self.prev_data[disk_name])
                     if rate != NAN:
                         disk_info[AGG +
-                                  READTHROUGHPUT] = round(rate, FLOATING_FACTOR)
+                                  READTHROUGHPUT] = round((rate/FACTOR), FLOATING_FACTOR)
                     rate = utils.get_rate(WRITEBYTE, disk_info,
                                           self.prev_data[disk_name])
                     if rate != NAN:
                         disk_info[AGG +
-                                  WRITETHROUGHPUT] = round(rate, FLOATING_FACTOR)
+                                  WRITETHROUGHPUT] = round((rate/FACTOR), FLOATING_FACTOR)
                     rate = utils.get_rate(READCOUNT, disk_info,
                                           self.prev_data[disk_name])
                     if rate != NAN:
@@ -256,6 +256,14 @@ class DiskStats(object):
                     if rate != NAN:
                         disk_info[AGG +
                                   WRITEIOPS] = round(rate, FLOATING_FACTOR)
+
+    def add_differential_value(self, dict_disks):
+        for disk_name, disk_info in dict_disks.items():
+            if self.prev_data and disk_name in self.prev_data:
+                disk_info[READDATA] = disk_info[READBYTE] - self.prev_data[disk_name][READBYTE]
+                disk_info[WRITEDATA] = disk_info[WRITEBYTE] - self.prev_data[disk_name][WRITEBYTE]
+                disk_info[READIOCOUNT] = disk_info[READCOUNT] - self.prev_data[disk_name][READCOUNT]
+                disk_info[WRITEIOCOUNT] = disk_info[WRITECOUNT] - self.prev_data[disk_name][WRITECOUNT]
 
     def add_latency(self, dict_disks):
         for disk_name, disk_info in dict_disks.items():
@@ -300,6 +308,8 @@ class DiskStats(object):
             "Plugin disk_stat: Added common parameters successfully.")
         # calculate rate
         self.add_rate(dict_disks)
+        #calculate differential values READDATA, WRITEDATA, READIOCOUNT, WRITEIOCOUNT
+        self.add_differential_value(dict_disks)
         # calculate latency
         self.add_latency(dict_disks)
         collectd.info(
