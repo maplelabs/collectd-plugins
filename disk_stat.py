@@ -221,12 +221,12 @@ class DiskStats(object):
                         READBYTE, disk_info, self.prev_data[disk_name])
                     if rate != NAN:
                         disk_info[READTHROUGHPUT] = round(
-                            rate, FLOATING_FACTOR)
+                            (rate/FACTOR), FLOATING_FACTOR)
                     rate = utils.get_rate(WRITEBYTE, disk_info,
                                           self.prev_data[disk_name])
                     if rate != NAN:
                         disk_info[WRITETHROUGHPUT] = round(
-                            rate, FLOATING_FACTOR)
+                            (rate/FACTOR), FLOATING_FACTOR)
                     rate = utils.get_rate(READCOUNT, disk_info,
                                           self.prev_data[disk_name])
                     if rate != NAN:
@@ -240,12 +240,12 @@ class DiskStats(object):
                         READBYTE, disk_info, self.prev_data[disk_name])
                     if rate != NAN:
                         disk_info[AGG +
-                                  READTHROUGHPUT] = round(rate, FLOATING_FACTOR)
+                                  READTHROUGHPUT] = round((rate/FACTOR), FLOATING_FACTOR)
                     rate = utils.get_rate(WRITEBYTE, disk_info,
                                           self.prev_data[disk_name])
                     if rate != NAN:
                         disk_info[AGG +
-                                  WRITETHROUGHPUT] = round(rate, FLOATING_FACTOR)
+                                  WRITETHROUGHPUT] = round((rate/FACTOR), FLOATING_FACTOR)
                     rate = utils.get_rate(READCOUNT, disk_info,
                                           self.prev_data[disk_name])
                     if rate != NAN:
