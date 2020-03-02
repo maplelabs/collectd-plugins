@@ -1421,13 +1421,14 @@ class ElasticsearchStats(object):
                     index_read_only_allow_delete = False
                     index_write = True
                     index_read_only = True
-
-
+                    
             index_creation_date = None
-            try:
-                index_creation_date = index_settings[index]['settings']['index'].get('creation_date')
-            except KeyError as ex:
-                collectd.error('Plugin elasticsearch: Error fetching index creation date for index %s : %s' % (index, ex.message))
+            if index != "_all":
+                
+                try:
+                    index_creation_date = index_settings[index]['settings']['index'].get('creation_date')
+                except KeyError as ex:
+                    collectd.error('Plugin elasticsearch: Error fetching index creation date for index %s : %s' % (index, ex.message))
 
             document_count = None
             try:
