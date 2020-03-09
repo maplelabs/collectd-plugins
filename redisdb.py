@@ -127,8 +127,8 @@ class RedisStats:
                     stats_dict["totalCommandsProcessed"] = 0
                     stats_dict["totalNetInputBytes"] = 0
                     stats_dict["totalNetOutputBytes"] = 0
-#                    stats_dict["keyspaceHits"] = 0
-#                    stats_dict["keyspaceMisses"] = 0
+                    stats_dict["keyspaceHits"] = 0
+                    stats_dict["keyspaceMisses"] = 0
 #                    stats_dict["keyspaceHitRate"] = 0.0
                     stats_dict["keyspaceMissRate"] = 0.0
                     stats_dict["writeThroughput"] = 0.0
@@ -144,8 +144,8 @@ class RedisStats:
                     stats_dict["totalCommandsProcessed"] = server_stats.get("total_commands_processed",0) - self.previousData["totalCommandsProcessed"]
                     stats_dict["totalNetInputBytes"] = input_bytes - self.previousData["totalNetInputBytes"]
                     stats_dict["totalNetOutputBytes"] = output_bytes - self.previousData["totalNetOuputBytes"]
-#                    stats_dict["keyspaceHits"] = server_stats.get("keyspace_hits",0) - self.previousData["keyspaceHits"]
-#                    stats_dict["keyspaceMisses"] = server_stats.get("keyspace_misses",0) - self.previousData["keyspaceMisses"]
+                    stats_dict["keyspaceHits"] = server_stats.get("keyspace_hits",0) - self.previousData["keyspaceHits"]
+                    stats_dict["keyspaceMisses"] = server_stats.get("keyspace_misses",0) - self.previousData["keyspaceMisses"]
 #                   if ((stats_dict["keyspaceHits"] > 0) or (stats_dict["keyspaceMisses"] > 0)):
 #                        keyspace_dict["keyspaceHitRate"] = round(float(stats_dict["keyspaceHits"] / (keyspace_dict["keyspaceHits"] + stats_dict["keyspaceMisses"])), 2)
 #                        stats_dict["keyspaceMissRate"] = round(float(stats_dict["keyspaceMisses"] / (stats_dict["keyspaceHits"] + stats_dict["keyspaceMisses"])), 2)
