@@ -23,6 +23,8 @@ class JVM(object):
         """Initializes interval and previous dictionary variable."""
         self.interval = 0
         self.process = None
+        self.previousData = {}
+        self.pollCounter = 0
 
     def read_config(self, cfg):
         """Initializes variables from conf files."""
@@ -147,7 +149,6 @@ class JVM(object):
         #heapsize = (float(heapsize[1])) / (1024 * 1024)
         heapsize = heapsize.split()
         heapsize = (float(heapsize[3])) / (1024 * 1024)
-        
         call = subprocess.Popen("jstat -gc %s" % int(pid), shell=True,
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
@@ -216,16 +217,54 @@ class JVM(object):
             ygc = 0
 
         try:
+            collectd.debug("Calculating YGC time.")
+            ygct = float(heapusage[13])
+        except:
+            collectd.debug("Error calculating YGC time.")
+            ygct = 0
+
+        try:
             collectd.debug("Calculating FGC.")
             fgc = int(heapusage[14])
         except:
             collectd.debug("Error calculating FGC.")
             fgc = 0
 
+        try:
+            collectd.debug("Calculating FGC time.")
+            fgct = float(heapusage[15])
+        except:
+            collectd.debug("Error calculating FGC time.")
+            fgct = 0
+
         # gct = float(heapusage[16])
         # ygc = int(heapusage[12])
         # fgc = int(heapusage[14])
-        tgc = ygc + fgc
+        #tgc = ygc + fgc
+
+        #Calculate differential values for GC time, Young GC and Full GC count.
+
+        ygc_diff = 0
+        ygct_diff = 0
+        fgc_diff = 0
+        fgct_diff = 0
+        gct_diff = 0
+
+        if self.pollCounter > 1 and self.previousData.get(pid):
+            if gct - self.previousData[pid]["gct"] > 0:
+                ygc_diff = ygc - self.previousData[pid]["ygc"]
+                ygct_diff = ygct - self.previousData[pid]["ygct"]
+                fgc_diff = fgc - self.previousData[pid]["fgc"]
+                fgct_diff = fgct - self.previousData[pid]["fgct"]
+                gct_diff = gct - self.previousData[pid]["gct"]
+
+        gc_info = dict()
+        gc_info["ygc"] = ygc
+        gc_info["ygct"] = ygct
+        gc_info["fgc"] = fgc
+        gc_info["fgct"] = fgct
+        gc_info["gct"] = gct
+        self.previousData[pid] = gc_info
 
         ram_usage = self.get_ramusage(pid)
         if ram_usage == -1:
@@ -246,14 +285,18 @@ class JVM(object):
         jvm_res["stime"] = float(stime)
         jvm_res["utime"] = float(utime)
         jvm_res["clockTick"] = int(clk_tick)
-        jvm_res["gct"] = gct
+        jvm_res["gct"] = gct_diff
         jvm_res["survivor_0"] = float(heapusage[2])
         jvm_res["survivor_1"] = float(heapusage[3])
         jvm_res["eden"] = float(heapusage[5])
         jvm_res["old"] = float(heapusage[7])
         jvm_res["permanent"] = float(heapusage[9])
-        jvm_res["gc"] = int(heapusage[14])
-      
+        #jvm_res["gc"] = int(heapusage[14])
+        jvm_res["ygc"] = ygc_diff
+        jvm_res["ygct"] = ygct_diff
+        jvm_res["fgc"] = fgc_diff
+        jvm_res["fgct"] = fgct_diff
+
         self.add_common_params(jvm_res, state, pid, process_name)
         self.dispatch_data(jvm_res)
 
@@ -279,11 +322,12 @@ class JVM(object):
     def get_jvmstate(self):
         """Get the state of jvm process"""
 	collectd.info("jvm: get the state of jvm")
+        self.pollCounter += 1
         for process_name in self.process.split(','):
             pids,pNames = self.get_pid(process_name)
             collectd.info( "pids +++ : %s" % pids)
             collectd.info( "pNames +++ : %s" % pNames)
-            self.remove_inactive_pids(pids)   
+            self.remove_inactive_pids(pids)
             if not pids:
                 collectd.info("No JAVA process are running")
                 return
