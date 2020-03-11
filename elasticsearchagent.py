@@ -599,10 +599,7 @@ class ElasticsearchStats(object):
             collectd.error('Plugin elasticsearch: Error getting jvm garbage collection time for node_id %s: %s',
                           node_id, kerr.message)
 
-            # Jvm garbage collection time in seconds
-        if jvm_gct:
-            jvm_gct = round(float(jvm_gct) / 1000, 2)
-            jvm_young_gc = None
+        jvm_young_gc = None
         try:
             jvm_young_gc = stats['nodes'][node_id]['jvm']['gc'] \
                 ['collectors']['young']['collection_count']
@@ -618,10 +615,7 @@ class ElasticsearchStats(object):
             collectd.error('Plugin elasticsearch: Error getting jvm young garbage collection time for node_id %s: %s',
                               node_id, kerr.message)
 
-            # Jvm young garbage collection time in seconds
-        if jvm_young_gct:
-            jvm_young_gct = round(float(jvm_young_gct) / 1000, 2)
-            thread_pool_get_threads = None
+        thread_pool_get_threads = None
         try:
             thread_pool_get_threads = stats['nodes'][node_id]['thread_pool']['get']['threads']
         except KeyError as kerr:
@@ -780,6 +774,34 @@ class ElasticsearchStats(object):
             # We need hit and miss count and jvm loaded and unloaded classes since our previous poll
         if 'nodeStats' in self.previousData and not self.pollCounter == 1:
             try:
+                jvm_young_gc_count = jvm_young_gc - self.previousData["nodeStats"]['node_jvm_young_gc_count']
+                if jvm_young_gc_count < 0:
+                    jvm_young_gc_count = 0
+                self.previousData["nodeStats"]['node_jvm_young_gc_count'] = jvm_young_gc
+
+                jvm_gc_count = jvm_gc - self.previousData["nodeStats"]['node_jvm_gc_count']
+                if jvm_gc_count < 0:
+                    jvm_gc_count = 0
+                self.previousData["nodeStats"]['node_jvm_gc_count'] = jvm_gc
+
+                jvm_gct_diff_sec = 0.0
+                jvm_gct_diff = jvm_gct - self.previousData["nodeStats"]['node_jvm_gct_diff']
+                if jvm_gct_diff < 0:
+                    jvm_gct_diff_sec = 0.0
+                else:
+                    jvm_gct_diff_sec = round(float(jvm_gct_diff) / 1000, 2)
+
+                self.previousData["nodeStats"]['node_jvm_gct_diff'] = jvm_gct
+
+                jvm_young_gct_diff_sec = 0.0
+                jvm_young_gct_diff = jvm_young_gct - self.previousData["nodeStats"]['node_jvm_young_gct_diff']
+                if jvm_young_gct_diff < 0:
+                    jvm_young_gct_diff_sec = 0.0
+                else:
+                    jvm_young_gct_diff_sec = round(float(jvm_young_gct_diff) / 1000, 2)
+
+                self.previousData["nodeStats"]['node_jvm_young_gct_diff'] = jvm_young_gct
+
                 hit_count = hits - self.previousData["nodeStats"]['node_hit_count']
                 if hit_count < 0:
                     hit_count = 0
@@ -939,7 +961,11 @@ class ElasticsearchStats(object):
                                                     'node_io_stats_tot_read_op': io_stats_total_read_operations,
                                                     'node_io_stats_tot_write_op': io_stats_total_write_operations,
                                                     'node_io_stats_total_read_kb': io_stats_total_read_kb,
-                                                    'node_io_stats_total_write_kb': io_stats_total_write_kb
+                                                    'node_io_stats_total_write_kb': io_stats_total_write_kb,
+                                                    'node_jvm_young_gct_diff': jvm_young_gct,
+                                                    'node_jvm_gct_diff': jvm_gct,
+                                                    'node_jvm_gc_count': jvm_gc,
+                                                    'node_jvm_young_gc_count': jvm_young_gc
                                                     }})
             hit_count = 0
             miss_count = 0
@@ -959,6 +985,11 @@ class ElasticsearchStats(object):
             io_stats_tot_write_op = 0
             io_stats_total_read = 0.0
             io_stats_total_write = 0.0
+            jvm_young_gct_diff_sec = 0.0
+            jvm_gct_diff_sec = 0.0
+            jvm_gc_count = 0
+            jvm_young_gc_count = 0
+
         if hit_count or miss_count:
             hit_ratio = (hit_count * 100)/(hit_count + miss_count)
         else:
@@ -1015,10 +1046,10 @@ class ElasticsearchStats(object):
                                                      'jvmPoolsOldPeakUsage': jvm_pools_old_peak_usage,
                                                      # 'jvmPoolsOldPeakMax': jvm_pools_old_peak_max,
                                                      'jvmThreads': int(jvm_threads),
-                                                     'jvmGc': int(jvm_gc),
-                                                     'jvmGct': jvm_gct,
-                                                     'jvmYoungGc': int(jvm_young_gc),
-                                                     'jvmYoungGct': jvm_young_gct,
+                                                     'jvmGc': int(jvm_gc_count),
+                                                     'jvmGct': jvm_gct_diff_sec,
+                                                     'jvmYoungGc': int(jvm_young_gc_count),
+                                                     'jvmYoungGct': jvm_young_gct_diff_sec,
                                                      'jvmLoadedClasses': jvm_loaded_classes,
                                                      'jvmUnloadedClasses': jvm_unloaded_classes,
                                                      'threadPoolGetThreads': int(thread_pool_get_threads),
