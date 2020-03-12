@@ -2,7 +2,7 @@ requests==2.18.1
 apache-log-parser==1.7.0
 collectd==1.0
 MYSQL-python==1.2.3
-psutil==5.3.0
+psutil==5.6.6
 pyjolokia==0.3.1
 kafka-python==1.4.2
 psycopg2-binary==2.7.5
