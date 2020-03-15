@@ -266,7 +266,7 @@ class JmxStat(object):
         zookper_ephemerals = jolokiaClient.request(type='exec', mbean=mbean_memory, operation='countEphemerals')
         if zookper_ephemerals['status'] == 200:
             dict_jmx['countEphemerals'] = zookper_ephemerals['value']
-        zookper_datasize = jolokiaClient.request(type='exec', mbean=mbean_memory, operation='countEphemerals')
+        zookper_datasize = jolokiaClient.request(type='exec', mbean=mbean_memory, operation='approximateDataSize')
         if zookper_datasize['status'] == 200:
             dict_jmx['approximateDataSize'] = round(zookper_datasize['value'] / 1024.0 / 1024.0, 2)
 
