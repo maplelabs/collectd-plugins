@@ -789,7 +789,7 @@ class ElasticsearchStats(object):
                 if jvm_gct_diff < 0:
                     jvm_gct_diff_sec = 0.0
                 else:
-                    jvm_gct_diff_sec = round(float(jvm_gct_diff) / 1000, 2)
+                    jvm_gct_diff_sec = round(float(jvm_gct_diff) / 1000, 3)
 
                 self.previousData["nodeStats"]['node_jvm_gct_diff'] = jvm_gct
 
@@ -798,7 +798,7 @@ class ElasticsearchStats(object):
                 if jvm_young_gct_diff < 0:
                     jvm_young_gct_diff_sec = 0.0
                 else:
-                    jvm_young_gct_diff_sec = round(float(jvm_young_gct_diff) / 1000, 2)
+                    jvm_young_gct_diff_sec = round(float(jvm_young_gct_diff) / 1000, 3)
 
                 self.previousData["nodeStats"]['node_jvm_young_gct_diff'] = jvm_young_gct
 
